@@ -308,6 +308,35 @@ namespace Levy.Common.Weapons
 		/// <summary>Class-chain names of the Calamity base projectiles whose AI is a held melee stab (matched by name: no compile-time reference to Calamity).</summary>
 		private const string ShortswordBase = "BaseShortswordProjectile", MaceFlailBase = "BaseMaceFlailProjectile", FlailBase = "BaseFlailProjectile";
 
+		/// <summary>
+		/// Content mods whose weapons are routed by rule, not by a per-item table: Redemption's sword, hammer, spear and staff shots are written around the player holding them (their swing is drawn around Main.player[owner], their combo and
+		/// charge read the owner's channel and cursor, and they only act when the owner is Main.myPlayer). As plain shots owned by the commander they swung at HER (measured: army sweep, 20 of its melee weapons made no damage in a levy's hands).
+		/// Held, the levy's dummy owns them. <c>LEVY_AUTOHOLD=0</c> turns the rule off, <c>LEVY_AUTOHOLD=Mod1,Mod2</c> sets the list (lab A/B).
+		/// </summary>
+		private static readonly string[] AutoHoldMods = ParseAutoHold();
+		private static string[] ParseAutoHold() { string e = Environment.GetEnvironmentVariable("LEVY_AUTOHOLD"); return e == "0" ? Array.Empty<string>() : string.IsNullOrEmpty(e) ? new[] { "Redemption" } : e.Split(',', StringSplitOptions.RemoveEmptyEntries); }
+		/// <summary>Items of an AutoHoldMods mod the plain shot serves better than the held route (measured per item, mechanism noted at its row).</summary>
+		private static readonly HashSet<string> AutoHoldPlain = new() { };
+
+		private static bool AutoHold(Item item, Projectile sample)
+		{
+			if (Array.IndexOf(AutoHoldMods, item.ModItem.Mod.Name) < 0 || AutoHoldPlain.Contains(item.ModItem.Name) || ForcePlain(item.ModItem.Name)) return false;
+			if (item.shoot <= 0 || sample?.ModProjectile == null || item.accessory) return false;
+			if (!(item.CountsAsClass(DamageClass.Ranged) || item.CountsAsClass(DamageClass.Magic) || item.CountsAsClass(DamageClass.Melee) || WeaponClassifier.IsExtraCombat(item))) return false;
+			// the shot is built on the mod's own "held by its owner" base class (a swing, a stab or a gun drawn at the owner's hand), or it is a channel shot that reads its owner's button
+			if (ChainHas(sample.ModProjectile.GetType(), "TrueMeleeProjectile")) return true;
+			return item.channel && (OwnerLockProbe.ReadsOwnerButton(item.shoot) || OwnerLockProbe.ReadsUseButtons(item.shoot));
+		}
+
+		private static bool ChainHas(Type t, string name)
+		{
+			for (Type b = t; b != null && b != typeof(ModProjectile) && b != typeof(object); b = b.BaseType) if (b.Name == name) return true;
+			return false;
+		}
+
+		/// <summary>True when the item belongs to an AutoHoldMods mod and is of that mod's own damage class (not Melee, Ranged or Magic): a dagger class whose blow is a blade-range swing, so the soldier closes to blade reach for it like for a sword.</summary>
+		internal static bool HeldBladeOfExtraClass(Item item) => item?.ModItem != null && Array.IndexOf(AutoHoldMods, item.ModItem.Mod.Name) >= 0 && !item.CountsAsClass(DamageClass.Melee) && !item.CountsAsClass(DamageClass.Ranged) && !item.CountsAsClass(DamageClass.Magic) && WeaponClassifier.IsExtraCombat(item);
+
 		public static ModShotKind Of(Item item)
 		{
 			if (Off || item == null || item.IsAir || item.type < ItemID.Count) return ModShotKind.None;
@@ -344,6 +373,8 @@ namespace Levy.Common.Weapons
 			// A held / charge-and-release holdout reads its owner's button (and is the weapon's own shot).
 			// Only holdouts measured as duds as plain shots are routed (see HoldoutRouted); everything else keeps the plain shot, which already works for it.
 			if (item.ModItem?.Mod.Name == "CalamityMod" && ForcePlain(item.ModItem.Name)) return ModShotKind.None;
+			// A content mod listed in AutoHoldMods: its channel weapons whose shot reads its owner's button (the swing / charge / beam is drawn around and fed by the holder) are HELD, found from the shot's own code, no per-item table
+			if (item.ModItem != null && !ProjAiHooks.Off && AutoHold(item, sample)) return ModShotKind.Holdout;
 			if (item.ModItem?.Mod.Name == "CalamityMod" && !ProjAiHooks.Off && HeldGrenadeRouted.Contains(item.ModItem.Name) && item.channel && item.shoot > 0 && sample?.ModProjectile != null) return ModShotKind.Holdout;
 			if (item.ModItem?.Mod.Name == "CalamityMod" && (HoldoutRouted.Contains(item.ModItem.Name) || (!ProjAiHooks.Off && HeldItemRateRouted.Contains(item.ModItem.Name)) || ForceHold(item.ModItem.Name)) && item.shoot > 0
 				&& (item.CountsAsClass(DamageClass.Ranged) || item.CountsAsClass(DamageClass.Magic) || item.CountsAsClass(DamageClass.Melee)))

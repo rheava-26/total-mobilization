@@ -191,7 +191,7 @@ namespace Levy.Common.Weapons
 			if (_safeItem.Contains(key)) return Kind.None; // measured, nothing changed (a pair-level rule may still apply through AltersWith)
 			// never measured: what its own compiled code says, its shot included (cached; when in doubt it alters)
 			Kind k = Kind.None;
-			if (it.shoot > ProjectileID.None) k |= ProjectileKind(it.shoot);
+			if (it.shoot > ProjectileID.None && !(it.shoot == ProjectileID.PurificationPowder && it.useAmmo > 0)) k |= ProjectileKind(it.shoot); // an ammo weapon's shoot of 10 is tML's "the round decides" placeholder, not a Purification Powder shot (Redemption's bows and guns carry it)
 			k |= ScanItem(it);
 			Scanned++; if (k != Kind.None) ScannedAltering++;
 			if (ScannedNames.Count < 400) ScannedNames.Add(key + (k != Kind.None ? " [" + k + "]" : ""));

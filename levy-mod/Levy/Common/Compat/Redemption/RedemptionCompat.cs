@@ -6,6 +6,7 @@ using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Levy.Common.Targeting;
+using Levy.Common.Weapons;
 
 namespace Levy.Common.Compat.Redemption
 {
@@ -33,6 +34,7 @@ namespace Levy.Common.Compat.Redemption
 			Loaded = true;
 			if (Environment.GetEnvironmentVariable("LEVY_REDECOMPAT") == "0") { Mod.Logger.Info("Levy Redemption compat: disabled by LEVY_REDECOMPAT=0 (test switch)"); return; }
 			if (Environment.GetEnvironmentVariable("LEVY_LAB_REDE_ELEMENTOFF") == "1") LabElementsOff(red);
+			WireDamageClass(red);
 			try
 			{
 				// the first boss: the death state is the open choice
@@ -44,7 +46,27 @@ namespace Levy.Common.Compat.Redemption
 			catch (Exception e) { Mod.Logger.Warn("Levy Redemption compat: could not wire the hold-fire states (" + e.GetType().Name + ": " + e.Message + ")"); }
 		}
 
-		public override void Unload() { _holdStates.Clear(); Wired.Clear(); Loaded = false; }
+		public override void Unload() { _holdStates.Clear(); Wired.Clear(); Loaded = false; if (_ritHook != null) { WeaponClassifier.ExtraCombatClasses.Remove(_ritHook); _ritHook = null; } _ritClass = null; }
+
+		private static DamageClass _ritClass; private static Func<Item, bool> _ritHook;
+		/// <summary>The mod's own damage class (a dagger class that counts as none of the five combat classes) is declared issuable: levies carry and use its weapons. Found by type name; a renamed class leaves it benched.</summary>
+		private void WireDamageClass(Mod red)
+		{
+			try
+			{
+				Type t = red.Code?.GetType("Redemption.DamageClasses.RitualistClass");
+				_ritClass = t == null ? null : ModContent.GetContent<DamageClass>().FirstOrDefault(d => d.GetType() == t);
+				if (_ritClass == null) { Wired.Add("custom damage class not found"); return; }
+				if (Environment.GetEnvironmentVariable("LEVY_REDECLASS") == "0") { Wired.Add("custom damage class: off (LEVY_REDECLASS=0)"); return; }
+				_ritHook = it => it.ModItem != null && it.ModItem.Mod == red && it.DamageType == _ritClass;
+				WeaponClassifier.ExtraCombatClasses.Add(_ritHook);
+				Wired.Add("custom damage class -> issuable");
+			}
+			catch (Exception e) { Mod.Logger.Warn("Levy Redemption compat: could not wire the custom damage class (" + e.GetType().Name + ": " + e.Message + ")"); }
+		}
+
+		/// <summary>True for an item of the mod's own damage class.</summary>
+		public static bool IsCustomClass(Item it) => _ritClass != null && it != null && it.DamageType == _ritClass;
 
 		/// <summary>Lab switch (LEVY_LAB_REDE_ELEMENTOFF=1): turns the mod's own element damage scaling off through its server config, to tell its effect on a measurement from Levy's. Never on in play.</summary>
 		private void LabElementsOff(Mod red)

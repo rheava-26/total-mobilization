@@ -330,7 +330,7 @@ namespace Levy.Common.Testing
 		private static void ArmySweep()
 		{
 			string mode = Environment.GetEnvironmentVariable("LEVY_ARMYSWEEP");
-			if (mode == "0" || !ModLoader.HasMod("CalamityMod")) return;
+			if (mode == "0" || (!ModLoader.HasMod("CalamityMod") && string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LEVY_ARMYSWEEP_MODS")))) return; // a LEVY_ARMYSWEEP_MODS sweep of another mod needs no Calamity
 			if (Environment.GetEnvironmentVariable("LEVY_ARMYSWEEP_ROGUE") == "1") { ArmyRogueSweep(); return; } // the rogue stealth sweep (IdentityWorldCheck.ArmyRogue.cs)
 			string only = Environment.GetEnvironmentVariable("LEVY_ARMYSWEEP_ONLY");
 			string[] names = !string.IsNullOrEmpty(only) ? only.Replace('_', ' ').Split(';', StringSplitOptions.RemoveEmptyEntries) : mode == "1" ? ArmyList : ArmyShip;
@@ -339,7 +339,8 @@ namespace Levy.Common.Testing
 			int ticks = int.TryParse(Environment.GetEnvironmentVariable("LEVY_ARMYSWEEP_TICKS"), out int tk) ? tk : 600;
 			var weapons = endgame ? ArmyEndgame() : ArmyResolve(names);
 			string modsEnv = Environment.GetEnvironmentVariable("LEVY_ARMYSWEEP_MODS"); // lab: every weapon of these mods (comma list of internal mod names) instead of the named list; reported, never failed
-			if (!string.IsNullOrEmpty(modsEnv)) { weapons = ArmyModWeapons(modsEnv.Split(',', StringSplitOptions.RemoveEmptyEntries)); reportOnly = true; }
+			if (!string.IsNullOrEmpty(modsEnv)) { weapons = ArmyModWeapons(modsEnv.Split(',', StringSplitOptions.RemoveEmptyEntries)); reportOnly = true;
+				if (!string.IsNullOrEmpty(only)) { var keys = names.Select(ArmyKey).ToHashSet(); weapons = weapons.Where(w => keys.Contains(ArmyKey(w.name)) || keys.Contains(ArmyKey(w.label.Substring(w.label.IndexOf(':') + 1)))).ToList(); } } // LEVY_ARMYSWEEP_ONLY narrows a mod sweep too
 			string shard = Environment.GetEnvironmentVariable("LEVY_ARMYSWEEP_SHARD");
 			if (!string.IsNullOrEmpty(shard) && shard.Split('/') is { Length: 2 } sh && int.TryParse(sh[0], out int si) && int.TryParse(sh[1], out int sn) && sn > 1) weapons = weapons.Where((w, k) => k % sn == si).ToList();
 			if (weapons.Count == 0) return;
@@ -363,7 +364,7 @@ namespace Levy.Common.Testing
 						// a weapon the armory never issues is listed, not fired: nobody would carry it
 						Item ci = new Item(); ci.SetDefaults(type); bool sup = false, locked = false, holdable = false;
 						try { sup = WeaponClassifier.IsIssuableWeapon(ci); locked = ModWeaponGates.Locked(ci); holdable = new SoldierGear().CanHold(SoldierGear.SlotWeapon, ci); } catch (Exception e) { Note($"army sweep: {label} classify threw {e.GetType().Name}: {e.Message}"); }
-						if (!sup || locked || !holdable) { Note($"army sweep UNISSUED {label} [{row.Cls}, {row.Fam}; {row.Probe}] supported={sup} gateLocked={locked} holdable={holdable} dmg={ci.damage} useStyle={ci.useStyle} channel={ci.channel} shoot={ci.shoot}"); rows.Add(new ArmyRow { Label = label, Name = name, Cls = row.Cls, Fam = row.Fam, Status = "UNISSUED", Player = new ArmyRes(), A = new ArmyRes(), B = new ArmyRes() }); continue; }
+						if (!sup || locked || !holdable) { Note($"army sweep UNISSUED {label} [{row.Cls}, {row.Fam}; {row.Probe}] supported={sup} gateLocked={locked} holdable={holdable} alters={WorldAlter.KindOf(ci)} shootAlters={WorldAlter.ProjectileKind(ci.shoot)} dmg={ci.damage} useStyle={ci.useStyle} channel={ci.channel} shoot={ci.shoot}"); rows.Add(new ArmyRow { Label = label, Name = name, Cls = row.Cls, Fam = row.Fam, Status = "UNISSUED", Player = new ArmyRes(), A = new ArmyRes(), B = new ArmyRes() }); continue; }
 					}
 					row.A = ArmyOne(type, ammo, ticks, false, false);
 					row.B = ArmyOne(type, ammo, ticks, false, true);

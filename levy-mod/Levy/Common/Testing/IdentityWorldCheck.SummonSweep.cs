@@ -37,6 +37,11 @@ namespace Levy.Common.Testing
 		{
 			public string Label, Mode, Err = ""; public long Damage; public int Ticks, Casts, Helpers, Sentries, Stacks, Recasts, HoldTicks; public float UsageMax = -1f, UsageEnd = -1f; public int Capacity, MaxMinions, MaxAlive, MinionTicks, NearLevyTicks, AtCmdTicks, CmdMinions, CmdOwned, CmdBuffs, LevyFrom;
 			public float MaxSlots, MaxSingleSlots, CmdSlots; public string CmdBuffNames = "";
+			/// <summary>The parity table's steady state: sums over the last third of the window of the live minions that take a slot, of all live minions and towers, and of their slots; the ticks counted; the peak of the slot-bearing count.</summary>
+			public long TailSlotted, TailAll, TailTicks; public double TailSlots; public int MaxSlotted, OverTicks;
+			public float TailSlottedAvg => TailTicks > 0 ? (float)TailSlotted / TailTicks : 0f;
+			public float TailAllAvg => TailTicks > 0 ? (float)TailAll / TailTicks : 0f;
+			public float TailSlotsAvg => TailTicks > 0 ? (float)(TailSlots / TailTicks) : 0f;
 			/// <summary>Births by projectile name: total, born within 8 tiles of the levy, born at the commander, untagged; and the ticks each name was alive.</summary>
 			public Dictionary<string, (int n, int atLevy, int atCmd, int untagged)> Born = new();
 			public Dictionary<string, int> AliveTicks = new();
@@ -50,6 +55,8 @@ namespace Levy.Common.Testing
 
 		/// <summary>The summoner kit both the levy and the parity commander wear: 6 minion slots (measured: the bare 1, Stardust Helmet, Spooky Breastplate and Stardust Leggings), no set bonus. 6 is a levy's own cap.</summary>
 		private static readonly short[] SumArmor = { ItemID.StardustHelmet, ItemID.SpookyBreastplate, ItemID.StardustLeggings };
+		/// <summary>The head / body / legs of a kit that gives exactly <paramref name="slots"/> minion slots (measured by the kit probe: Stardust Helmet +1, Spooky Breastplate +2, Stardust Leggings +2 over the bare 1): 1 is no armor, 3 the Spooky Breastplate, 6 the full kit.</summary>
+		private static short[] SumKit(int slots) => slots <= 1 ? new short[] { 0, 0, 0 } : slots <= 3 ? new short[] { 0, ItemID.SpookyBreastplate, 0 } : SumArmor;
 		
 
 		/// <summary>The four pinned enemies of the dummy line: the main one 12 tiles right of the levy, then 3, 6 and 9 tiles past it.</summary>
@@ -67,6 +74,9 @@ namespace Levy.Common.Testing
 			}
 		}
 
+		/// <summary>Fight-and-rest runs: the enemies are gone (see LEVY_SUMMONSWEEP_CYCLE) and the pins leave them alone.</summary>
+		private static bool _sumGone;
+
 		private static Item SumItem(int type) { Item i = new Item(); i.SetDefaults(type); return i; }
 
 		/// <summary>The commander's use of a staff in the parity run: clicks (20 of every 30 ticks) until her flock fills its slots, then lets go; for a RECAST staff she lets go for a moment and then clicks and holds (a player channels it at full slots).</summary>
@@ -77,9 +87,10 @@ namespace Levy.Common.Testing
 		}
 
 		/// <summary>One staff for <paramref name="ticks"/> ticks: in a levy's hands (<paramref name="commander"/> false, she stands 64 tiles away) or in the commander's own at the levy's spot (the parity run).</summary>
-		private static SumStat SumRun(int weaponType, string label, int ticks, bool commander)
+		private static SumStat SumRun(int weaponType, string label, int ticks, bool commander, int kitSlots = 6)
 		{
 			var st = new SumStat { Label = label, Mode = commander ? "commander alone" : "1 levy" };
+			short[] kit = SumKit(kitSlots);
 			Vector2 at = new Vector2(Cx * 16f + 8f, FloorY * 16f);
 			_cmdAt = commander ? new Vector2(at.X, at.Y - 24f) : HoldCmdAt();
 			ClearSoldiers(); ClearRogueAdds(); _cmdHolds = false; ReleaseCommanderButtons();
@@ -91,7 +102,7 @@ namespace Levy.Common.Testing
 			int body = -1; SoldierNPC sn = null; Item w = SumItem(weaponType);
 			if (commander)
 			{
-				for (int i = 0; i < SumArmor.Length; i++) cmd.armor[i] = SumItem(SumArmor[i]);
+				for (int i = 0; i < kit.Length; i++) cmd.armor[i] = SumItem(kit[i]);
 				// a minion that fires its owner's gun asks her for bullets (Cosmic Viper Engine, Tactical Plague Engine): a levy's minion is given a stack the same way (SoldierMinions.GiveMinionAmmo)
 				Item am = SumItem(ItemID.MusketBall); am.stack = am.maxStack; cmd.inventory[54] = am;
 				_cmdManaFloor = Math.Max(200, w.mana);
@@ -99,7 +110,7 @@ namespace Levy.Common.Testing
 			else
 			{
 				SoldierRecord rec = MakeOriginRecord(w, 0); rec.Name = "Pvt. Summoner";
-				rec.Gear.Set(SoldierGear.SlotHead, SumItem(SumArmor[0])); rec.Gear.Set(SoldierGear.SlotBody, SumItem(SumArmor[1])); rec.Gear.Set(SoldierGear.SlotLegs, SumItem(SumArmor[2]));
+				rec.Gear.Set(SoldierGear.SlotHead, SumItem(kit[0])); rec.Gear.Set(SoldierGear.SlotBody, SumItem(kit[1])); rec.Gear.Set(SoldierGear.SlotLegs, SumItem(kit[2]));
 				foreach (int sl in new[] { SoldierGear.SlotHead, SoldierGear.SlotBody, SoldierGear.SlotLegs }) rec.Gear.SetLocked(sl, true);
 				rec.Order = SoldierOrder.Hold; rec.HoldPos = at;
 				RosterSystem.Instance.Regulars.Add(rec);
@@ -117,6 +128,8 @@ namespace Levy.Common.Testing
 			KeepCommander(); PinSweepTarget(); PinRogueAdds(); CursorOnCommander(); Step(4);
 			var lastSerial = new long[Main.maxProjectiles]; var seen = new HashSet<(int, long)>(); var buffNames = new HashSet<string>(); int dbg = 0, fullSince = -1; bool again = false;
 			HoldBirthProbe.At.Clear(); HoldBirthProbe.On = true;
+			Vector2 enemy0 = _sweepTargetAt; bool wasGone = false;
+			int cycle = int.TryParse(Environment.GetEnvironmentVariable("LEVY_SUMMONSWEEP_CYCLE"), out int cy) ? cy : 0; // fight-and-rest: the enemies are there for the first half of every cycle and gone for the second; a negative cycle has no enemy at all (a levy at rest)
 			if (SumDebug && !commander) { _killLog = 0; On_Projectile.Kill += KillSpy; }
 			try
 			{
@@ -139,6 +152,7 @@ namespace Levy.Common.Testing
 						st.MaxMinions = Math.Max(st.MaxMinions, cmd.maxMinions);
 					}
 					else CursorOnCommander();
+					if (cycle != 0) { bool gone = cycle < 0 || (k % cycle) >= cycle / 2; if (gone && !wasGone) { _sumGone = true; if (_sweepTarget != null) _sweepTarget.active = false; foreach (NPC a in _rogueAdds) if (a != null) a.active = false; } else if (!gone && wasGone) { _sumGone = false; SumLine(at); } wasGone = gone; }
 					Step(1); ClearNaturalHostiles();
 					if (_sweepTarget != null && _sweepTarget.active) { int d = _sweepTarget.lifeMax - _sweepTarget.life; if (d > 0) st.Damage += d; }
 					foreach (NPC a in _rogueAdds) if (a != null && a.active) { int d = a.lifeMax - a.life; if (d > 0) st.Damage += d; }
@@ -146,7 +160,7 @@ namespace Levy.Common.Testing
 					if (sn != null && sn.NPC.active) { st.Capacity = Math.Max(st.Capacity, sn.MinionCapacity(w)); st.MaxMinions = Math.Max(st.MaxMinions, sn.Dummy?.maxMinions ?? 0); if (Main.GameUpdateCount < sn.RecastHoldUntil) st.HoldTicks++; }
 					if (saros) { float u = AltPolicies.ReadMeter(commander ? cmd : sn?.Dummy, "sarosEclipseBeamUsage"); if (!float.IsNaN(u)) { st.UsageMax = Math.Max(st.UsageMax, u); st.UsageEnd = u; } }
 					Vector2 cmdC = cmd.Center, levyC = sn != null && sn.NPC.active ? sn.NPC.Center : at;
-					int alive = 0, owned = 0; float slots = 0f;
+					int alive = 0, owned = 0, slotted = 0; float slots = 0f;
 					for (int i = 0; i < Main.maxProjectiles; i++)
 					{
 						Projectile p = Main.projectile[i];
@@ -162,7 +176,7 @@ namespace Levy.Common.Testing
 							if (SumDebug && !commander && k % 90 == 0 && p.minion) SNote($"  dbg {label} t={k} {pn} ai=({p.ai[0]:0.##},{p.ai[1]:0.##},{p.ai[2]:0.##}) slots={p.minionSlots} dmg={p.damage} orig={p.originalDamage} fromTarget={((p.Center - (_sweepTarget?.Center ?? levyC)) / 16f).ToString()} fromLevy={(p.Center - levyC).Length() / 16f:0.0}t vel={p.velocity.Length():0.0}");
 							if (p.minion || p.sentry)
 							{
-								alive++; slots += p.minionSlots; st.MaxSingleSlots = Math.Max(st.MaxSingleSlots, p.minionSlots); st.MinionTicks++;
+								alive++; slots += p.minionSlots; if (p.minionSlots > 0.01f) slotted++; st.MaxSingleSlots = Math.Max(st.MaxSingleSlots, p.minionSlots); st.MinionTicks++;
 								float dl = Vector2.Distance(p.Center, levyC), dc = Vector2.Distance(p.Center, cmdC);
 								if (!commander && dc < 10 * 16f && dc < dl) st.AtCmdTicks++;
 								if (dl <= 20 * 16f || Vector2.Distance(p.Center, _sweepTarget?.Center ?? levyC) <= 20 * 16f) st.NearLevyTicks++;
@@ -180,7 +194,9 @@ namespace Levy.Common.Testing
 						st.Born.TryGetValue(pn, out var bt); st.Born[pn] = (bt.n + 1, bt.atLevy + (atLevy ? 1 : 0), bt.atCmd + (atCmd ? 1 : 0), bt.untagged + (commander || tagged ? 0 : 1));
 						if (SumDebug && dbg++ < 40) SNote($"  dbg {label} [{st.Mode}] t={k} new {pn} owner={p.owner} tagged={tagged} minion={p.minion} sentry={p.sentry} slots={p.minionSlots} fromLevy={bl / 16f:0.0}t fromCmd={bc / 16f:0.0}t ai=({p.ai[0]:0.##},{p.ai[1]:0.##},{p.ai[2]:0.##}) dmg={p.damage}");
 					}
-					st.MaxAlive = Math.Max(st.MaxAlive, alive); st.MaxSlots = Math.Max(st.MaxSlots, slots);
+					st.MaxAlive = Math.Max(st.MaxAlive, alive); st.MaxSlots = Math.Max(st.MaxSlots, slots); st.MaxSlotted = Math.Max(st.MaxSlotted, slotted);
+					if (slots > Math.Max(1, st.MaxMinions) + 0.01f) st.OverTicks++;
+					if (k >= ticks - ticks / 3) { st.TailTicks++; st.TailSlotted += slotted; st.TailAll += alive; st.TailSlots += slots; }
 					if (!commander)
 					{
 						st.CmdOwned = Math.Max(st.CmdOwned, owned); st.CmdMinions = Math.Max(st.CmdMinions, cmd.numMinions); st.CmdSlots = Math.Max(st.CmdSlots, cmd.slotsMinions);
@@ -192,6 +208,7 @@ namespace Levy.Common.Testing
 			}
 			finally
 			{
+				_sumGone = false; _sweepTargetAt = enemy0;
 				HoldBirthProbe.On = false; HoldBirthProbe.At.Clear(); _cmdHolds = false; _parityAim = null;
 				if (SumDebug && !commander) On_Projectile.Kill -= KillSpy;
 				try { MegaCommanderUse(w, false); } catch (Exception) { }
@@ -242,8 +259,96 @@ namespace Levy.Common.Testing
 			return post.Concat(mid.Where((w, k) => k % step == 0)).ToList();
 		}
 
+		/// <summary>Lab: what each piece of gear adds to the commander's maxMinions (LEVY_SUMMONSWEEP_KITPROBE=1), to build the kits of the 1 / 3 / 6 slot parity runs.</summary>
+		private static void SumKitProbe()
+		{
+			Player cmd = Main.player[0];
+			var cands = new[] { ItemID.StardustHelmet, ItemID.StardustBreastplate, ItemID.StardustLeggings, ItemID.SpookyHelmet, ItemID.SpookyBreastplate, ItemID.SpookyLeggings, ItemID.TikiMask, ItemID.TikiShirt, ItemID.TikiPants, ItemID.PapyrusScarab, ItemID.PygmyNecklace, ItemID.NecromanticScroll, ItemID.HerculesBeetle, ItemID.SummonerEmblem, ItemID.AdamantiteHeadgear, ItemID.AncientCobaltHelmet };
+			Item[] saved = new Item[cmd.armor.Length]; for (int i = 0; i < cmd.armor.Length; i++) saved[i] = cmd.armor[i];
+			foreach (int t in cands)
+			{
+				for (int i = 0; i < cmd.armor.Length; i++) cmd.armor[i] = new Item();
+				Item it = SumItem(t);
+				int slot = it.headSlot >= 0 ? 0 : it.bodySlot >= 0 ? 1 : it.legSlot >= 0 ? 2 : 3;
+				cmd.armor[slot] = it;
+				Step(2);
+				SNote($"kit probe: {it.Name} (slot {slot}) -> commander maxMinions {cmd.maxMinions}");
+			}
+			for (int i = 0; i < cmd.armor.Length; i++) cmd.armor[i] = saved[i];
+		}
+
+		// ---------------------------------------------------------------------------------------------- PARITY TABLE: the same staff for a player and for a levy at 1, 3 and 6 minion slots
+		// For each staff and each slot count (a kit of gear that gives exactly that many, see SumKit) the stand-in commander uses it herself (the player's result) and a levy holds it (the levy's): the minions out in the last third of the
+		// window (those that take a slot, and all of them with the towers), their slot sum, and the peaks. Logged as "[SummonParity] ROW" lines (weapon | slots | player n | levy n | player slots | levy slots | peaks | verdict).
+		// Verdicts: PARITY (the levy keeps what the player keeps), OVERCAST (the levy ever holds more slots than he has), UNDERCAST (fewer minions or slots than the player), NONE (neither makes a minion in the window: not a minion staff, or it needs more than the kit).
+		// Env: LEVY_SUMMONSWEEP_TABLE=1 the whole catalogue of the loaded mods (vanilla and Calamity), LEVY_SUMMONSWEEP_SLOTSET=1,3,6.
+
+		private static readonly short[] SumParityVanilla = { ItemID.SlimeStaff, ItemID.PygmyStaff, ItemID.RavenStaff, ItemID.XenoStaff, ItemID.StardustDragonStaff, ItemID.EmpressBlade };
+		private static readonly string[] SumParityCal = { "MidnightSunBeacon", "EtherealSubjugator", "CorvidHarbringerStaff", "TacticalPlagueEngine", "Cosmilamp", "PoleWarper", "AbandonedSlimeStaff", "SarosPossession" };
+
+		/// <summary>The verdict of one (staff, slot count) pair. <paramref name="n"/> is the slots the kit gives both. A levy over his slots for no more than a few ticks is the replace-on-cast overlap a player's own cast has too; longer is OVERCAST.</summary>
+		private static string SumVerdict(SumStat lv, SumStat pc, int n)
+		{
+			bool playerMakes = pc.TailAllAvg > 0.05f || pc.MaxAlive > 0, levyMakes = lv.TailAllAvg > 0.05f || lv.MaxAlive > 0;
+			if (!playerMakes && !levyMakes) return "NONE";
+			if (lv.OverTicks > Math.Max(SumOverTolerance, pc.OverTicks + SumOverTolerance)) return "OVERCAST"; // a cast that makes its new minion before the old one goes (Fuel Cell Bundle) overlaps for the player just the same
+			if (lv.TailSlottedAvg + 0.5f < pc.TailSlottedAvg || lv.TailSlotsAvg + 0.5f < pc.TailSlotsAvg || (playerMakes && !levyMakes)) return "UNDERCAST";
+			if (pc.TailAllAvg >= 2f && lv.TailAllAvg < pc.TailAllAvg * 0.5f) return "UNDERCAST"; // a self-ending cast (bombers, fists): the player keeps many out, the levy few
+			return "PARITY";
+		}
+		private const int SumOverTolerance = 6;
+
+		private static string SumRowText(string label, int n, SumStat pc, SumStat lv, string verdict) =>
+			$"ROW | {label} | slots {n} (player {pc.MaxMinions}, levy {lv.MaxMinions}) | player n {pc.TailSlottedAvg:0.0} (all {pc.TailAllAvg:0.0}, peak {pc.MaxSlotted}) | levy n {lv.TailSlottedAvg:0.0} (all {lv.TailAllAvg:0.0}, peak {lv.MaxSlotted}) | player slots {pc.TailSlotsAvg:0.0} (peak {pc.MaxSlots:0.##}) | levy slots {lv.TailSlotsAvg:0.0} (peak {lv.MaxSlots:0.##}) | levy casts {lv.Casts} helpers {lv.Helpers}, ticks over the slots player {pc.OverTicks} levy {lv.OverTicks} | {verdict}";
+
+		/// <summary>Runs the parity table for <paramref name="list"/>; a row of an <paramref name="asserted"/> staff fails the check unless it is PARITY (or NONE for a staff the kit cannot use).</summary>
+		private static void SumParityTable(List<(int type, string label)> list, int ticks, int[] slotSet, bool asserted)
+		{
+			var tally = new Dictionary<string, int>();
+			foreach (var (type, label) in list)
+			{
+				Item fi = SumItem(type);
+				bool sentry = WeaponClassifier.GetProfile(fi).Family == WeaponFamily.Sentry;
+				foreach (int n in sentry ? new[] { 6 } : slotSet)
+				{
+					try
+					{
+						SumStat pc = SumRun(type, label, ticks, true, n);
+						SumStat lv = SumRun(type, label, ticks, false, n);
+						string v = SumVerdict(lv, pc, n);
+						tally[v] = tally.GetValueOrDefault(v) + 1;
+						_mod.Logger.Info("[SummonParity] " + SumRowText(label, n, pc, lv, v + (sentry ? " (tower)" : "")));
+						if (asserted) SCheck($"parity table: {label} at {n} slots: the levy keeps what the player keeps ({v}: player {pc.TailSlottedAvg:0.0} minions / {pc.TailSlotsAvg:0.0} slots, levy {lv.TailSlottedAvg:0.0} / {lv.TailSlotsAvg:0.0}, levy peak {lv.MaxSlots:0.##} of {lv.MaxMinions})", v == "PARITY" || v == "NONE");
+					}
+					catch (Exception e) { _mod.Logger.Info($"[SummonParity] ROW | {label} | slots {n} | threw {e.GetType().Name}: {e.Message}"); if (asserted) SCheck($"parity table: {label} at {n} slots threw {e.GetType().Name}", false); }
+				}
+			}
+			_mod.Logger.Info($"[SummonParity] TALLY {string.Join(", ", tally.OrderBy(kv => kv.Key).Select(kv => kv.Key + " " + kv.Value))} over {list.Count} staves");
+		}
+
+		/// <summary>Every summon staff and tower of a mod (or of vanilla, <paramref name="cal"/> null) a levy can carry, in item order.</summary>
+		private static List<(int type, string label)> SumCatalogue(Mod mod)
+		{
+			var res = new List<(int, string)>(); var probe = new SoldierGear();
+			int from = mod == null ? 1 : ItemID.Count, to = mod == null ? ItemID.Count : ItemLoader.ItemCount;
+			for (int i = from; i < to; i++)
+			{
+				if (!ContentSamples.ItemsByType.TryGetValue(i, out Item s) || s == null || s.IsAir || s.damage <= 0 || s.shoot <= 0 || s.accessory) continue;
+				if (mod != null && s.ModItem?.Mod != mod) continue;
+				if (!(s.CountsAsClass(DamageClass.Summon) || s.sentry)) continue;
+				Item it = new Item(); it.SetDefaults(i);
+				if (!probe.CanHold(SoldierGear.SlotWeapon, it)) continue;
+				WeaponFamily f = WeaponClassifier.GetProfile(it).Family;
+				if (f != WeaponFamily.Summon && f != WeaponFamily.Sentry) continue;
+				if (mod != null && ModWeaponGates.Locked(it)) continue;
+				res.Add((i, (mod == null ? "Terraria:" + (ItemID.Search.TryGetName(i, out string nm) ? nm : s.Name) : mod.Name + ":" + s.ModItem.Name)));
+			}
+			return res;
+		}
+
 		private static void SummonSweepCheck()
 		{
+			if (Environment.GetEnvironmentVariable("LEVY_SUMMONSWEEP_KITPROBE") == "1") SumKitProbe();
 			string mode = Environment.GetEnvironmentVariable("LEVY_SUMMONSWEEP");
 			if (mode == "0") return;
 			_ssPass = _ssFail = 0;
@@ -254,12 +359,13 @@ namespace Levy.Common.Testing
 			bool cal = ModLoader.TryGetMod("CalamityMod", out Mod calMod);
 			var sw = System.Diagnostics.Stopwatch.StartNew();
 			var runs = new List<(int type, string label, string tier, bool asserted)>();
-			if (!full || names != null)
+			bool tableOnly = Environment.GetEnvironmentVariable("LEVY_SUMMONSWEEP_TABLE") == "1";
+			if (!tableOnly && (!full || names != null))
 			{
 				foreach (short t in SumSampleVanilla) if (names == null || names.Contains(ItemID.Search.GetName(t))) runs.Add((t, "Terraria:" + ItemID.Search.GetName(t), "sample", true));
 				if (cal) foreach (string n in SumFixedCal.Concat(SumSampleCal)) if ((names == null || names.Contains(n)) && calMod.TryFind(n, out ModItem mi)) runs.Add((mi.Type, "CalamityMod:" + n, "sample", true));
 			}
-			if (full && cal) foreach (var w in SumSweepWeapons(calMod, names)) if (!runs.Any(r => r.type == w.type)) runs.Add((w.type, w.label, w.tier, false));
+			if (full && cal && !tableOnly) foreach (var w in SumSweepWeapons(calMod, names)) if (!runs.Any(r => r.type == w.type)) runs.Add((w.type, w.label, w.tier, false));
 			try
 			{
 				Arena(); _cmdAt = HoldCmdAt(); KeepCommander(); Step(2);
@@ -267,11 +373,12 @@ namespace Levy.Common.Testing
 				{
 					try
 					{
-						SumStat lv = SumRun(type, label, ticks, false);
+						int ks = int.TryParse(Environment.GetEnvironmentVariable("LEVY_SUMMONSWEEP_SLOTS"), out int kk) ? kk : 6;
+						SumStat lv = SumRun(type, label, ticks, false, ks);
 						string par = "";
 						if (parity)
 						{
-							SumStat pc = SumRun(type, label, ticks, true);
+							SumStat pc = SumRun(type, label, ticks, true, ks);
 							par = $" || {pc} || levy/commander dps={(pc.Dps > 0 ? (lv.Dps / pc.Dps).ToString("0.00") : "n/a")}";
 						}
 						Item fi = SumItem(type); WeaponProfile fp = WeaponClassifier.GetProfile(fi);
@@ -302,6 +409,25 @@ namespace Levy.Common.Testing
 				}
 			}
 			catch (Exception e) { SCheck("summon sweep threw " + e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(), false); }
+			try
+			{
+				bool table = Environment.GetEnvironmentVariable("LEVY_SUMMONSWEEP_TABLE") == "1";
+				string ss = Environment.GetEnvironmentVariable("LEVY_SUMMONSWEEP_SLOTSET");
+				int[] slotSet = string.IsNullOrEmpty(ss) ? new[] { 1, 3, 6 } : ss.Split(',').Select(int.Parse).ToArray();
+				if (table)
+				{
+					var all = SumCatalogue(null); if (cal) all.AddRange(SumCatalogue(calMod));
+					if (names != null) all = all.Where(a => names.Contains(a.label.Substring(a.label.IndexOf(':') + 1))).ToList();
+					SumParityTable(all, ticks, slotSet, false);
+				}
+				else if (!full && names == null)
+				{
+					var sample = SumParityVanilla.Select(t => ((int)t, "Terraria:" + ItemID.Search.GetName(t))).ToList();
+					if (cal) foreach (string n in SumParityCal) if (calMod.TryFind(n, out ModItem mi)) sample.Add((mi.Type, "CalamityMod:" + n));
+					SumParityTable(sample, ticks, slotSet, true);
+				}
+			}
+			catch (Exception e) { SCheck("parity table threw " + e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(), false); }
 			finally { _sweepTarget = null; ClearRogueAdds(); ClearSoldiers(); ReleaseCommanderButtons(); }
 			SNote($"summon sweep: {runs.Count} staves, {ticks} ticks each{(parity ? " (and the commander's own run)" : "")}, in {sw.ElapsedMilliseconds / 1000} s");
 			_mod.Logger.Info($"[SummonSweep] self-check pass={_ssPass} fail={_ssFail}");

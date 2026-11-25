@@ -130,7 +130,11 @@ namespace Levy.Common.Recording
 		private static readonly Dictionary<int, int> _lgear = new();
 		private static readonly Dictionary<int, string> _prefixes = new();
 		private static int _cmdGear = int.MinValue;
-		public const int AddRangePx = 600 * 16, MaxAdds = 400, MaxHitboxes = 900, MaxCmdProj = 300;
+		public const int AddRangePx = 600 * 16, MaxAdds = 400, MaxHitboxes = 900, MaxCmdProj = 300, MaxMinionRows = 100, MaxTraceRows = 300;
+		/// <summary>Summon A/B harness (IdentityWorldCheck.SummonAB): the levies' friendly shots go into the frame key m as well (format 14 normally keeps only their minions and sentries there), so a viewer can draw "its shots".</summary>
+		public static bool SummonTrace;
+		/// <summary>Summon A/B harness: NPC slots the recorder treats as fight bosses although they are not (the pinned dummies of the A/B), so they are drawn with a life bar and a recording has a target to show.</summary>
+		public static readonly HashSet<int> TraceTargets = new();
 
 		/// <summary>
 		/// A projectile that is the commander's own (format 11 frame key c): owned by his player slot, friendly or a minion / sentry, not a grappling hook, not a pet or light with no damage, and not the army's. Soldier shots, officer and summoned-unit bolts and
@@ -144,6 +148,8 @@ namespace Levy.Common.Recording
 			if (pr.TryGetGlobalProjectile(out global::Levy.Common.Globals.SoldierProjectileTag tag) && (tag.IsSoldierShot || tag.CommanderIndex >= 0 || tag.DroneShot || tag.SourceNpcIndex >= 0)) return false;
 			return !global::Levy.Common.Mark.MarkSystem.IsArmyProjectile(pr);
 		}
+		/// <summary>Format 14 kind of a projectile row (c field 8, m field 9): 1 minion, 2 sentry, 4 anything else (a shot).</summary>
+		internal static int ProjKind(Projectile pr) => pr.minion ? 1 : pr.sentry ? 2 : 4;
 		/// <summary>Format 7 hitbox rows: whoAmI -> hash of the definition (type, width, height, realLife, flags) last written in full; a row for an unchanged NPC is just [id,x,y].</summary>
 		private static readonly Dictionary<int, long> _hbDef = new();
 		private static readonly HashSet<int> _inA = new();
@@ -196,6 +202,7 @@ namespace Levy.Common.Recording
 		/// </summary>
 		internal static bool IsFightBoss(NPC n)
 		{
+			if (TraceTargets.Count > 0 && TraceTargets.Contains(n.whoAmI)) return true;
 			if (IsEventNpc(n.type)) return false;
 			if (n.boss || NPCID.Sets.ShouldBeCountedAsBoss[n.type] || BossRule.IsMainBossType(n.type)) return true;
 			return n.realLife == n.whoAmI && NPCID.Sets.BossHeadTextures[n.type] >= 0;
@@ -203,6 +210,7 @@ namespace Levy.Common.Recording
 
 		internal static bool IsBossOrPart(NPC n)
 		{
+			if (TraceTargets.Count > 0 && TraceTargets.Contains(n.whoAmI)) return true;
 			if (IsEventNpc(n.type)) return false;
 			if (n.boss || NPCID.Sets.ShouldBeCountedAsBoss[n.type]) return true;
 			if (n.realLife >= 0 && n.realLife < Main.maxNPCs && Main.npc[n.realLife].active && Main.npc[n.realLife].boss) return true;
@@ -528,7 +536,7 @@ namespace Levy.Common.Recording
 					+ ",\"world\":" + FightRecFormat.Esc(Main.worldName) + ",\"date\":" + FightRecFormat.Esc(DateTime.Now.ToString("s"))
 					+ ",\"stateNames\":" + FightRecFormat.Esc(string.Join(",", Enum.GetNames(typeof(SoldierState))))
 					+ ",\"schemaP\":" + FightRecFormat.Esc(FightRecFormat.SchemaP) + ",\"flagsP\":" + FightRecFormat.Esc(FightRecFormat.SchemaPFlags)
-					+ ",\"schemaB\":" + FightRecFormat.Esc(FightRecFormat.SchemaB) + ",\"schemaJ\":" + FightRecFormat.Esc(FightRecFormat.SchemaJ) + ",\"schemaC\":" + FightRecFormat.Esc(FightRecFormat.SchemaC) + ",\"codec\":" + (_gzip ? "1" : "0")
+					+ ",\"schemaB\":" + FightRecFormat.Esc(FightRecFormat.SchemaB) + ",\"schemaJ\":" + FightRecFormat.Esc(FightRecFormat.SchemaJ) + ",\"schemaC\":" + FightRecFormat.Esc(FightRecFormat.SchemaC) + ",\"schemaM\":" + FightRecFormat.Esc(FightRecFormat.SchemaM) + ",\"codec\":" + (_gzip ? "1" : "0")
 					+ ",\"tkinds\":" + FightRecFormat.Esc(FightRecFormat.TKinds) + ",\"schemaA\":" + FightRecFormat.Esc(FightRecFormat.SchemaA) + ",\"schemaL\":" + FightRecFormat.Esc(FightRecFormat.SchemaL) + ",\"flagsL\":" + FightRecFormat.Esc(FightRecFormat.SchemaLFlags)
 					+ ",\"imp\":" + FightRecFormat.Esc(FightRecFormat.ImpNames) + ",\"auto\":" + _auto + ",\"gzip\":" + (_gzip ? "1" : "0") + ",\"cmd\":" + CommanderSummary(cmd) + ",\"army\":" + ArmySummary() + extra + "}");
 				LastHeader = hdr;
@@ -1010,8 +1018,25 @@ namespace Levy.Common.Recording
 				if (!IsCommanderShot(pr, p)) continue;
 				if (Math.Abs(pr.Center.X - p.Center.X) > ProjRangePx || Math.Abs(pr.Center.Y - p.Center.Y) > ProjRangePx) continue;
 				if (!_projs.ContainsKey(pr.type)) _projs[pr.type] = Lang.GetProjectileName(pr.type).Value;
-				f.C.Add(new double[] { pr.type, pr.Center.X, pr.Center.Y, pr.velocity.X, pr.velocity.Y, pr.width, pr.height, i });
+				f.C.Add(new double[] { pr.type, pr.Center.X, pr.Center.Y, pr.velocity.X, pr.velocity.Y, pr.width, pr.height, i, ProjKind(pr) });
 				cc++;
+			}
+
+			// format 14: the levies' own minions and sentries (frame key m, with the levy's id and the kind), and in a summon trace their friendly shots; a viewer draws them beside the commander's c
+			int mcount = 0, mcap = SummonTrace ? MaxTraceRows : MaxMinionRows;
+			for (int i = 0; i < Main.maxProjectiles && mcount < mcap; i++)
+			{
+				Projectile pr = Main.projectile[i];
+				if (!pr.active || pr.hostile) continue;
+				bool mn = pr.minion || pr.sentry;
+				if (!mn && !SummonTrace) continue;
+				if (!pr.TryGetGlobalProjectile(out global::Levy.Common.Globals.SoldierProjectileTag mtag) || mtag.SoldierIndex < 0 || mtag.SoldierIndex >= Main.maxNPCs) continue;
+				if (!mn && (!pr.friendly || pr.damage <= 0 || pr.aiStyle == 7)) continue;
+				if (!(Main.npc[mtag.SoldierIndex].ModNPC is SoldierNPC owner) || !Main.npc[mtag.SoldierIndex].active) continue;
+				if (Math.Abs(pr.Center.X - p.Center.X) > ProjRangePx || Math.Abs(pr.Center.Y - p.Center.Y) > ProjRangePx) continue;
+				if (!_projs.ContainsKey(pr.type)) _projs[pr.type] = Lang.GetProjectileName(pr.type).Value;
+				f.M.Add(new double[] { pr.type, pr.Center.X, pr.Center.Y, pr.velocity.X, pr.velocity.Y, pr.width, pr.height, i, LevyId(owner, mtag.SoldierIndex), ProjKind(pr) });
+				mcount++;
 			}
 
 			// levies

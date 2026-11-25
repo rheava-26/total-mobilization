@@ -239,7 +239,7 @@ body.big #strip,body.big .legend{display:none}
           <button id="fit" title="frame the fight">Fit</button>
           <button id="bigBtn" title="fill the screen with the radar">Full screen</button>
           <button id="followBoss" title="camera follows the boss">Follow boss</button>
-          <button id="tBoss" class="on" title="fading trails behind boss parts">Boss trails</button><button id="tLevy" class="on" title="fading trails behind levies">Levy trails</button><button id="tAdd" title="fading trails behind adds and minions">Add trails</button><button id="tProj" class="on" title="streaks behind projectiles">Proj trails</button><button id="hitBtn" class="on" title="draw the real hitbox rectangles">Hitboxes</button><button id="tCmd" class="on" title="the commander's own projectiles (recordings of format 11 and later)">Commander shots</button>
+          <button id="tBoss" class="on" title="fading trails behind boss parts">Boss trails</button><button id="tLevy" class="on" title="fading trails behind levies">Levy trails</button><button id="tAdd" title="fading trails behind adds and minions">Add trails</button><button id="tProj" class="on" title="streaks behind projectiles">Proj trails</button><button id="hitBtn" class="on" title="draw the real hitbox rectangles">Hitboxes</button><button id="tCmd" class="on" title="the commander's own projectiles (recordings of format 11 and later)">Commander shots</button><button id="tSum" title="summon trace: every minion's path as a fading trail and its shots, coloured by owner (the commander's own minions and the levies'; recordings of format 14 and later show the levies')">Summon trace</button>
           <button id="labelBtn" title="levy numbers">Labels</button><button id="hpBtn" class="on" title="a small HP bar above every levy">HP bars</button><button id="dmgBtn" class="on" title="damage numbers where a levy is hit">Damage numbers</button>
           <div class="legend" id="legend"><span><i style="background:var(--grn)"></i>levy (colour = HP)</span><span><i style="background:var(--red)"></i>boss / part</span><span><i style="background:var(--amb)"></i>add / minion</span><span><i style="background:var(--cyan)"></i>commander</span><span><i style="background:var(--proj)"></i>projectile</span><span><i style="background:var(--cshot)"></i>commander shot</span><span><i class="sq" style="background:var(--red)"></i>boxes = real hitboxes</span><span>flash = hit &middot; X = death</span></div>
         </div>
@@ -254,7 +254,7 @@ const $=id=>document.getElementById(id);
 const TPS=60, TILE=16;
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const RM=!!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches);
-let D=null, playing=false, cur=0, last=0, camMode="fit", trBoss=true, trLevy=true, trProj=true, showHit=true, showLabels=false, trAdd=false, showCmdP=true, selL=null, showHpBars=true, showDmg=true;
+let D=null, playing=false, cur=0, last=0, camMode="fit", trBoss=true, trLevy=true, trProj=true, showHit=true, showLabels=false, trAdd=false, showCmdP=true, showSum=false, sumTouched=false, selL=null, showHpBars=true, showDmg=true;
 const cam={x:0,y:0,z:0.2};
 let blips=[], manifest=null, fights=[], curFight=null, curId=null, loadSeq=0;
 
@@ -367,6 +367,7 @@ function build(R){
   R.lhitBy=new Map(); for(const e of R.lhit){let a=R.lhitBy.get(e.id);if(!a)R.lhitBy.set(e.id,a=[]);a.push(e);}
   R.fellBy=new Map(); for(const e of R.ldeath) if(!R.fellBy.has(e.id)) R.fellBy.set(e.id,e);
   R.hasCmd=R.frames.some(f=>f.c&&f.c.length);
+  R.hasSum=R.frames.some(f=>(f.m&&f.m.length)||(f.c&&f.c.some(q=>q[7]===1||q[7]===2))); R.trS=null;
   evBuild(R);
   mergeTerrain(R); makeArena(R);
   // boss outcome (format 4) and levy totals
@@ -438,6 +439,8 @@ function setRec(R,name,f){
   head(f,name,s);
   hideMsg(); setPlaying(false);
   {const cb=$("tCmd"); cb.disabled=!D.hasCmd; cb.title=D.hasCmd?"the commander's own projectiles, not the army's":"this recording has no commander projectile data (format 11 and later)";}
+  {const sb=$("tSum"); sb.disabled=!D.hasSum; sb.classList.toggle("on",showSum&&D.hasSum); sb.title=D.hasSum?"every minion's path as a fading trail and its shots, coloured by owner: cyan = the commander's, green = the levy's; circles are minions, squares towers, small dots shots":"this recording has no minion data";
+   if(D.hasSum&&D.hdr&&D.hdr.meta&&D.hdr.meta.who&&!sumTouched){showSum=true;sb.classList.add("on");}}
   $("followBoss").hidden=$("tBoss").hidden=!D.hasBoss; $("legend").innerHTML=legendHtml(); $("legend").classList.toggle("pvp",!!D.pvp); callUI();
   selL=null; cur=D.tmin; camMode="fit"; $("followBoss").classList.remove("on"); fitView(); renderInfo(); drawStrip(); draw(); syncUI();
   if(call.on&&!call.pick) setPlaying(false); else if(!RM) setPlaying(true);
@@ -776,6 +779,54 @@ function legendHtml(){
   return `<span><i style="background:var(--grn)"></i>levy (colour = HP)</span><span><i style="background:var(--red)"></i>boss / part</span><span><i style="background:var(--amb)"></i>add / minion</span><span><i style="background:var(--cyan)"></i>commander</span><span><i style="background:var(--proj)"></i>projectile</span><span><i style="background:var(--cshot)"></i>commander shot</span>${hp}${dn}<span><i class="sq" style="background:var(--red)"></i>boxes = real hitboxes</span><span>flash = hit &middot; X = death</span>`;
 }
 
+// ================================================================ summon trace (format 14)
+// One track per minion / sentry / shot: the commander's (key c, owner 0) and the levies' (key m, owner = the levy's id), followed by the slot it lives in. kind 1 minion, 2 sentry, 4 shot, 0 unknown (an older recording's c rows: drawn as shots).
+function hsl2hex(h,s,l){s/=100;l/=100;const k=n=>(n+h/30)%12,a=s*Math.min(l,1-l),f=n=>{const v=l-a*Math.max(-1,Math.min(k(n)-3,Math.min(9-k(n),1)));return Math.round(255*v).toString(16).padStart(2,"0");};return "#"+f(0)+f(8)+f(4);}
+function sumCol(owner){
+  if(owner===0) return T.cyan;                       // the commander
+  const i=D.order.indexOf(owner); if(i<=0) return T.grn;   // the first levy (the only one in a player-vs-levy pair)
+  const h=(i*137)%360; return hsl2hex(h,75,document.documentElement.dataset.theme==="light"?38:62);
+}
+function sumBuild(R){
+  if(R.trS) return R.trS;
+  const live=new Map(), out=[]; const GAP=24;
+  for(const f of R.frames){
+    const seen=new Set(), add=(o,type,x,y,k,slot)=>{
+      const key=o+"|"+slot+"|"+type; seen.add(key); let tr=live.get(key);
+      if(!tr||f.t-tr.p[tr.p.length-1][0]>GAP){tr={o,type,k:k||4,p:[]};live.set(key,tr);out.push(tr);}
+      tr.p.push([f.t,x,y]);};
+    for(const q of (f.c||[])) add(0,q[0],q[1],q[2],q[7],q[8]);
+    for(const q of (f.m||[])) add(q[8],q[0],q[1],q[2],q[9],q[7]);
+    for(const [key,tr] of live) if(!seen.has(key)&&f.t-tr.p[tr.p.length-1][0]>GAP) live.delete(key);
+  }
+  return R.trS=out;
+}
+function drawSummon(g,sc,dpr,f0){
+  const tracks=sumBuild(D); if(!tracks.length) return;
+  const dt=cur-f0.t, MINT=4*TPS, SHOT=0.7*TPS;
+  g.lineCap="round";
+  for(const tr of tracks){
+    const span=tr.k===1||tr.k===2?MINT:SHOT, p=tr.p;
+    if(p[0][0]>cur+1||p[p.length-1][0]<cur-span) continue;
+    const i1=trackStart(p,cur+1), i0=Math.max(trackStart(p,cur-span),1); if(i1-i0<1) continue;
+    const col=sumCol(tr.o); g.strokeStyle=col; g.lineWidth=(tr.k===4?1.6:1.4)*dpr;
+    for(let i=i0;i<i1;i++){const a=p[i-1],b=p[i]; if(b[0]-a[0]>GAPDRAW) continue;
+      g.globalAlpha=Math.max(0.06,1-(cur-b[0])/span)*(tr.k===4?0.9:0.55);
+      const p0=sc(a[1],a[2]),p1=sc(b[1],b[2]); g.beginPath();g.moveTo(p0[0],p0[1]);g.lineTo(p1[0],p1[1]);g.stroke();}
+  }
+  g.globalAlpha=1;
+  const mark=(o,type,x,y,w,h,k)=>{
+    const col=sumCol(o),[sx,sy]=sc(x,y),r=Math.max(3.2*dpr,Math.min(w,h||w)*cam.z*dpr/2);
+    g.lineWidth=1.4*dpr; g.strokeStyle=col;
+    if(k===1){g.fillStyle=al(col,.85);g.beginPath();g.arc(sx,sy,r,0,6.2832);g.fill();g.strokeStyle=T.stage;g.stroke();}
+    else if(k===2){g.fillStyle=al(col,.85);g.fillRect(sx-r,sy-r,2*r,2*r);g.strokeStyle=T.stage;g.strokeRect(sx-r,sy-r,2*r,2*r);}
+    else{g.fillStyle=col;g.beginPath();g.arc(sx,sy,Math.max(1.8*dpr,r*0.5),0,6.2832);g.fill();}
+    blips.push({x:sx/dpr,y:sy/dpr,r:Math.max(7,r/dpr+3),info:`${k===1?"minion":k===2?"tower":"shot"} ${nm("projectiles",type)}\n${o===0?"the commander's":"levy "+lname(o)+"'s"}`});};
+  for(const q of (f0.c||[])) mark(0,q[0],q[1]+q[3]*dt,q[2]+q[4]*dt,q[5],q[6],q[7]||4);
+  for(const q of (f0.m||[])) mark(q[8],q[0],q[1]+q[3]*dt,q[2]+q[4]*dt,q[5],q[6],q[9]||4);
+}
+const GAPDRAW=24;
+
 // ================================================================ helpers
 function frameIndex(t){let lo=0,hi=D.frames.length-1;while(lo<hi){const m=(lo+hi+1)>>1;if(D.frames[m].t<=t)lo=m;else hi=m-1;}return lo;}
 function trackStart(tr,t){let lo=0,hi=tr.length;while(lo<hi){const m=(lo+hi)>>1;if(tr[m][0]<t)lo=m+1;else hi=m;}return lo;}
@@ -921,6 +972,7 @@ function draw(){
       blips.push({x:sx/dpr,y:sy/dpr,r:Math.max(7,rr/dpr+3),info:`commander projectile ${nm("projectiles",q[0])}${q[5]?"\nhitbox "+q[5]+" x "+q[6]+" px":""}\nspeed ${(Math.hypot(q[3],q[4])*60/16).toFixed(1)} tiles/s`});
     }
   }
+  if(showSum&&D.hasSum) drawSummon(g,sc,dpr,f0);
   let tgtText="none", tgtCls="";
   if(mb0){
     const k=tkOf(mb0), b1=byIdB.get(mb0[1])||mb0; const bx=lerp(mb0[2],b1[2],u),by=lerp(mb0[3],b1[3],u);
@@ -1231,7 +1283,7 @@ $("scrub").oninput=e=>{if(!D)return;cur=D.tmin+e.target.value/1000*(D.tmax-D.tmi
 $("fit").onclick=()=>{if(D){camMode="fit";$("followBoss").classList.remove("on");fitView();draw();}};
 $("followBoss").onclick=()=>{if(!D)return;camMode=camMode==="boss"?"free":"boss";$("followBoss").classList.toggle("on",camMode==="boss");if(camMode==="boss"&&cam.z<0.25)cam.z=0.3;draw();};
 const tog=(id,get,set)=>{$(id).onclick=()=>{set(!get());$(id).classList.toggle("on",get());draw();};};
-tog("tBoss",()=>trBoss,v=>trBoss=v);tog("tAdd",()=>trAdd,v=>trAdd=v);tog("tLevy",()=>trLevy,v=>trLevy=v);tog("tProj",()=>trProj,v=>trProj=v);tog("hitBtn",()=>showHit,v=>showHit=v);tog("tCmd",()=>showCmdP,v=>showCmdP=v);tog("hpBtn",()=>showHpBars,v=>showHpBars=v);tog("dmgBtn",()=>showDmg,v=>showDmg=v);
+tog("tBoss",()=>trBoss,v=>trBoss=v);tog("tAdd",()=>trAdd,v=>trAdd=v);tog("tLevy",()=>trLevy,v=>trLevy=v);tog("tProj",()=>trProj,v=>trProj=v);tog("hitBtn",()=>showHit,v=>showHit=v);tog("tCmd",()=>showCmdP,v=>showCmdP=v);$("tSum").onclick=()=>{showSum=!showSum;sumTouched=true;$("tSum").classList.toggle("on",showSum);draw();};tog("hpBtn",()=>showHpBars,v=>showHpBars=v);tog("dmgBtn",()=>showDmg,v=>showDmg=v);
 $("labelBtn").onclick=()=>{showLabels=!showLabels;$("labelBtn").classList.toggle("on",showLabels);draw();};
 $("prevEv").onclick=()=>jumpEvent(-1); $("nextEv").onclick=()=>jumpEvent(1);
 window.addEventListener("keydown",e=>{const tg=e.target.tagName;if(tg==="SELECT"||tg==="BUTTON"||tg==="INPUT"&&e.target.type!=="range")return;

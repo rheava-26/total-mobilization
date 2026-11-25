@@ -46,7 +46,7 @@ namespace Levy.Common.Testing
 			p.statManaMax = p.statManaMax2 = Math.Max(200, _cmdManaFloor); p.statMana = p.statManaMax2;
 			if (p.inventory[0] == null || p.inventory[0].IsAir || p.inventory[0].type != weapon.type) p.inventory[0] = weapon.Clone();
 			p.selectedItem = 0; p.noItems = false;
-			Vector2 aim = _sweepTarget != null ? _sweepTarget.Center : p.Center + new Vector2(300f, 0f);
+			Vector2 aim = _sweepTarget != null ? _sweepTarget.Center + _abAimOffset : p.Center + new Vector2(300f, 0f);
 			Main.screenPosition = Vector2.Zero; Main.mouseX = (int)aim.X; Main.mouseY = (int)aim.Y;
 			p.controlUseItem = press; p.controlUseTile = false; p.channel = press && weapon.channel; if (!press) p.releaseUseItem = true;
 			Main.mouseLeft = press; Main.mouseLeftRelease = !press;

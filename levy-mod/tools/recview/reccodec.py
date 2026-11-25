@@ -2,7 +2,7 @@
 """Format 13 frame rows: the compact row coding of fight recordings, and joining part files. Python 3, standard library only.
 
 The C# original is FightRecFormat.RowCodec (the writer) and FightRecFormat.RowDecoder (the in-game reader); the JS one is in fightviewer/viewer.html.
-A recording whose header has "codec": 1 writes the frame keys b, a, l, j and c this way (p, s and every other record are as in format 12):
+A recording whose header has "codec": 1 writes the frame keys b, a, l, j, c (and m, format 14) this way (p, s and every other record are as in format 12):
 
   every number is stored as an integer in its field's unit: positions, sizes, life, ids in whole pixels / points, velocities (and boss ai0..ai3) in tenths.
   an entry of a row list is one of
@@ -27,6 +27,7 @@ LISTS = {
     "l": (0, 13, (1, 2), (3, 4)),
     "j": (8, 9, (1, 2), (3, 4)),
     "c": (7, 8, (1, 2), (3, 4)),
+    "m": (7, 10, (1, 2), (3, 4)),   # format 14: the levies' minions: type,x,y,vx,vy,w,h,slot,owner,kind
 }
 PART_RE = re.compile(r"^(.*)_part(\d+)(\.levyrec|\.jsonl\.gz|\.jsonl)$")
 

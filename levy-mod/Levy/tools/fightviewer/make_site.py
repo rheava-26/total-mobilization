@@ -5,7 +5,7 @@ usage: make_site.py <outdir> <set-name>=<dir> [<set-name>=<dir> ...] [--hz 15] [
 
   make_site.py /tmp/replay-site lab1=replays/notable lab2=replays/notable2 worm=replays/worm5 options=replays/options lab3=replays/lab3
 
-For every set directory it reads the recordings (*.levyrec, *.jsonl or *.jsonl.gz, FightRecorder format 1-13; a format 13 recording's NAME_part2.levyrec ... are joined to NAME.levyrec), the optional index.txt
+For every set directory it reads the recordings (*.levyrec, *.jsonl or *.jsonl.gz, FightRecorder format 1-14; a format 13 recording's NAME_part2.levyrec ... are joined to NAME.levyrec), the optional index.txt
 ("why it's notable" notes) and each recording's header meta, and writes
 
   make_site.py <outdir> <sets...> --auto <dir> [--auto <dir2> ...] [--per-cell 2] [--max-auto 110] [--batches 55] [--cache scan.json]
@@ -35,12 +35,13 @@ except ImportError:      # the page still builds without it; results then come f
     recrules = None
 import reccodec          # format 13: compact frame rows and part files (tools/recview/reccodec.py)
 TITLES = {"eve": "Eve's fights", "rec2": "Recorder test", "lab1": "Lab 1", "lab2": "Lab 2", "lab3": "Lab 3", "worm": "Worm round", "worm5": "Worm round", "options": "Options", "vert1": "Movement lab", "moblab": "Mobility gear lab", "adds": "Boss minions", "wormdodge": "Worm dodge lab", "wormbody": "Worm body lab", "eowrev": "Eater of Worlds: Rev vs Death", "deathladder": "Death EoW gear ladder", "paladin": "Paladin's Shield lab"}
-MODES = {"exp": "Expert", "rev": "Rev", "death": "Death", "revoff": "Rev, rage off", "mdeath": "Master+Death"}
+MODES = {"exp": "Expert", "rev": "Rev", "death": "Death", "revoff": "Rev, rage off", "mdeath": "Master+Death", "player": "Player", "levy": "Levy"}
 ARENAS = {"surf": "Surface", "ug": "Underground"}
 FLED_PX = 50000          # a boss that ends this far from where it began has left the fight
 MAX_FILE = 14 * 1048576  # hard limit is 15 MB per data file
 MAX_TOTAL = 55 * 1048576  # hard limit is 60 MB for the site (curate_site.py works to its own, larger --max-mb)
 MAX_C_ROWS = 120         # format 11 key c (the commander's own projectiles): rows kept per sample; 0 drops the layer. --cmd-cap changes it
+MAX_M_ROWS = 160         # format 14 key m (the levies' minions, sentries and in a summon trace their shots): rows kept per sample
 
 
 # ---------------------------------------------------------------- versions
@@ -426,7 +427,11 @@ def shrink_frame(f):
         o["j"] = [row(j[:8], ints=(1, 2)) for j in f["j"]]      # format 13 adds the slot (field 8): the page has no use for it
     if f.get("c") and MAX_C_ROWS > 0:
         # the commander's own projectiles: [type,x,y,vx,vy,w,h], positions and sizes as integers, velocity to a tenth; the nearest-listed MAX_C_ROWS stay
-        o["c"] = [row(c[:7], ints=(0, 1, 2, 5, 6), ones=(3, 4)) for c in f["c"][:MAX_C_ROWS]]
+        # page row [type,x,y,vx,vy,w,h,kind,slot]: format 14 appends the kind (1 minion, 2 sentry, 4 shot) to the recording row; older files have none (0 = unknown, drawn as a shot). The slot (field 7 of the recording row, format 13) follows one minion from sample to sample
+        o["c"] = [row(c[:7] + [c[8] if len(c) > 8 else 0, c[7] if len(c) > 7 else -1], ints=(0, 1, 2, 5, 6, 7, 8), ones=(3, 4)) for c in f["c"][:MAX_C_ROWS]]
+    if f.get("m") and MAX_M_ROWS > 0:
+        # format 14 key m: the levies' own minions, sentries and (summon trace) shots [type,x,y,vx,vy,w,h,slot,owner,kind]; the slot lets the page follow one minion from sample to sample
+        o["m"] = [row(m[:10], ints=(0, 1, 2, 5, 6, 7, 8, 9), ones=(3, 4)) for m in f["m"][:MAX_M_ROWS]]
     return o
 
 

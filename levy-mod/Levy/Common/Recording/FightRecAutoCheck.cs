@@ -438,8 +438,8 @@ namespace Levy.Common.Recording
 							using var d = JsonDocument.Parse(l); var r = d.RootElement; string k = r.GetProperty("k").GetString();
 							if (k == "hdr") { hdrFmt = r.GetProperty("format").GetInt32().ToString(); dec.Header(r); }
 							if (k != "f") continue;
-							var c = dec.Rows(r, 4); // format 13: coded rows, [type,x,y,vx,vy,w,h,slot] once decoded
-							if (c.Count > 0) { withC++; maxRows = Math.Max(maxRows, c.Count); foreach (var row in c) { if (row.Length != 8 || (int)row[0] != ProjectileID.MagicMissile) wrongType++; } }
+							var c = dec.Rows(r, 4); // format 13: coded rows, [type,x,y,vx,vy,w,h,slot,kind,damage,penetrate,timeLeft] once decoded (at least the first 8)
+							if (c.Count > 0) { withC++; maxRows = Math.Max(maxRows, c.Count); foreach (var row in c) { if (row.Length < 8 || (int)row[0] != ProjectileID.MagicMissile) wrongType++; } }
 							else noC++;
 						}
 						catch { }

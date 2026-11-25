@@ -268,7 +268,7 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",
 const RM=!!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches);
 let D=null, playing=false, cur=0, last=0, camMode="fit", trBoss=true, trLevy=true, trProj=true, showHit=true, showLabels=false, trAdd=false, showCmdP=true, showSum=false, sumTouched=false, selL=null, showHpBars=true, showDmg=true;
 const cam={x:0,y:0,z:0.2};
-let showEN=true, showBuff=true, selP=null, lblRects=[];   // enemy name labels, the commander's buffs panel, the clicked projectile {src:"j"|"c"|"m", slot, type, x, y}
+let showEN=true, showBuff=true, selP=null, lblRects=[], lblSeen=[];   // enemy name labels, the commander's buffs panel, the clicked projectile {src:"j"|"c"|"m", slot, type, x, y}
 // write innerHTML only when the text changed (the HUD and the cards are rewritten every frame otherwise)
 function setIf(el,html){if(el.__s!==html){el.__s=html;el.innerHTML=html;}}
 let blips=[], manifest=null, fights=[], curFight=null, curId=null, loadSeq=0;
@@ -385,6 +385,8 @@ function build(R){
   R.hasSum=R.frames.some(f=>(f.m&&f.m.length)||(f.c&&f.c.some(q=>q[7]===1||q[7]===2))); R.trS=null;
   R.buffEv=R.events.filter(e=>e.e==="buffs"&&Array.isArray(e.b)).sort((a,b)=>a.t-b.t);
   R.hasZ=R.frames.some(f=>f.z&&f.z.length);
+  R.bstate=R.events.filter(e=>e.e==="bstate").sort((a,b)=>a.t-b.t);   // format 15: the main boss's attack state (Nameless Deity, the Avatar of Emptiness)
+  R.hasRift=R.frames.some(f=>f.p[5]&16384);
   evBuild(R);
   mergeTerrain(R); makeArena(R);
   // boss outcome (format 4) and levy totals
@@ -455,6 +457,7 @@ function setRec(R,name,f){
   $("meta").textContent=[name,s.boss,m.arena,h.mode].filter(Boolean).join("  |  ");
   head(f,name,s);
   hideMsg(); setPlaying(false);
+  $("buffBtn").hidden=!!(D.isEvent||D.pvp);
   {const cb=$("tCmd"); cb.disabled=!D.hasCmd; cb.title=D.hasCmd?"the commander's own projectiles, not the army's":"this recording has no commander projectile data (format 11 and later)";}
   {const sb=$("tSum"); sb.disabled=!D.hasSum; sb.classList.toggle("on",showSum&&D.hasSum); sb.title=D.hasSum?"every minion's path as a fading trail and its shots, coloured by owner: cyan = the commander's, green = the levy's; circles are minions, squares towers, small dots shots":"this recording has no minion data";
    if(D.hasSum&&D.hdr&&D.hdr.meta&&D.hdr.meta.who&&!sumTouched){showSum=true;sb.classList.add("on");}}
@@ -645,7 +648,7 @@ function drawAddMark(g,sx,sy,a0,dpr){
     const col=imp>=2?T.red:T.vio, r=(imp>=2?9:7)*dpr, fr=a0[6]/Math.max(1,a0[7]);
     g.save(); g.strokeStyle=col; g.lineWidth=2*dpr; g.globalAlpha=.9; g.beginPath(); g.arc(sx,sy,r+5*dpr,0,6.2832); g.stroke();
     g.fillStyle=col; g.beginPath(); for(let k=0;k<10;k++){const ang=-1.5708+k*0.6283,rr=k%2?r*0.45:r;g.lineTo(sx+Math.cos(ang)*rr,sy+Math.sin(ang)*rr);} g.closePath(); g.fill(); g.strokeStyle=T.stage; g.lineWidth=1*dpr; g.stroke();
-    g.globalAlpha=1; g.fillStyle=T.bossLabel; g.font=`600 ${11*dpr}px system-ui`; const lab=nm("npcs",a0[0]); g.fillText(lab,sx+r+8*dpr,sy-2*dpr); lblRects.push([sx+r+8*dpr,sy-14*dpr,sx+r+8*dpr+Math.max(40*dpr,g.measureText(lab).width),sy+6*dpr]);
+    g.globalAlpha=1; g.fillStyle=T.bossLabel; g.font=`600 ${11*dpr}px system-ui`; const lab=nm("npcs",a0[0]); g.fillText(lab,sx+r+8*dpr,sy-2*dpr); lblRects.push([sx+r+8*dpr,sy-14*dpr,sx+r+8*dpr+Math.max(40*dpr,g.measureText(lab).width),sy+6*dpr]); lblSeen.push({name:lab,sx,sy});
     const bw=Math.max(40*dpr,g.measureText(lab).width); g.fillStyle=al(T.ink,.25); g.fillRect(sx+r+8*dpr,sy+3*dpr,bw,3*dpr); g.fillStyle=hpColor(fr); g.fillRect(sx+r+8*dpr,sy+3*dpr,bw*Math.max(0,Math.min(1,fr)),3*dpr);
     g.restore(); return;
   }
@@ -1014,6 +1017,12 @@ function updateCard(f0,f1,u,SP,g,sc,dpr){
 }
 // the commander's buffs at this moment: the last "buffs" event (written once a second) with its times counted down
 function bufTime(s){s=Math.max(0,s);return s>=60?Math.floor(s/60)+":"+String(Math.floor(s%60)).padStart(2,"0"):Math.ceil(s)+" s";}
+// the main boss's attack now (the last bstate event at or before the playhead), words not code
+function bossStateAt(t){
+  const ev=D.bstate; if(!ev||!ev.length||ev[0].t>t) return "";
+  let lo=0,hi=ev.length-1; while(lo<hi){const m=(lo+hi+1)>>1;if(ev[m].t<=t)lo=m;else hi=m-1;}
+  return String(ev[lo].s).replace(/_/g," ").replace(/([a-z])([A-Z])/g,"$1 $2");
+}
 function updateBuffs(){
   const el=$("buffs"); if(!el) return;
   if(!D||D.isEvent||D.pvp||!showBuff){el.hidden=true;return;}
@@ -1065,7 +1074,9 @@ function drawEnemyNames(g,W,H,dpr,c){
     if(n>=80) break; if(e.sx<-30||e.sx>W+30||e.sy<-30||e.sy>H+30) continue;
     const w=g.measureText(e.name).width, x=e.sx+7*dpr, y=e.sy-6*dpr, h=11*dpr; let hit=false;
     for(const r of placed) if(x<r[2]&&x+w>r[0]&&y-h<r[3]&&y>r[1]){hit=true;break;}
-    if(hit) continue; placed.push([x,y-h,x+w,y]);
+    if(hit) continue;
+    let dup=false; for(const q of lblSeen) if(q.name===e.name&&Math.hypot(q.sx-e.sx,q.sy-e.sy)<150*dpr){dup=true;break;}
+    if(dup) continue; placed.push([x,y-h,x+w,y]); lblSeen.push(e);
     g.strokeStyle=al(T.stage,.85); g.lineWidth=3*dpr; g.strokeText(e.name,x,y); g.fillStyle=e.col; g.fillText(e.name,x,y); n++;
   }
   g.restore();
@@ -1085,11 +1096,15 @@ function draw(){
   const P=mv(f0.p,f1.p,0,1,2,3,u,SP).slice();
   if(camMode==="levy"&&selL!=null){const l0=fmap(f0,"l",0).get(selL);if(l0){const l1=byIdL.get(selL)||l0;const q=mv(l0,l1,1,2,3,4,u,SP);cam.x=q[0];cam.y=q[1];}}
   if(camMode==="boss"&&mb0){const b1=byIdB.get(mb0[1])||mb0;const q=mv(mb0,b1,2,3,4,5,u,SP);cam.x=q[0];cam.y=q[1];}
-  const enc=[]; lblRects=[];   // enemy name candidates; name boxes already placed this frame
+  const enc=[]; lblRects=[]; lblSeen=[];   // enemy name candidates; name boxes already placed this frame
   const sc=(x,y)=>w2s(x,y,W,H);
   g.imageSmoothingEnabled=false;
   if(D.arenaImg){const A=D.terr;const [sx,sy]=sc(A.x0*TILE,A.y0*TILE);g.drawImage(D.arenaImg,sx,sy,A.w*TILE*cam.z,A.h*TILE*cam.z);}
   drawExtraTerrain(g,sc,W,H);
+  if(f0.p[5]&16384){   // the Avatar's dimension is up: no tile holds anything up and the recorded terrain is not where the fight is
+    g.fillStyle=al(T.vio,.11); g.fillRect(0,0,W,H);
+    g.fillStyle=al(T.vio,.9); g.font=`600 ${11*dpr}px system-ui`; g.textAlign="center"; g.fillText("In the Avatar's dimension: no ground here",W/2,H-14*dpr); g.textAlign="left";
+  }
   const ctr=mb0?(q=>sc(q[0],q[1]))(mv(mb0,byIdB.get(mb0[1])||mb0,2,3,4,5,u,SP)):sc(P[0],P[1]);
   g.lineWidth=1*dpr; g.strokeStyle=al(T.grn,.22); g.setLineDash([4*dpr,6*dpr]);
   for(const tiles of [15,30,60]){g.beginPath();g.arc(ctr[0],ctr[1],tiles*TILE*cam.z,0,6.2832);g.stroke();}
@@ -1197,7 +1212,7 @@ function draw(){
     const part=!!b0[13];
     const [bx,by,rr]=hbox(g,sc,dpr,x,y,b0[16],b0[17],al(T.red,part?.22:.14),T.red,part?1.2:2,part?5:9);
     g.fillStyle=T.red; g.beginPath();g.arc(bx,by,(part?1.6:3)*dpr,0,6.2832);g.fill();
-    if(!part&&((mb0&&b0[1]===mb0[1])||EVENT_NPC.has(b0[0]))){g.fillStyle=T.bossLabel;g.font=`${11*dpr}px system-ui`;{const lt=nm("npcs",b0[0]),lw=g.measureText(lt).width;g.fillText(lt,bx+rr+4*dpr,by-rr*0.6);lblRects.push([bx+rr+4*dpr,by-rr*0.6-12*dpr,bx+rr+4*dpr+lw,by-rr*0.6]);}}
+    if(!part&&((mb0&&b0[1]===mb0[1])||EVENT_NPC.has(b0[0]))){g.fillStyle=T.bossLabel;g.font=`${11*dpr}px system-ui`;{const lt=nm("npcs",b0[0]),lw=g.measureText(lt).width;g.fillText(lt,bx+rr+4*dpr,by-rr*0.6);lblRects.push([bx+rr+4*dpr,by-rr*0.6-12*dpr,bx+rr+4*dpr+lw,by-rr*0.6]);lblSeen.push({name:lt,sx:bx,sy:by});}}
     blips.push({x:bx/dpr,y:by/dpr,r:Math.max(9,rr/dpr+3),info:bossInfo(b0)});
     if(!part&&!(mb0&&b0[1]===mb0[1])&&!EVENT_NPC.has(b0[0])) enc.push({sx:bx,sy:by,name:nm("npcs",b0[0]),pri:95,col:T.bossLabel});
     else if(part&&cam.z>=0.5) enc.push({sx:bx,sy:by,name:nm("npcs",b0[0]),pri:20,col:T.bossLabel});
@@ -1246,7 +1261,7 @@ function draw(){
       `<div class="r txs"><div class="sides"><span class="small">levies alive</span><span>${esc(prettyTeam(P.a))} ${a[0]}${wt[0]>0?` <span class="small">(+${wt[0]} waiting)</span>`:""}<i class="sw ta"></i></span><span>${esc(prettyTeam(P.b))} ${a[1]}${wt[1]>0?` <span class="small">(+${wt[1]} waiting)</span>`:""}<i class="sw tb"></i></span></div>${((cur-D.tmin)/TPS).toFixed(1)} s</div>`;
     return;
   }
-  $("hud").innerHTML=`<div class="l"><div class="tgt ${tgtCls}">boss target: ${esc(tgtText)}</div>${outHtml}${mb0?`<div class="hpt">${esc(bossHp)}</div><div class="bar"><i style="width:${(100*mb0[6]/Math.max(1,mb0[7])).toFixed(1)}%"></i></div>`:""}</div><div class="r">levies alive ${alive} of ${tot}<br>${D.hasAdds?`adds alive ${(f0.a||[]).length}${D.hasSeg?` + ${(f0.s||[]).length} other hitboxes`:""}${D.offCount?` (${D.offCount} off-screen)`:""}<br>`:""}${((cur-D.tmin)/TPS).toFixed(1)} s</div>`;
+  $("hud").innerHTML=`<div class="l"><div class="tgt ${tgtCls}">boss target: ${esc(tgtText)}</div>${outHtml}${mb0?`<div class="hpt">${esc(bossHp)}</div><div class="bar"><i style="width:${(100*mb0[6]/Math.max(1,mb0[7])).toFixed(1)}%"></i></div>`:""}${D.bstate&&D.bstate.length?`<div class="hpt">attack: ${esc(bossStateAt(cur)||"-")}</div>`:""}</div><div class="r">levies alive ${alive} of ${tot}<br>${D.hasAdds?`adds alive ${(f0.a||[]).length}${D.hasSeg?` + ${(f0.s||[]).length} other hitboxes`:""}${D.offCount?` (${D.offCount} off-screen)`:""}<br>`:""}${((cur-D.tmin)/TPS).toFixed(1)} s</div>`;
 }
 
 // ================================================================ timeline strip

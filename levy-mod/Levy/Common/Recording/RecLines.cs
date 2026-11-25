@@ -24,6 +24,9 @@ namespace Levy.Common.Recording
 		/// <summary>Types seen with a hostile hitbox of 600 px or more or a line collision that nothing here resolved (log aid for the lab, once per type).</summary>
 		internal static readonly HashSet<string> Unresolved = new();
 
+		/// <summary>The part of the world a line is worth recording in (the box the hostile projectiles of j come from): a beam rooted outside it that reaches into it is kept, one that never touches it is not.</summary>
+		private static float _wx0, _wy0, _wx1, _wy1;
+		internal static void SetWindow(Vector2 centre, float range) { _wx0 = centre.X - range; _wx1 = centre.X + range; _wy0 = centre.Y - range; _wy1 = centre.Y + range; }
 		private const BindingFlags Any = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
 
 		private static Kind Classify(Projectile pr)
@@ -119,6 +122,7 @@ namespace Levy.Common.Recording
 		private static bool Add(List<double[]> rows, Vector2 a, Vector2 b, float width, int kind, Projectile pr, int slot)
 		{
 			if (float.IsNaN(a.X) || float.IsNaN(b.X) || float.IsInfinity(a.X) || float.IsInfinity(b.X)) return false;
+			if (Math.Max(a.X, b.X) + width < _wx0 || Math.Min(a.X, b.X) - width > _wx1 || Math.Max(a.Y, b.Y) + width < _wy0 || Math.Min(a.Y, b.Y) - width > _wy1) return false;
 			rows.Add(new double[] { Math.Round(a.X), Math.Round(a.Y), Math.Round(b.X), Math.Round(b.Y), Math.Round(width), kind, pr.type, slot });
 			return true;
 		}

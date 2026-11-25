@@ -331,20 +331,24 @@ namespace Levy.Common.Recording
 				for (int k = 0; k < 30; k++)
 				{
 					if (rnd.NextDouble() < 0.1) { live.Remove(k); continue; }
-					if (!live.TryGetValue(k, out var r)) live[k] = r = new double[] { rnd.Next(1, 900), rnd.Next(-5000, 5000) + rnd.NextDouble(), rnd.Next(-5000, 5000), rnd.Next(-20, 20) * 0.37, rnd.Next(-20, 20) * 0.1, 30, 16, 16, k };
+					if (!live.TryGetValue(k, out var r)) live[k] = r = new double[] { rnd.Next(1, 900), rnd.Next(-5000, 5000) + rnd.NextDouble(), rnd.Next(-5000, 5000), rnd.Next(-20, 20) * 0.37, rnd.Next(-20, 20) * 0.1, 30, 16, 16, k, k % 3 == 0 ? -1 : 1, 600 };
 					r[3] += rnd.Next(-3, 4) * 0.13; r[4] += rnd.NextDouble() < 0.3 ? 0.3 : 0; r[1] += r[3] * 2 * (k % 3 == 0 ? 3 : 1) + (k % 5 == 0 ? rnd.Next(-40, 40) : 0); r[2] += r[4] * 2;
 					if (k == 3 && t == 40) r[5] = double.NaN; else if (k == 3) r[5] = 30;
+					r[10] -= 2; // format 15: timeLeft ticks down every sample, penetrate stays
 					f.J.Add((double[])r.Clone());
 					if (k % 4 == 0) f.M.Add(new double[] { 5, r[1], r[2], r[3], r[4], 16, 16, k, 65 + k % 3, 1 + k % 4 }); // format 14: the levies' minions (owner = the levy, kind), row coded like the rest
 					if (k == 11 && t % 6 == 0) f.J.Add((double[])r.Clone()); // the same key twice in one sample
 				}
 				f.B.Add(new double[] { 125, 4, 1e7 + t * 3.3, -t, 1.25, -0.05, 2.5e6 - t, 3e6, 1.5, 2e9, -3, 0.15, 255, 0, 1, -1, 40, 40, 4 });
+				if (t % 4 == 0) f.Z.Add(new double[] { 100, 200 + t, 5000, 200, 60, 1 + t % 3, 77, 3 }); // format 15: a line, plain rows next to the coded ones
 				string line = Frame(f, codec);
 				using var d = JsonDocument.Parse(line);
+				if (t % 4 == 0) { if (!d.RootElement.TryGetProperty("z", out var zr) || zr.GetArrayLength() != 1 || zr[0].GetArrayLength() != 8 || zr[0][1].GetDouble() != 200 + t) return "t=" + t + ": the z line is not written back"; }
+				else if (d.RootElement.TryGetProperty("z", out _)) return "t=" + t + ": a z key with no lines";
 				var back = dec.Rows(d.RootElement, 3);
 				if (back.Count != f.J.Count) return "t=" + t + ": " + back.Count + " projectile rows of " + f.J.Count;
 				for (int i = 0; i < back.Count; i++)
-					for (int c = 0; c < 9; c++)
+					for (int c = 0; c < 11; c++)
 					{
 						double want = RowCodec.Q(f.J[i][c], c == 3 || c == 4) / (c == 3 || c == 4 ? 10.0 : 1.0);
 						if (Math.Abs(back[i][c] - want) > 1e-9) return "t=" + t + " row " + i + " field " + c + ": " + back[i][c] + " for " + want;

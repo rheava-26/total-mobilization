@@ -1046,16 +1046,16 @@ namespace Levy.Common.Recording
 			}
 
 			// hostile projectiles near the player, nearest first when there are too many
-			int pc = 0;
+			int pc = 0; RecLines.SetWindow(p.Center, ProjRangePx);
 			for (int i = 0; i < Main.maxProjectiles; i++)
 			{
 				Projectile pr = Main.projectile[i];
 				if (!pr.active || !pr.hostile) continue;
+				if (LineKeys && RecLines.Collect(pr, i, f.Z) && !_projs.ContainsKey(pr.type)) _projs[pr.type] = Lang.GetProjectileName(pr.type).Value; // a beam rooted far away still reaches the fight
 				if (Math.Abs(pr.Center.X - p.Center.X) > ProjRangePx || Math.Abs(pr.Center.Y - p.Center.Y) > ProjRangePx) continue;
 				if (!_projs.ContainsKey(pr.type)) _projs[pr.type] = Lang.GetProjectileName(pr.type).Value;
 				if (pc++ >= MaxProj) break;
 				f.J.Add(new double[] { pr.type, pr.Center.X, pr.Center.Y, pr.velocity.X, pr.velocity.Y, pr.damage, pr.width, pr.height, i, pr.penetrate, pr.timeLeft });
-				if (LineKeys) RecLines.Collect(pr, i, f.Z);
 			}
 
 			// format 11: the commander's own projectiles (his weapons, his minions and sentries); the army's shots, owned by the same slot, are left out

@@ -57,10 +57,12 @@ namespace Levy.Common.Testing
 			_done = true;
 			if (!ModLoader.TryGetMod("NoxusBoss", out _) || !WotgScenes.Installed || WotgScenes.AvatarType < 0) { _mod.Logger.Info("[AvatarBehave] OBSERVED NoxusBoss is not loaded: skipped"); _mod.Logger.Info("[AvatarBehave] self-check pass=0 fail=0"); return; }
 			_running = true;
+			On_Player.hook_KillMe killDet = (On_Player.orig_KillMe orig, Player self, Terraria.DataStructures.PlayerDeathReason reason, double dmg, int dir, bool pvp) => { if (self.whoAmI != 0) { orig(self, reason, dmg, dir, pvp); return; } _cmdKills++; };
+			On_Player.KillMe += killDet;
 			bool sp = global::Levy.Common.Util.LevyUtil.SpEmulation; int gm = Main.GameMode; bool hm = Main.hardMode; bool day = Main.dayTime; double time = Main.time; bool? on0 = AvatarFight.TestOn;
 			try { global::Levy.Common.Util.LevyUtil.SpEmulation = true; Main.player[0] = Main.player[0] ?? new Player(); Run(); }
 			catch (Exception e) { Check("driver threw " + e.GetType().Name + ": " + e.Message + " @ " + string.Join(" | ", (e.StackTrace ?? "").Split('\n').Take(4).Select(l => l.Trim())), false); }
-			finally { _running = false; global::Levy.Common.Util.LevyUtil.SpEmulation = sp; Main.netMode = NetmodeID.Server; Cleanup(); AvatarFight.TestOn = on0; WotgScenes.TestAvatarPercent = null; Main.GameMode = gm; Main.hardMode = hm; Main.dayTime = day; Main.time = time; }
+			finally { On_Player.KillMe -= killDet; _running = false; global::Levy.Common.Util.LevyUtil.SpEmulation = sp; Main.netMode = NetmodeID.Server; Cleanup(); AvatarFight.TestOn = on0; AvatarFight.TestZones = null; WotgScenes.TestAvatarPercent = null; Main.GameMode = gm; Main.hardMode = hm; Main.dayTime = day; Main.time = time; }
 			_mod.Logger.Info($"[AvatarBehave] self-check pass={_pass} fail={_fail}");
 		}
 
@@ -87,14 +89,14 @@ namespace Levy.Common.Testing
 		private static void ForceStates(NPC boss, string[] states, int phase, string timed, int time)
 		{
 			object sm = _smP.GetValue(boss.ModNPC);
-			object stack = sm.GetType().GetProperty("StateStack").GetValue(sm);
-			object reg = sm.GetType().GetProperty("StateRegistry").GetValue(sm);
+			object stack = Member(sm, "StateStack");
+			object reg = Member(sm, "StateRegistry");
 			MethodInfo clear = stack.GetType().GetMethod("Clear"), push = stack.GetType().GetMethod("Push"), get = reg.GetType().GetMethod("get_Item");
 			clear.Invoke(stack, null);
 			for (int i = states.Length - 1; i >= 0; i--)
 			{
 				object st = get.Invoke(reg, new[] { Enum.Parse(_aiEnum, states[i]) });
-				st.GetType().GetProperty("Time").SetValue(st, states[i] == timed ? time : 0);
+				SetMember(st, "Time", states[i] == timed ? time : 0);
 				push.Invoke(stack, new[] { st });
 			}
 			_phaseP.SetValue(boss.ModNPC, phase);
@@ -102,6 +104,21 @@ namespace Levy.Common.Testing
 			foreach (var (n, v) in new (string, object)[] { ("NeckAppearInterpolant", 1f), ("HeadOpacity", 1f), ("LeftFrontArmScale", 1f), ("RightFrontArmScale", 1f), ("LeftFrontArmOpacity", 1f), ("RightFrontArmOpacity", 1f), ("LilyScale", 1f) })
 				try { _avT.GetProperty(n, BindingFlags.Public | BindingFlags.Instance)?.SetValue(boss.ModNPC, v); } catch (Exception) { }
 			try { _avT.GetProperty("HasSentPlayersThroughVortex", BindingFlags.Public | BindingFlags.Instance)?.SetValue(boss.ModNPC, true); } catch (Exception) { }
+		}
+		private const BindingFlags Any = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
+		private static object Member(object o, string name)
+		{
+			Type t = o.GetType();
+			PropertyInfo p = t.GetProperty(name, Any); if (p != null) return p.GetValue(o);
+			FieldInfo f = t.GetField(name, Any); if (f != null) return f.GetValue(o);
+			throw new MissingMemberException(t.Name, name);
+		}
+		private static void SetMember(object o, string name, object v)
+		{
+			Type t = o.GetType();
+			PropertyInfo p = t.GetProperty(name, Any); if (p != null) { p.SetValue(o, v); return; }
+			FieldInfo f = t.GetField(name, Any); if (f != null) { f.SetValue(o, v); return; }
+			throw new MissingMemberException(t.Name, name);
 		}
 		private static string CurrentState(NPC boss) { try { return _stateP.GetValue(boss.ModNPC)?.ToString(); } catch (Exception) { return null; } }
 
@@ -137,7 +154,7 @@ namespace Levy.Common.Testing
 			Player p = Main.player[0];
 			if (Vector2.Distance(p.Center, _cmdAt) > 400f) { _shifts++; _lastShiftTick = _tick; _cmdAt = p.Center; _anchor = p.Center; if (Trace) _mod.Logger.Info($"[AvatarBehave] TRACE t={_tick} the commander was moved to tile ({p.Center.X / 16f:0},{p.Center.Y / 16f:0}) state {(_boss != null && _boss.active ? CurrentState(_boss) : "-")}"); }
 		}
-		private static NPC _boss;
+		private static NPC _boss; private static int _cmdKills;
 
 		private static void Arena()
 		{
@@ -201,23 +218,23 @@ namespace Levy.Common.Testing
 		private sealed class Result
 		{
 			public Acc All = new(), Flier = new(), Foot = new(), Hook = new(); public int Hits, Ticks, Lost, Shifts, AliveAtEnd; public long Damage; public double Near2s, Near10s; public int Near2sN, Near10sN;
-			public int Lines, Floating; public long InSphere; public bool BossAlive; public readonly HashSet<string> States = new();
+			public int Lines, Floating, Reforced, CmdKills; public long InSphere; public bool BossAlive; public readonly HashSet<string> States = new();
 			public readonly Dictionary<string, long> StateTicks = new(); public readonly Dictionary<string, int> HitBy = new();
 		}
 
-		private sealed record Scn(string Name, int Phase, string[] States, int Ticks, bool Send);
+		private sealed record Scn(string Name, int Phase, string[] States, int Ticks, bool Send, bool Zone = false);
 
-		private static Result RunScene(Scn sc, bool behave)
+		private static Result RunScene(Scn sc, int variant)
 		{
 			var r = new Result();
-			Cleanup(); AvatarFight.TestOn = behave; WotgScenes.TestAvatarPercent = behave ? null : 100;   // off = the chatter the army had before (every line of the fight pools at the old rate)
+			bool behave = variant > 0; Cleanup(); AvatarFight.TestOn = behave; AvatarFight.TestZones = variant == 1 ? false : null; WotgScenes.TestAvatarPercent = behave ? null : 100;   // off = the chatter the army had before (every line of the fight pools at the old rate)
 			Terraria.Main.rand = new Terraria.Utilities.UnifiedRandom(4242);
 			Arena();
 			Main.GameMode = GameModeID.Master; Main.hardMode = true;
 			var cfg = global::Levy.Common.Config.LevyConfig.Get; if (cfg != null) { _savedBossTarget ??= cfg.BossesTargetSoldiers; cfg.BossesTargetSoldiers = true; }
 			ModContent.TryFind("NoxusBoss/AvatarOfEmptiness", out ModNPC av);
 			BossDownedSystem.SetDownedForTest(av.Type, true);
-			_shifts = 0; _lastShiftTick = -100000; _tick = 0;
+			_shifts = 0; _lastShiftTick = -100000; _tick = 0; _cmdKills = 0;
 			_anchor = new Vector2(Cx * 16f, (FloorY - 12) * 16f); _cmdAt = _anchor;
 			KeepCommander(); Step(2);
 			var levies = new List<(SoldierNPC s, Cls c)>();
@@ -238,7 +255,8 @@ namespace Levy.Common.Testing
 			int lines0 = WotgScenes.Log.Count, fl0 = DialogueSystem.FloatingDelivered;
 			var hitSeen = new HashSet<long>();
 			var nearCheck = new List<(int at, bool two)>();
-			int shiftsSeen = 0;
+			int shiftsSeen = 0, lastForce = -1000;
+			string[] roots = sc.States.Where(x => x != "SendPlayerToMyUniverse").Select(x => x.Contains('_') ? x.Substring(0, x.IndexOf('_')) : x).Distinct().ToArray();
 			for (int t = 0; t < sc.Ticks; t++)
 			{
 				_tick = t;
@@ -247,7 +265,9 @@ namespace Levy.Common.Testing
 				Step(1);
 				if (!boss.active || boss.type != av.Type) { r.BossAlive = false; break; }
 				boss.timeLeft = 99999; boss.life = boss.lifeMax; r.BossAlive = true;
-				string st = CurrentState(boss) ?? "?"; r.States.Add(st); r.StateTicks[st] = r.StateTicks.GetValueOrDefault(st) + 1;
+				string st = CurrentState(boss) ?? "?";
+				if (t - lastForce > 30 && sc.States[0] != "ResetCycle" && st != "SendPlayerToMyUniverse" && !st.StartsWith("Teleport") && !roots.Any(rt => st.StartsWith(rt))) { ForceStates(boss, sc.States.Where(x => x != "SendPlayerToMyUniverse").ToArray(), sc.Phase, null, 0); lastForce = t; r.Reforced++; st = CurrentState(boss) ?? "?"; }
+				r.States.Add(st); r.StateTicks[st] = r.StateTicks.GetValueOrDefault(st) + 1;
 				r.Ticks++;
 				Player cm = Main.player[0];
 				if (_shifts > shiftsSeen) { shiftsSeen = _shifts; nearCheck.Add((_lastShiftTick + 120, true)); nearCheck.Add((_lastShiftTick + 600, false)); r.Shifts++; }
@@ -285,7 +305,7 @@ namespace Levy.Common.Testing
 				}
 				if (Trace && t % 120 == 0) _mod.Logger.Info($"[AvatarBehave] TRACE t={t} state={st} void={AvatarFight.Void} cmd=({cm.Center.X / 16f:0},{cm.Center.Y / 16f:0}) levies: " + string.Join(" ", levies.Where((l, i) => i % 3 == 0 && l.s.NPC.active).Select(l => $"{l.c.ToString()[0]}({(l.s.NPC.Center.X - cm.Center.X) / 16f:0},{(l.s.NPC.Center.Y - cm.Center.Y) / 16f:0})v{l.s.NPC.velocity.Y:0}")));
 			}
-			r.Lost = levies.Count(l => !l.s.NPC.active);
+			r.Lost = levies.Count(l => !l.s.NPC.active); r.CmdKills = _cmdKills;
 			r.Lines = WotgScenes.Log.Count - lines0; r.Floating = DialogueSystem.FloatingDelivered - fl0;
 			return r;
 		}
@@ -296,7 +316,7 @@ namespace Levy.Common.Testing
 			Acc A = r.All; double n = Math.Max(1, A.Ticks);
 			string cls(Acc a) => P(100.0 * a.Far / Math.Max(1, a.Ticks));
 			return $"{name}: {r.Ticks} ticks, moved {r.Shifts}x; mean distance {F(A.Dist / n)} tiles, stranded(>40) {P(100.0 * A.Far / n)} (fliers {cls(r.Flier)}, foot {cls(r.Foot)}, hookers {cls(r.Hook)}), lost(>100) {P(100.0 * A.Lost / n)}, falling {P(100.0 * A.Fall / n)}, aloft {P(100.0 * A.Aloft / n)} (fliers {P(100.0 * r.Flier.Aloft / Math.Max(1, r.Flier.Ticks))}, foot {P(100.0 * r.Foot.Aloft / Math.Max(1, r.Foot.Ticks))}); " +
-				$"near after move 2s {(r.Near2sN > 0 ? P(r.Near2s / r.Near2sN) : "-")}, 10s {(r.Near10sN > 0 ? P(r.Near10s / r.Near10sN) : "-")}; hits {r.Hits} (dmg {r.Damage}) [{string.Join(",", r.HitBy.OrderByDescending(kv => kv.Value).Take(4).Select(kv => kv.Key + ":" + kv.Value))}], in annihilation sphere {r.InSphere} body-ticks; lines {r.Lines} scripted + {r.Floating - r.Lines} other floating in {F(r.Ticks / 3600.0)} min; levies lost {r.Lost}; states [{string.Join(",", r.StateTicks.OrderByDescending(kv => kv.Value).Take(4).Select(kv => kv.Key + ":" + kv.Value))}]";
+				$"near after move 2s {(r.Near2sN > 0 ? P(r.Near2s / r.Near2sN) : "-")}, 10s {(r.Near10sN > 0 ? P(r.Near10s / r.Near10sN) : "-")}; hits {r.Hits} (dmg {r.Damage}) [{string.Join(",", r.HitBy.OrderByDescending(kv => kv.Value).Take(4).Select(kv => kv.Key + ":" + kv.Value))}], in annihilation sphere {r.InSphere} body-ticks; lines {r.Lines} scripted + {r.Floating - r.Lines} other floating in {F(r.Ticks / 3600.0)} min; levies lost {r.Lost}; the commander would have died {r.CmdKills}x; attack put back {r.Reforced}x; states [{string.Join(",", r.StateTicks.OrderByDescending(kv => kv.Value).Take(4).Select(kv => kv.Key + ":" + kv.Value))}]";
 		}
 
 		private static readonly Scn[] All =
@@ -305,14 +325,15 @@ namespace Levy.Common.Testing
 			new("RubbleGravitySlam (phase 2)", 0, new[] { "RubbleGravitySlam_ApplyExtremeGravity" }, 1100, false),
 			new("WorldSmash (phase 2)", 0, new[] { "WorldSmash" }, 1500, false),
 			new("DyingStarsWind + LilyStars (phase 2)", 0, new[] { "DyingStarsWind", "LilyStars_ChargePower" }, 1500, false),
-			new("Send to the dimension, WhirlingIceStorm (frost)", 1, new[] { "SendPlayerToMyUniverse", "WhirlingIceStorm" }, 1500, true),
+			new("Send to the dimension, WhirlingIceStorm (frost)", 1, new[] { "SendPlayerToMyUniverse", "WhirlingIceStorm" }, 1500, true, true),
 			new("Send, AbsoluteZeroOutburst (frost)", 1, new[] { "SendPlayerToMyUniverse", "AbsoluteZeroOutburst" }, 1800, true),
-			new("Send, BloodiedFountainBlasts (blood)", 1, new[] { "SendPlayerToMyUniverse", "BloodiedFountainBlasts" }, 1500, true),
+			new("Send, BloodiedFountainBlasts (blood)", 1, new[] { "SendPlayerToMyUniverse", "BloodiedFountainBlasts" }, 1300, true, true),
 			new("Send, Unclog (blood)", 1, new[] { "SendPlayerToMyUniverse", "Unclog" }, 1500, true),
 			new("Send, ArmPortalStrikes (dark)", 1, new[] { "SendPlayerToMyUniverse", "ArmPortalStrikes" }, 1200, true),
-			new("Send, RealityShatter (dark)", 1, new[] { "SendPlayerToMyUniverse", "RealityShatter_CreateAndWaitForTelegraph" }, 1800, true),
+			new("Send, RealityShatter (dark)", 1, new[] { "SendPlayerToMyUniverse", "RealityShatter_CreateAndWaitForTelegraph" }, 1800, true, true),
 			new("Send, EnterBloodWhirlpool + AntishadowOnslaught (phase 4)", 2, new[] { "SendPlayerToMyUniverse", "EnterBloodWhirlpool", "AntishadowOnslaught" }, 1800, true),
 			new("Send, UniversalAnnihilation (phase 4)", 2, new[] { "SendPlayerToMyUniverse", "UniversalAnnihilation" }, 1800, true),
+			new("The whole cycle as the game picks it, phase 4 (what the army says)", 2, new[] { "ResetCycle" }, 7200, false),
 		};
 
 		private static void Run()
@@ -325,12 +346,16 @@ namespace Levy.Common.Testing
 			{
 				if (only != null && !only.Split(',').Contains(i.ToString())) continue;
 				Scn s = scale > 0 ? All[i] with { Ticks = scale } : All[i];
-				var off = RunScene(s, false); Note($"#{i} before - " + Line(s.Name, off)); Cleanup();
-				var on = RunScene(s, true); Note($"#{i} after  - " + Line(s.Name, on)); Cleanup();
-				results.Add((s, off, on));
+				var off = RunScene(s, 0); Note($"#{i} before - " + Line(s.Name, off)); Cleanup();
+				Result mid = null;
+				if (s.Zone) { mid = RunScene(s, 1); Note($"#{i} flight only (the attack's own rule off) - " + Line(s.Name, mid)); Cleanup(); }
+				var on = RunScene(s, 2); Note($"#{i} after  - " + Line(s.Name, on)); Cleanup();
+				results.Add((s, off, on)); if (mid != null) _mids[s.Name] = mid;
 			}
 			Report(results);
 		}
+
+		private static readonly Dictionary<string, Result> _mids = new();
 
 		private static void Report(List<(Scn s, Result off, Result on)> results)
 		{

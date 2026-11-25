@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using Microsoft.Xna.Framework;
 using Terraria;
@@ -91,6 +92,140 @@ namespace Levy.Common.Compat.Wotg
 
 		/// <summary>The behaviour applies to this tick: switched on and a fight is up.</summary>
 		public static bool Applies => Enabled && Active;
+
+		// =====================================================================================================
+		// Attacks with a telegraph or a safe place. The default (follow the commander's slot, dodge what is in flight) fails each of these the same way: the telegraph is a projectile with no damage
+		// and the army never reads it, and the safe place is where only the commander was told to stand. Each rule reads the attack's own projectile or state, named here with the NoxusBoss file it comes from.
+		// =====================================================================================================
+
+		/// <summary>A place the army keeps out of (Keep false) or stands in (Keep true) for as long as the attack lasts.</summary>
+		public struct Zone { public Rectangle Rect; public bool Keep; public string Why; }
+
+		/// <summary>Self-check: false = the attack rules are off (the flight stays on), to tell what they add.</summary>
+		internal static bool? TestZones;
+		private static readonly List<Zone> _zones = new();
+		private static uint _zoneStamp = uint.MaxValue;
+		private static bool _zoneInit; private static int _frostTele = -1, _frostCol = -1, _field = -1, _solyn = -1; private static MethodInfo _aiInt;
+
+		private static void ZoneInit()
+		{
+			if (_zoneInit) return; _zoneInit = true;
+			try
+			{
+				if (!ModLoader.TryGetMod("NoxusBoss", out Mod nox)) return;
+				if (nox.TryFind("FrostColumnTelegraph", out ModProjectile a)) _frostTele = a.Type;
+				if (nox.TryFind("FrostColumn", out ModProjectile b)) _frostCol = b.Type;
+				if (nox.TryFind("SolynProtectiveForcefield", out ModProjectile c)) _field = c.Type;
+				if (nox.TryFind("BattleSolyn", out ModNPC d)) _solyn = d.Type;
+				_aiInt = _avatarT?.GetMethod("GetAIInt", BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(string) }, null);
+			}
+			catch (Exception) { }
+		}
+
+		/// <summary>The keep-out and stand-in places of this tick's attack (built once a tick; empty outside the attacks below).</summary>
+		public static List<Zone> Zones
+		{
+			get
+			{
+				uint now = Main.GameUpdateCount;
+				if (_zoneStamp == now) return _zones;
+				_zoneStamp = now; _zones.Clear();
+				Read();
+				if (_boss == null || !Enabled || TestZones == false) return _zones;
+				ZoneInit();
+				try { BuildZones(); } catch (Exception) { _zones.Clear(); }
+				return _zones;
+			}
+		}
+
+		private static void BuildZones()
+		{
+			string st = _state;
+			NPC boss = _boss;
+			// RealityShatter (AvatarOfEmptiness.BehaviorStates.RealityShatter.cs; Projectiles/AvatarSlamTelegraph.cs): the Avatar waits above its target while a lane 1400 px wide (the telegraph, drawn red) fills in over
+			// RealityShatter_TelegraphTime, then falls down that lane at up to 107 px a tick with its contact damage on. Anything in the lane when it falls is hit; anything outside it is not.
+			if (st == "RealityShatter_CreateAndWaitForTelegraph" || st == "RealityShatter_SlamDownward")
+			{
+				float half = 700f + 90f;
+				_zones.Add(new Zone { Rect = new Rectangle((int)(boss.Center.X - half), (int)(boss.Center.Y - 600f), (int)(half * 2f), 24000), Keep = false, Why = "slam lane" });
+			}
+			// WhirlingIceStorm (AvatarOfEmptiness.BehaviorStates.WhirlingIceStorm.cs; Projectiles/FrostColumnTelegraph.cs and FrostColumn.cs): a column marked 1.25 s ahead (the telegraph carries no damage) then 540 px wide and
+			// 4020 px tall rising from the marked point, damaging while it stands.
+			for (int i = 0; i < Main.maxProjectiles; i++)
+			{
+				Projectile p = Main.projectile[i];
+				if (!p.active) continue;
+				if (p.type == _frostTele && _frostTele >= 0)
+					_zones.Add(new Zone { Rect = new Rectangle((int)(p.Center.X - 330f), (int)(p.Center.Y - 4100f), 660, 4220), Keep = false, Why = "frost column marked" });
+				else if (p.type == _frostCol && _frostCol >= 0)
+				{
+					Rectangle h = p.Hitbox; h.Inflate(40, 0);
+					_zones.Add(new Zone { Rect = h, Keep = false, Why = "frost column" });
+				}
+			}
+			// BloodiedFountainBlasts_DenseBurst (AvatarOfEmptiness.BehaviorStates.BloodiedFountainBlasts.cs; Projectiles/SolynProjectiles/SolynProtectiveForcefield.cs): Solyn says "stay below me" and holds a shield
+			// (BloodiedFountainBlasts_SolynForcefieldWidth wide, a little under as tall, centred 40 px under her) that destroys every Avatar projectile touching it (its hitbox is that rectangle moved 35 px up and grown 16 by 10):
+			// the blood rain of the burst is stopped by it for whoever stands in its width at or below the shield. This is the one safe place of the attack.
+			if (st == "BloodiedFountainBlasts_DenseBurst")
+			{
+				Rectangle? r = null;
+				for (int i = 0; i < Main.maxProjectiles && r == null; i++)
+				{
+					Projectile p = Main.projectile[i];
+					if (p.active && p.type == _field && _field >= 0 && p.Opacity > 0.3f && p.scale > 0.4f) { Rectangle h = p.Hitbox; h.Y -= 35; h.Inflate(16, 10); r = h; }
+				}
+				if (r == null && _solyn >= 0)
+				{
+					for (int i = 0; i < Main.maxNPCs && r == null; i++)
+					{
+						NPC n = Main.npc[i];
+						if (!n.active || n.type != _solyn) continue;
+						int w = 285; try { if (_aiInt != null) w = Convert.ToInt32(_aiInt.Invoke(null, new object[] { "BloodiedFountainBlasts_SolynForcefieldWidth" })); } catch (Exception) { }
+						int h = (int)(w * 0.875f);
+						r = new Rectangle((int)(n.Center.X - w / 2f), (int)(n.Center.Y + 40f - h / 2f - 35f), w, h);
+					}
+				}
+				if (r != null) _zones.Add(new Zone { Rect = r.Value, Keep = true, Why = "solyn shield" });
+			}
+		}
+
+		/// <summary>
+		/// A body's goal moved for this tick's zones: out of a keep-out place (to the side of it the commander is on, or by its slot when he is in it), into a stand-in place (a grid in its lower half, one cell a body by slot).
+		/// <paramref name="urgent"/> is true when the body is in a place it must leave, or outside one it must reach: it goes at full speed.
+		/// </summary>
+		public static Vector2 AdjustForZones(NPC body, Vector2 want, int slot, Player cmd, out bool urgent)
+		{
+			urgent = false;
+			var zones = Zones;
+			for (int zi = 0; zi < zones.Count; zi++)
+			{
+				Zone z = zones[zi];
+				if (z.Keep)
+				{
+					int pad = 26;
+					Rectangle r = z.Rect;
+					int cols = Math.Max(1, (r.Width - 2 * pad) / 30);
+					int col = slot % cols, row = slot / cols;
+					float x = r.X + pad + (col + 0.5f) * (r.Width - 2f * pad) / cols;
+					float y = Math.Min(r.Bottom - 30f, r.Center.Y + 10f + row * 30f);
+					Vector2 inside = new Vector2(x, y);
+					if (!r.Contains(body.Center.ToPoint())) urgent = true;
+					want = inside;
+				}
+				else
+				{
+					Rectangle r = z.Rect; r.Inflate((int)(body.width / 2f + 24f), (int)(body.height / 2f + 24f));
+					bool wantIn = r.Contains(want.ToPoint()), bodyIn = r.Contains(body.Center.ToPoint());
+					if (!wantIn && !bodyIn) continue;
+					int side;
+					if (cmd != null && !r.Contains(cmd.Center.ToPoint())) side = cmd.Center.X < r.Center.X ? -1 : 1;
+					else side = (slot & 1) == 0 ? -1 : 1;
+					want = new Vector2(side < 0 ? r.Left - 8f : r.Right + 8f, want.Y);
+					if (bodyIn) urgent = true;
+				}
+			}
+			return want;
+		}
 
 		/// <summary>True when a point is the middle of the world, where the Avatar puts a player it sends to its universe.</summary>
 		public static bool IsUniversePoint(Vector2 center)

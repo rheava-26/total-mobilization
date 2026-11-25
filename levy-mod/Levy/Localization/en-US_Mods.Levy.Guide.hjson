@@ -551,7 +551,7 @@ Pages: {
 			Every other option is under Settings, Mod Configuration, Levy, with progression assistance on its own page: loot, Dungeon Spirits, Chlorophyte and Luminite. Some boss lines are changed to fit fighting with an army; Boss lines acknowledge your army turns this off.
 			Machines stand down during boss fights is a Mechanization setting, off by default. While a boss lives, every drone and turret leaves the field and frees its NPC slot. Barracks drones return their weapons to the Armory. All of them come back when the boss is gone.
 			Machines sleep when no player is near is a Mechanization setting. Turrets, placed drones and garrisons out of range pack away and free their NPC slots, then wake as they were. It is on by default. A boss that needs more NPC slots packs turrets and placed drones the same way until it is gone.
-			With Wrath of the Gods loaded, /levyrift shows the state of its sky and /levyrift replay plays the covering of the sun again.
+			With Wrath of the Gods loaded, /levyrift shows the state of its sky and /levyrift replay plays the covering of the sun again. In the Avatar of Emptiness fight levies come with you through its dimensions and portals. Levies with wings fly beside you and the rest are carried where there is no ground. Avatar fight chatter sets how much of their fight talk they keep.
 			'''
 	}
 }

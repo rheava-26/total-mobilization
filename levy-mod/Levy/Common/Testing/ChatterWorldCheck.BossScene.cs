@@ -41,7 +41,7 @@ namespace Levy.Common.Testing
 			finally
 			{
 				WotgScenes.TestFight = null; WotgScenes.TestState = null; WotgScenes.TestLife = null; WotgScenes.TestVoice = WotgScenes.TestEnabled = WotgScenes.TestAvatarDefeated = WotgScenes.TestNamelessDefeated = WotgScenes.TestGenesis = null;
-				NoxusFights.Override = null; RiftMood.TestPhase = null; _keepDuke = false; SoldierNPC.ChatterOverride = chat0;
+				WotgScenes.TestAvatarPercent = null; NoxusFights.Override = null; RiftMood.TestPhase = null; _keepDuke = false; SoldierNPC.ChatterOverride = chat0;
 				WotgScenes.Reset(); DialogueSystem.ResetRuntime();
 			}
 			_mod.Logger.Info($"[BossScene] self-check pass={_sPass} fail={_sFail}");
@@ -182,8 +182,8 @@ namespace Levy.Common.Testing
 			WotgScenes.TestState = "Teleport"; Step(10); WotgScenes.TestState = "Awaken_LegEmergence"; Step(400);
 			SCheck($"a moment speaks once a fight ({LinesOf("SCENE_AVATAR_EMERGE", o0)} lines the second time)", LinesOf("SCENE_AVATAR_EMERGE", o0) == 0);
 
-			// the worried line now and then; the levies' own chatter stays held
-			WotgScenes.TestState = "Teleport";
+			// the worried line now and then; the levies' own chatter stays held (at the full rate: the Avatar fight's quieter default is checked just below)
+			WotgScenes.TestState = "Teleport"; WotgScenes.TestAvatarPercent = 100;
 			int c0 = WotgScenes.Log.Count, fl0 = WotgScenes.FightLines, fd0 = DialogueSystem.FloatingDelivered, amb0 = SoldierNPC.ChatterLines, hh0 = NoxusFights.HushDropped;
 			Step(60 * 120);
 			var chatter = WotgScenes.Log.Skip(c0).ToList();
@@ -193,6 +193,18 @@ namespace Levy.Common.Testing
 			SCheck($"and none of its ordinary chatter ({generic} ordinary lines out)", generic == 0);
 			var chats = army.Where(a => a != null && a.NPC.active && a.IsAlive).Select(a => DialogueSystem.ChatLine(a)).ToList();
 			SCheck($"right-click chat in the fight is about the fight ({chats.Count(WotgScenes.IsFightChat)} of {chats.Count}: {chats.FirstOrDefault()})", chats.Count > 0 && chats.All(WotgScenes.IsFightChat));
+
+			// the Avatar fight is quiet by default (AvatarFightChatterPercent, 25): a quarter of the worried lines; none at 0; the other fights are untouched
+			WotgScenes.Reset(); WotgScenes.TestFight = WotgFight.Avatar; WotgScenes.TestState = "Teleport"; WotgScenes.TestLife = 1f; Step(5);
+			WotgScenes.TestAvatarPercent = 25; int q0 = WotgScenes.FightLines; Step(60 * 240); int q25 = WotgScenes.FightLines - q0;
+			WotgScenes.Reset(); WotgScenes.TestFight = WotgFight.Avatar; WotgScenes.TestState = "Teleport"; WotgScenes.TestLife = 1f; Step(5);
+			WotgScenes.TestAvatarPercent = 0; q0 = WotgScenes.FightLines; Step(60 * 240); int q00 = WotgScenes.FightLines - q0;
+			WotgScenes.Reset(); WotgScenes.TestFight = WotgFight.Nameless; WotgScenes.TestState = "Teleport"; WotgScenes.TestLife = 1f; WotgScenes.TestAvatarPercent = 25; Step(5);
+			q0 = WotgScenes.FightLines; Step(60 * 240); int qNd = WotgScenes.FightLines - q0;
+			SNote($"four minutes of the Avatar fight at 25 percent: {q25} worried lines; at 0 percent: {q00}; four minutes of the Nameless Deity fight with the same setting: {qNd}");
+			SCheck($"the Avatar fight keeps a quarter of its worried lines by default ({q25} in four minutes, where the full rate gives six to nine)", q25 >= 1 && q25 <= 4);
+			SCheck($"and none at 0 percent ({q00}); the Nameless Deity fight is not thinned ({qNd})", q00 == 0 && qNd >= 5);
+			WotgScenes.TestAvatarPercent = 100; WotgScenes.Reset(); WotgScenes.TestFight = WotgFight.Avatar; WotgScenes.TestState = "Teleport"; WotgScenes.TestLife = 0.9f; Step(5);
 
 			// hope, the fallen, the kill
 			int k0 = WotgScenes.Log.Count;

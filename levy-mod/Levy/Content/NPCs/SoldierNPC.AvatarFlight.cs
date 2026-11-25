@@ -122,6 +122,9 @@ namespace Levy.Content.NPCs
 					if (off.Length() > lim) want = cmd.Center + off / off.Length() * lim;
 				}
 			}
+			// the attack's own rules: out of a marked lane or column, under Solyn's shield (Common/Compat/Wotg/AvatarFight.cs, Zones)
+			bool urgent = false;
+			if (AvatarFight.State != null) want = AvatarFight.AdjustForZones(npc, want, AvatarSlot(), cmd, out urgent);
 			bool carried = mode == 2;
 			if (carried) AvCarryTicks++; else AvFlyTicks++;
 			_flying = true; _aerialVisualTicks = AerialVisualHoldTicks;
@@ -132,9 +135,9 @@ namespace Levy.Content.NPCs
 			_flying = true;
 
 			Vector2 to = want - npc.Center; float d = to.Length();
-			float cap = d > 40f * 16f ? 18f : d > 16f * 16f ? 11f : Math.Max(FlySpeed * 1.4f, 7.5f);
-			Vector2 desired = d < 4f ? Vector2.Zero : to / d * Math.Min(cap, d * 0.1f + 0.5f);
-			float acc = d > 16f * 16f ? 0.9f : 0.45f;
+			float cap = d > 40f * 16f ? 18f : d > 16f * 16f || urgent ? 11f : Math.Max(FlySpeed * 1.4f, 7.5f);
+			Vector2 desired = d < 4f ? Vector2.Zero : to / d * (urgent ? cap : Math.Min(cap, d * 0.1f + 0.5f));
+			float acc = d > 16f * 16f || urgent ? 0.9f : 0.45f;
 			npc.velocity.X += MathHelper.Clamp(desired.X - npc.velocity.X, -acc, acc);
 			npc.velocity.Y += MathHelper.Clamp(desired.Y - npc.velocity.Y, -acc, acc);
 			npc.velocity.Y -= Gravity(); // UpdateNPC adds gravity after the AI

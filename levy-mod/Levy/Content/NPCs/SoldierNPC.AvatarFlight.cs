@@ -30,6 +30,8 @@ namespace Levy.Content.NPCs
 		private const float AvUrgentSpeedPx = 17f, AvUrgentAccelPx = 1.7f;
 		/// <summary>Harness telemetry: ticks a body flew, was carried, was held; slots it was brought to; times the ground took it back.</summary>
 		internal static long AvFlyTicks, AvCarryTicks, AvHoldTicks, AvRejoins, AvYields;
+		/// <summary>Harness telemetry: why a body was not owned outside the dimension: 0 no record or dead, 1 yielded to the ground movement, 2 not following, 3 the commander is not far above.</summary>
+		internal static readonly long[] AvWhy = new long[4];
 		private uint _avOwnedTick = uint.MaxValue; private int _avSlot = -1, _avSlotTick = -10000, _avFar, _avYieldUntil, _avProgTick; private float _avProgDist = float.MaxValue; private bool _avWasOwned;
 
 		/// <summary>True when the fight owned this body's movement this tick (the air layer and the other tile-reading layers stand aside).</summary>
@@ -77,18 +79,20 @@ namespace Levy.Content.NPCs
 		private int AvatarMode(out Player cmd)
 		{
 			cmd = null;
-			if (Record == null || State == SoldierState.Dead || _avYieldUntil > (int)Main.GameUpdateCount && !AvatarFight.Void) return 0;
+			if (Record == null || State == SoldierState.Dead) { AvWhy[0]++; return 0; }
+			if (_avYieldUntil > (int)Main.GameUpdateCount && !AvatarFight.Void) { AvWhy[1]++; return 0; }
 			bool voidNow = AvatarFight.Void;
 			Player c = Commander;
 			bool follows = c != null && !c.dead && Record.Order == SoldierOrder.Follow && !Record.StoodDown && State != SoldierState.Routed && State != SoldierState.Desert && State != SoldierState.ReturnHome;
 			bool wings = Abilities != null && Abilities.HasWings && Abilities.WingTimeMax > 0;
 			if (voidNow) { cmd = c; return follows ? (wings ? 1 : 2) : 3; }
-			if (!follows) return 0;
+			if (!follows) { AvWhy[2]++; return 0; }
 			cmd = c;
 			if (wings) return 1;
 			// no wings, no dimension: only when the commander is far above anywhere this body can stand (the arena is open sky)
 			float above = (NPC.Bottom.Y - c.Bottom.Y) / 16f;
-			return above >= AvCarryAboveTiles ? 2 : 0;
+			if (above < AvCarryAboveTiles) { AvWhy[3]++; return 0; }
+			return 2;
 		}
 
 		/// <summary>The fight let go of this body (it is over, or the body came down to the ground it can use): a body let go in the air comes down as after a teleport, no fall that counts against it.</summary>
@@ -119,7 +123,7 @@ namespace Levy.Content.NPCs
 			if (distTiles > (AvatarFight.Zones.Count > 0 ? AvRejoinFarTiles : AvRejoinTiles))   // a body clearing a marked lane is far from the commander on purpose
 			{
 				bool moved = AvatarFightSystem.MovedRecently(cmd.whoAmI, 600);
-				if (++_avFar >= 6 && (moved || AvatarFight.Void || distTiles > AvRejoinFarTiles || !VisibleToAnyPlayer())) { AvatarRejoin(cmd, AvatarFight.Void); slot = AvatarSlotCenter(cmd); }
+				if (++_avFar >= 6 && (moved || AvatarFight.Void || distTiles > AvRejoinFarTiles || !VisibleToAnyPlayer())) { AvatarRejoin(cmd, AvatarFight.Void || mode == 2); slot = AvatarSlotCenter(cmd); }
 			}
 			else _avFar = 0;
 

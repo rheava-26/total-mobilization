@@ -29,7 +29,7 @@ namespace Levy.Common.Testing
 			public string Name, Head, Body, Legs, Weapon, Cls = "melee", Event;
 			public string[] Acc = Array.Empty<string>();
 			public int Ticks = 600;
-			public bool Poker, Mate, Hold, CmdHurt, NoWeapon;
+			public bool Poker, Mate, Hold, CmdHurt, NoWeapon, AccOnly;
 			public float TargetTiles = 9f;
 			public bool Static = true;
 		}
@@ -156,6 +156,7 @@ namespace Levy.Common.Testing
 			SbAdd("Vortex", "VortexHelmet", "VortexBreastplate", "VortexLeggings", "ranged", "stealth");
 			SbAdd("Nebula", "NebulaHelmet", "NebulaBreastplate", "NebulaLeggings", "magic", "nebula", s => { s.Ticks = 900; });
 			SbAdd("Stardust", "StardustHelmet", "StardustBreastplate", "StardustLeggings", "summon", "stardust", s => { s.Ticks = 600; });
+			SbBuildMod(); // a big content mod's own sets and accessories (CombatHarness.SetBonus.Rede.cs)
 			// ---- spot checks: Calamity / Thorium (loaded mods only)
 			if (ModLoader.HasMod("CalamityMod"))
 			{
@@ -197,6 +198,24 @@ namespace Levy.Common.Testing
 			return _sbPlayerFields;
 		}
 
+		private static System.Reflection.MethodInfo _sbGetModPlayer; private static List<ModPlayer> _sbBases;
+		/// <summary>Every ModPlayer instance of a Player, found through the registered ModPlayer types (the Player's own list is not reachable by one name on every tML build).</summary>
+		private static List<object> SbModPlayersOf(Player p)
+		{
+			var res = new List<object>();
+			try
+			{
+				_sbGetModPlayer ??= typeof(Player).GetMethods().FirstOrDefault(m => m.Name == "GetModPlayer" && m.IsGenericMethodDefinition && m.GetParameters().Length == 1);
+				_sbBases ??= ModContent.GetContent<ModPlayer>().ToList();
+				foreach (ModPlayer b in _sbBases)
+				{
+					try { object inst = _sbGetModPlayer.MakeGenericMethod(b.GetType()).Invoke(p, new object[] { b }); if (inst != null) res.Add(inst); } catch (Exception) { }
+				}
+			}
+			catch (Exception) { }
+			return res;
+		}
+
 		private static Dictionary<string, double> SbSnap(Player p)
 		{
 			var d = new Dictionary<string, double>();
@@ -223,7 +242,7 @@ namespace Levy.Common.Testing
 			}
 			try
 			{
-				var mp = typeof(Player).GetProperty("ModPlayers", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(p) as System.Collections.IEnumerable;
+				var mp = SbModPlayersOf(p);
 				if (mp != null)
 					foreach (object m in mp)
 					{
@@ -231,6 +250,12 @@ namespace Levy.Common.Testing
 						string mn = m.GetType().Name;
 						foreach (var f in m.GetType().GetFields(BindingFlags.Public | BindingFlags.Instance))
 						{
+							// a mod's per-element / per-kind tables (float[] / int[] fields: elemental damage and resistance) are diffed cell by cell
+							if (f.FieldType == typeof(float[]) || f.FieldType == typeof(int[]))
+							{
+								try { if (f.GetValue(m) is Array arr && arr.Length <= 64) for (int ai = 0; ai < arr.Length; ai++) d["M." + mn + "." + f.Name + "[" + ai + "]"] = Convert.ToDouble(arr.GetValue(ai)); } catch (Exception) { }
+								continue;
+							}
 							if (!(f.FieldType == typeof(bool) || f.FieldType == typeof(int) || f.FieldType == typeof(float) || f.FieldType == typeof(double))) continue;
 							try { object v = f.GetValue(m); d["M." + mn + "." + f.Name] = v is bool b ? (b ? 1 : 0) : Convert.ToDouble(v); } catch (Exception) { }
 						}
@@ -671,7 +696,7 @@ namespace Levy.Common.Testing
 				bool sok = true;
 				if (_sbMode != "fight" && s.Static)
 				{
-					try { sv = SbStatic(s, out sok, out _, out _); }
+					try { sv = s.AccOnly ? SbStaticAcc(s, out sok) : SbStatic(s, out sok, out _, out _); }
 					catch (Exception e) { sv = "FAIL static threw " + e.GetType().Name + ": " + e.Message; sok = false; }
 					if (!sok && !sv.StartsWith("SKIP")) _sbStaticBroken++;
 					SbLog($"HARNESS-SB: STATIC {s.Name,-18} {sv}");

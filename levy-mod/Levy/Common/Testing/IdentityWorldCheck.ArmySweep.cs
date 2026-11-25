@@ -75,6 +75,8 @@ namespace Levy.Common.Testing
 		};
 
 		private static readonly Dictionary<string, int> _armyAmmo = new();
+		/// <summary>The stand-in player's tap cadence for channel weapons (ticks the button is held before it is let go for four); 0 = hold the button down throughout. A charge-and-release weapon never fires on a held button, so the sweep takes the better of the two for the reference.</summary>
+		private static int _armyTap;
 		/// <summary>LEVY_ARMYSWEEP_REACH=1 (on by default in a LEVY_ARMYSWEEP_MODS sweep): a weapon whose own reach is 10 tiles or less meets its enemy at blade distance, like a blade.</summary>
 		private static bool ArmyReachPlace => Environment.GetEnvironmentVariable("LEVY_ARMYSWEEP_REACH") == "1" || (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LEVY_ARMYSWEEP_MODS")) && Environment.GetEnvironmentVariable("LEVY_ARMYSWEEP_REACH") != "0");
 		private static readonly bool ArmyDebug = Environment.GetEnvironmentVariable("LEVY_ARMYSWEEP_DEBUG") == "1";
@@ -150,7 +152,8 @@ namespace Levy.Common.Testing
 		{
 			p.position = at - new Vector2(p.width / 2f, p.height); p.velocity = Vector2.Zero; p.statMana = p.statManaMax2; p.statLife = p.statLifeMax2;
 			bool grenade = it.channel && it.noUseGraphic && it.useStyle == ItemUseStyleID.Swing; // a held-then-thrown grenade (Doomsday Device) is charged with the button down and thrown on the release
-			bool press = grenade ? GrenadeInHand(255, it.shoot, out bool fullCharge) == null || !fullCharge : (it.autoReuse || it.channel || k % 2 == 0); // a grenade is held until its charge is full and let go (RogueGrenade: a full charge is the player's throw)
+			bool press = grenade ? GrenadeInHand(255, it.shoot, out bool fullCharge) == null || !fullCharge : (it.autoReuse || it.channel || k % 2 == 0);
+			if (_armyTap > 0 && it.channel && !grenade) press = k % (_armyTap + 4) < _armyTap; // a player who taps a charge-and-release weapon: the button down for _armyTap ticks, up for four, again // a grenade is held until its charge is full and let go (RogueGrenade: a full charge is the player's throw)
 			if ((it.sentry || it.buffType > 0 && it.shoot > 0 && (it.DamageType?.CountsAsClass(DamageClass.Summon) ?? false)) && p.ownedProjectileCounts.Length > 0) { int mine = 0; for (int i = 0; i < Main.maxProjectiles; i++) { Projectile q = Main.projectile[i]; if (q.active && q.owner == 255 && (it.sentry ? q.sentry : q.minion)) mine++; } if (mine > 0 && it.sentry) press = false; } // a player does not recast a sentry that is standing
 			if (forcePress >= 0) press = forcePress == 1; // the rogue sweep's stand-in decides its own button (IdentityWorldCheck.ArmyRogue.cs)
 			Main.screenPosition = p.Center - new Vector2(Main.screenWidth / 2f, Main.screenHeight / 2f); Main.mouseX = (int)(aim.X - Main.screenPosition.X); Main.mouseY = (int)(aim.Y - Main.screenPosition.Y);
@@ -180,6 +183,33 @@ namespace Levy.Common.Testing
 			int d = _sweepTarget.lifeMax - _sweepTarget.life; if (d > 0) { res.Dmg += d; _sweepTarget.life = _sweepTarget.lifeMax; }
 		}
 
+		/// <summary>The reference player for a weapon: the stand-in uses it, and a channel weapon is used three ways (the button held, tapped for 12 ticks, tapped for 40) with the best result kept: a charge-and-release weapon never fires on a held button, a player taps it.</summary>
+		private static ArmyRes ArmyPlayerBest(int type, int ammo, int ticks, int minions, int turrets, Item sample)
+		{
+			ArmyRes best = ArmyOne(type, ammo, ticks, true, false, minions, turrets);
+			if (sample != null && sample.channel && sample.shoot > 0)
+				foreach (int tap in new[] { 12, 40 })
+				{
+					_armyTap = tap;
+					try { ArmyRes alt = ArmyOne(type, ammo, ticks, true, false, minions, turrets); if (alt.Dmg > best.Dmg) best = alt; }
+					finally { _armyTap = 0; }
+				}
+			return best;
+		}
+
+		/// <summary>LEVY_ARMYSWEEP_WALL=1: three solid columns, 60 tiles high, three tiles in front of the enemy on the shooter's side. A weapon that hits through it hits what a player standing there could not.</summary>
+		private static readonly bool ArmyWall = Environment.GetEnvironmentVariable("LEVY_ARMYSWEEP_WALL") == "1";
+		private static void ArmyWallSet(bool on)
+		{
+			int x0 = (int)(_sweepTargetAt.X / 16f) - 3;
+			for (int x = x0; x < x0 + 1; x++)
+				for (int y = FloorY - 60; y < FloorY; y++)
+				{
+					Tile t = Main.tile[x, y];
+					if (on) { t.HasTile = true; t.TileType = TileID.GrayBrick; t.BlockType = BlockType.Solid; } else t.ClearEverything();
+				}
+		}
+
 		private static ArmyRes ArmyOne(int weaponType, int ammoType, int ticks, bool player, bool cmdHolds, int minionCap = 1, int turretCap = 1)
 		{
 			var res = new ArmyRes { Who = player ? "player" : (cmdHolds ? "levy, commander holding her button" : "levy, commander idle 60 tiles away") };
@@ -191,6 +221,7 @@ namespace Levy.Common.Testing
 			bool close = !w.noMelee || w.shoot <= 0 || ItemID.Sets.Yoyo[w.type] || ItemID.Sets.Spears[w.type]; // a blade or spear is used next to the enemy (5 tiles), a shooter from 12 tiles
 				if (!close && (ArmyReachPlace || WeaponClassifier.IsAnchoredSwing(w))) { try { close = WeaponClassifier.GetProfile(w).RangeTiles <= 10; } catch (Exception) { } } // a short-reach weapon (a slash that circles its wielder): the enemy stands inside the levy's own reach, so a levy posted on Hold is measured fighting, not waiting
 			SpawnOriginTarget(close ? at - new Vector2(7 * 16f, 0f) : at); _sweepTarget.boss = true;
+			if (ArmyWall) ArmyWallSet(true); // LEVY_ARMYSWEEP_WALL=1: a wall stands between the shooter and the enemy (the hit gate's A/B)
 			Player scratch = null, saved255 = null; int body = -1; SoldierRecord rec = null;
 			ArmySweepTally.Target = _sweepTarget.whoAmI; ArmySweepTally.On = true; ArmySweepTally.ByProj = new();
 			try
@@ -268,7 +299,7 @@ namespace Levy.Common.Testing
 			catch (Exception e) { res.Err = e.GetType().Name + ": " + e.Message + " @ " + string.Join(" < ", (e.StackTrace ?? "").Split('\n').Take(3).Select(l => l.Trim())); }
 			finally
 			{
-				ArmySweepTally.On = false; _costBody = -1;
+				ArmySweepTally.On = false; _costBody = -1; if (ArmyWall) ArmyWallSet(false);
 				if (player) { _my = 0; if (scratch != null && ReferenceEquals(Main.player[255], scratch)) Main.player[255] = saved255; global::Levy.Common.Targeting.EnemyTargeting.ResetState(); }
 				ClearSoldiers(); _cmdHolds = false; ReleaseCommanderButtons(); _cmdAt = OriginCmdAt();
 			}
@@ -335,7 +366,7 @@ namespace Levy.Common.Testing
 		private static void ArmySweep()
 		{
 			string mode = Environment.GetEnvironmentVariable("LEVY_ARMYSWEEP");
-			if (mode == "0" || !ModLoader.HasMod("CalamityMod")) return;
+			if (mode == "0" || (!ModLoader.HasMod("CalamityMod") && string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LEVY_ARMYSWEEP_MODS")))) return; // a LEVY_ARMYSWEEP_MODS sweep of another mod needs no Calamity
 			if (Environment.GetEnvironmentVariable("LEVY_ARMYSWEEP_ROGUE") == "1") { ArmyRogueSweep(); return; } // the rogue stealth sweep (IdentityWorldCheck.ArmyRogue.cs)
 			string only = Environment.GetEnvironmentVariable("LEVY_ARMYSWEEP_ONLY");
 			string[] names = !string.IsNullOrEmpty(only) ? only.Replace('_', ' ').Split(';', StringSplitOptions.RemoveEmptyEntries) : mode == "1" ? ArmyList : ArmyShip;
@@ -344,7 +375,8 @@ namespace Levy.Common.Testing
 			int ticks = int.TryParse(Environment.GetEnvironmentVariable("LEVY_ARMYSWEEP_TICKS"), out int tk) ? tk : 600;
 			var weapons = endgame ? ArmyEndgame() : ArmyResolve(names);
 			string modsEnv = Environment.GetEnvironmentVariable("LEVY_ARMYSWEEP_MODS"); // lab: every weapon of these mods (comma list of internal mod names) instead of the named list; reported, never failed
-			if (!string.IsNullOrEmpty(modsEnv)) { weapons = ArmyModWeapons(modsEnv.Split(',', StringSplitOptions.RemoveEmptyEntries)); reportOnly = true; }
+			if (!string.IsNullOrEmpty(modsEnv)) { weapons = ArmyModWeapons(modsEnv.Split(',', StringSplitOptions.RemoveEmptyEntries)); reportOnly = true;
+				if (!string.IsNullOrEmpty(only)) { var keys = names.Select(ArmyKey).ToHashSet(); weapons = weapons.Where(w => keys.Contains(ArmyKey(w.name)) || keys.Contains(ArmyKey(w.label.Substring(w.label.IndexOf(':') + 1)))).ToList(); } } // LEVY_ARMYSWEEP_ONLY narrows a mod sweep too
 			string shard = Environment.GetEnvironmentVariable("LEVY_ARMYSWEEP_SHARD");
 			if (!string.IsNullOrEmpty(shard) && shard.Split('/') is { Length: 2 } sh && int.TryParse(sh[0], out int si) && int.TryParse(sh[1], out int sn) && sn > 1) weapons = weapons.Where((w, k) => k % sn == si).ToList();
 			if (weapons.Count == 0) return;
@@ -368,11 +400,11 @@ namespace Levy.Common.Testing
 						// a weapon the armory never issues is listed, not fired: nobody would carry it
 						Item ci = new Item(); ci.SetDefaults(type); bool sup = false, locked = false, holdable = false;
 						try { sup = WeaponClassifier.IsIssuableWeapon(ci); locked = ModWeaponGates.Locked(ci); holdable = new SoldierGear().CanHold(SoldierGear.SlotWeapon, ci); } catch (Exception e) { Note($"army sweep: {label} classify threw {e.GetType().Name}: {e.Message}"); }
-						if (!sup || locked || !holdable) { Note($"army sweep UNISSUED {label} [{row.Cls}, {row.Fam}; {row.Probe}] supported={sup} gateLocked={locked} holdable={holdable} dmg={ci.damage} useStyle={ci.useStyle} channel={ci.channel} shoot={ci.shoot}"); rows.Add(new ArmyRow { Label = label, Name = name, Cls = row.Cls, Fam = row.Fam, Status = "UNISSUED", Player = new ArmyRes(), A = new ArmyRes(), B = new ArmyRes() }); continue; }
+						if (!sup || locked || !holdable) { Note($"army sweep UNISSUED {label} [{row.Cls}, {row.Fam}; {row.Probe}] supported={sup} gateLocked={locked} holdable={holdable} alters={WorldAlter.KindOf(ci)} shootAlters={WorldAlter.ProjectileKind(ci.shoot)} dmg={ci.damage} useStyle={ci.useStyle} channel={ci.channel} shoot={ci.shoot}"); rows.Add(new ArmyRow { Label = label, Name = name, Cls = row.Cls, Fam = row.Fam, Status = "UNISSUED", Player = new ArmyRes(), A = new ArmyRes(), B = new ArmyRes() }); continue; }
 					}
 					row.A = ArmyOne(type, ammo, ticks, false, false);
 					row.B = ArmyOne(type, ammo, ticks, false, true);
-					row.Player = ArmyOne(type, ammo, ticks, true, false, Math.Max(row.A.DummyMinions, row.B.DummyMinions), Math.Max(row.A.DummyTurrets, row.B.DummyTurrets)); // the stand-in gets the minion and sentry slots the levy's own player has
+					row.Player = ArmyPlayerBest(type, ammo, ticks, Math.Max(row.A.DummyMinions, row.B.DummyMinions), Math.Max(row.A.DummyTurrets, row.B.DummyTurrets), sample); // the stand-in gets the minion and sentry slots the levy's own player has
 					ArmyClassify(row); rows.Add(row);
 					Note($"army sweep {row.Status} {row.Label} [{row.Cls}, {row.Fam}; {row.Probe}] ratio idle {row.RatioA:0.00} / commander holding {row.RatioB:0.00} {row.Cause} || {row.Player} || {row.A} || {row.B}");
 					Note($"army seq {row.Label}: player [{string.Join(",", row.Player.Seq.Take(12))}] || levy idle [{string.Join(",", row.A.Seq.Take(12))}] || commander holding [{string.Join(",", row.B.Seq.Take(12))}]");

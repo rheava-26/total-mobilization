@@ -112,6 +112,8 @@ namespace Levy.Common.Weapons
 			// Voidragon: after its 50-round magazine the holdout fires the Abyssal Fire beam, which ends itself when its owner cannot use the holdout (CantUseHoldout: the button is up). Handed to the commander it read her button and died
 			// on its first tick (no beam in 900 ticks; the beam is 90% of a player's Voidragon damage, gunparity 2026-11-23).
 			"Voidragon" };
+		/// <summary>True for a held weapon of an AutoHoldMods mod: its children that read the holder's button or point at the holder stay in the held chain (a charged bolt that waits for its owner to let go).</summary>
+		internal static bool AutoHolds(Item item) => item?.ModItem != null && Array.IndexOf(AutoHoldMods, item.ModItem.Mod.Name) >= 0 && Of(item) == ModShotKind.Holdout;
 		internal static bool ChainExtras(Item item) => item?.ModItem != null && item.ModItem.Mod.Name == "CalamityMod" && ChainExtraNames.Contains(item.ModItem.Name);
 
 		/// <summary>A held modded weapon that deals its damage only when the button is LET GO after a charge: hold for <see cref="HoldTicks"/>, release, and end the holdout <see cref="LingerTicks"/> later so the next one is cast.</summary>
@@ -152,6 +154,19 @@ namespace Levy.Common.Weapons
 			return d;
 		}
 		internal static ChargePlan ChargeRelease(Item item) => item?.ModItem == null || item.ModItem.Mod.Name != "CalamityMod" ? null : _planOverride.TryGetValue(item.ModItem.Name, out ChargePlan o) ? o : ChargeReleaseTable.TryGetValue(item.ModItem.Name, out ChargePlan p) ? p : null;
+
+		/// <summary>
+		/// The stall rule of an AutoHoldMods mod's held weapon (<see cref="AutoHoldType"/>: a blade, a hammer, a charged staff): a held weapon that has done nothing is let go once (<see cref="LevyConstants.HeldStallReleaseTicks"/>), because a
+		/// weapon that swings when the button goes UP never swings on a held one. A sword that swings on the release has hit nothing while it charges, so it is let go after a short wait and lives out its swing; one that fights while held
+		/// (a combo) hits at once, counts as having done something, and is never let go. Returns the (hold, linger) in ticks, or null for the general rule.
+		/// </summary>
+		internal static (int hold, int linger)? BladeStall(Item item)
+		{
+			if (item?.ModItem == null || Array.IndexOf(AutoHoldMods, item.ModItem.Mod.Name) < 0 || !item.channel || item.shoot <= 0) return null;
+			if (Of(item) != ModShotKind.Holdout) return null;
+			return (BladeStallTicks, Math.Clamp(item.useTime * 3, 30, 90));
+		}
+		private const int BladeStallTicks = 30;
 
 		/// <summary>
 		/// Held weapons whose state lives in the holder's per-tick player step (Calamity's PostUpdateMiscEffects), not in the holdout: the Unstable Caster's Gauntlet's vis meter (+0.1 every 4 ticks while it is held) pays for every needle.
@@ -209,6 +224,7 @@ namespace Levy.Common.Weapons
 
 		private static int FindHolder(Item item)
 		{
+			if (!Off && !ProjAiHooks.Off && !AutoHoldPlain.Contains(item.ModItem?.Name ?? "")) { int ah = AutoHoldType(item, item.shoot > 0 ? WeaponClassifier.ProjectileSample(item.shoot) : null); if (ah > 0) return ah; }
 			if (item.shoot > 0 && WeaponClassifier.ProjectileSample(item.shoot)?.ModProjectile != null && OwnerLockProbe.ReadsOwnerButton(item.shoot)) return item.shoot;
 			int idle = IdleHolder(item.type);
 			if (idle > 0) return idle;
@@ -308,6 +324,55 @@ namespace Levy.Common.Weapons
 		/// <summary>Class-chain names of the Calamity base projectiles whose AI is a held melee stab (matched by name: no compile-time reference to Calamity).</summary>
 		private const string ShortswordBase = "BaseShortswordProjectile", MaceFlailBase = "BaseMaceFlailProjectile", FlailBase = "BaseFlailProjectile";
 
+		/// <summary>
+		/// Content mods whose weapons are routed by rule, not by a per-item table: Redemption's sword, hammer, spear and staff shots are written around the player holding them (their swing is drawn around Main.player[owner], their combo and
+		/// charge read the owner's channel and cursor, and they only act when the owner is Main.myPlayer). As plain shots owned by the commander they swung at HER (measured: army sweep, 20 of its melee weapons made no damage in a levy's hands).
+		/// Held, the levy's dummy owns them. <c>LEVY_AUTOHOLD=0</c> turns the rule off, <c>LEVY_AUTOHOLD=Mod1,Mod2</c> sets the list (lab A/B).
+		/// </summary>
+		private static readonly string[] AutoHoldMods = ParseAutoHold();
+		private static string[] ParseAutoHold() { string e = Environment.GetEnvironmentVariable("LEVY_AUTOHOLD"); return e == "0" ? Array.Empty<string>() : string.IsNullOrEmpty(e) ? new[] { "Redemption" } : e.Split(',', StringSplitOptions.RemoveEmptyEntries); }
+		/// <summary>Items of an AutoHoldMods mod the plain shot serves better than the held route (measured per item, mechanism noted at its row).</summary>
+		private static readonly HashSet<string> AutoHoldPlain = new()
+		{
+			// army sweep, one levy against one pinned enemy for 600 ticks, plain vs held, damage against the player's best (held button / short tap / long tap): the plain shot already does what the player's does; held it did nothing or much less
+			"EaglecrestSling", // 3901 plain, 0 held
+			"Rockslide",       // 10937 plain (player 871), 112 held
+			"SlayerFist",      // 4176 plain (player 4412), 0 held
+			"InfectedEye",     // 41266 plain (player 49845), 27986 held
+			"Petridish",       // 23618 plain (player 35297), 20204 held
+		};
+
+		private static bool AutoHold(Item item, Projectile sample)
+		{
+			if (Array.IndexOf(AutoHoldMods, item.ModItem.Mod.Name) < 0 || AutoHoldPlain.Contains(item.ModItem.Name) || ForcePlain(item.ModItem.Name)) return false;
+			if (item.shoot <= 0 || item.accessory) return false;
+			if (!(item.CountsAsClass(DamageClass.Ranged) || item.CountsAsClass(DamageClass.Magic) || item.CountsAsClass(DamageClass.Melee) || WeaponClassifier.IsExtraCombat(item))) return false;
+			// the shot is built on the mod's own "held by its owner" base class (a swing, a stab or a gun drawn at the owner's hand): the item's shot, or the one its ModifyShootStats / Shoot hook names (an ammo gun's shoot is the placeholder 10)
+			if (AutoHoldType(item, sample) > 0) return true;
+			// or it is a channel shot that reads its owner's button
+			return sample?.ModProjectile != null && item.channel && (OwnerLockProbe.ReadsOwnerButton(item.shoot) || OwnerLockProbe.ReadsUseButtons(item.shoot));
+		}
+
+		/// <summary>The projectile type of an AutoHoldMods weapon's held "true melee" shot (the item's own shoot, else the one its hooks name), or 0.</summary>
+		internal static int AutoHoldType(Item item, Projectile sample)
+		{
+			if (item?.ModItem == null || Array.IndexOf(AutoHoldMods, item.ModItem.Mod.Name) < 0) return 0;
+			if (sample?.ModProjectile != null && ChainHas(sample.ModProjectile.GetType(), "TrueMeleeProjectile")) return item.shoot;
+			if (!item.channel) return 0; // a hook that merely names a held-type helper (a coil's pulse) is not a holdout; a held weapon's use is a channel
+			foreach (Type t in OwnerLockProbe.NamedProjectileTypes(item))
+				if (ChainHas(t, "TrueMeleeProjectile")) { int pt = TypeOf(t); if (pt > 0) return pt; }
+			return 0;
+		}
+
+		private static bool ChainHas(Type t, string name)
+		{
+			for (Type b = t; b != null && b != typeof(ModProjectile) && b != typeof(object); b = b.BaseType) if (b.Name == name) return true;
+			return false;
+		}
+
+		/// <summary>True when the item belongs to an AutoHoldMods mod and is of that mod's own damage class (not Melee, Ranged or Magic): a dagger class whose blow is a blade-range swing, so the soldier closes to blade reach for it like for a sword.</summary>
+		internal static bool HeldBladeOfExtraClass(Item item) => item?.ModItem != null && Array.IndexOf(AutoHoldMods, item.ModItem.Mod.Name) >= 0 && !item.CountsAsClass(DamageClass.Melee) && !item.CountsAsClass(DamageClass.Ranged) && !item.CountsAsClass(DamageClass.Magic) && WeaponClassifier.IsExtraCombat(item);
+
 		public static ModShotKind Of(Item item)
 		{
 			if (Off || item == null || item.IsAir || item.type < ItemID.Count) return ModShotKind.None;
@@ -344,6 +409,8 @@ namespace Levy.Common.Weapons
 			// A held / charge-and-release holdout reads its owner's button (and is the weapon's own shot).
 			// Only holdouts measured as duds as plain shots are routed (see HoldoutRouted); everything else keeps the plain shot, which already works for it.
 			if (item.ModItem?.Mod.Name == "CalamityMod" && ForcePlain(item.ModItem.Name)) return ModShotKind.None;
+			// A content mod listed in AutoHoldMods: its channel weapons whose shot reads its owner's button (the swing / charge / beam is drawn around and fed by the holder) are HELD, found from the shot's own code, no per-item table
+			if (item.ModItem != null && !ProjAiHooks.Off && AutoHold(item, sample)) return ModShotKind.Holdout;
 			if (item.ModItem?.Mod.Name == "CalamityMod" && !ProjAiHooks.Off && HeldGrenadeRouted.Contains(item.ModItem.Name) && item.channel && item.shoot > 0 && sample?.ModProjectile != null) return ModShotKind.Holdout;
 			if (item.ModItem?.Mod.Name == "CalamityMod" && (HoldoutRouted.Contains(item.ModItem.Name) || (!ProjAiHooks.Off && HeldItemRateRouted.Contains(item.ModItem.Name)) || ForceHold(item.ModItem.Name)) && item.shoot > 0
 				&& (item.CountsAsClass(DamageClass.Ranged) || item.CountsAsClass(DamageClass.Magic) || item.CountsAsClass(DamageClass.Melee)))

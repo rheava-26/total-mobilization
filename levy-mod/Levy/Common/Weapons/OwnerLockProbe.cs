@@ -245,6 +245,41 @@ namespace Levy.Common.Weapons
 			return result;
 		}
 
+		private static readonly Dictionary<int, bool> _buffCache = new();
+		/// <summary>
+		/// True when the modded projectile's own AI asks its OWNER whether a buff is on (<c>Player.HasBuff</c>, usually the staff's own summon buff, and ends itself when it is not: a sentry's <c>CheckActive</c>). A tower a soldier plants is owned by
+		/// the commander, who never cast the staff and wears no such buff, so the tower ended on its first tick.
+		/// </summary>
+		public static bool ReadsOwnerBuff(int projType)
+		{
+			if (_buffCache.TryGetValue(projType, out bool cached)) return cached;
+			bool result = false;
+			try
+			{
+				ModProjectile mod = WeaponClassifier.ProjectileSample(projType)?.ModProjectile;
+				if (mod != null)
+				{
+					EnsureReflection();
+					var sink = new HashSet<string>(); _sink = sink;
+					var visited = new HashSet<MethodBase>(); var found = new HashSet<FieldInfo>();
+					try
+					{
+						for (Type t = mod.GetType(); t != null && t != typeof(ModProjectile) && t != typeof(object); t = t.BaseType)
+						{
+							const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
+							foreach (MethodInfo m in t.GetMethods(flags))
+								if (m.Name == "PreAI" || m.Name == "AI" || m.Name == "PostAI" || m.Name == "SafeAI" || m.Name == "CheckActive") Scan(m, 0, visited, found);
+						}
+					}
+					finally { _sink = null; }
+					result = sink.Contains("HasBuff");
+				}
+			}
+			catch (Exception e) { ModContent.GetInstance<Levy>()?.Logger.Warn($"Levy: owner-buff probe failed for projectile {projType}: {e.Message}"); }
+			_buffCache[projType] = result;
+			return result;
+		}
+
 		private static byte[] _btnCache = new byte[0];
 		/// <summary>
 		/// True when the modded projectile's own AI reads its owner's use buttons: <c>Player.channel</c> / <c>controlUseItem</c> / <c>controlUseTile</c>, Calamity's <c>CantUseHoldout</c>, or the raw <c>Main.mouseLeft</c> / <c>mouseRight</c>.

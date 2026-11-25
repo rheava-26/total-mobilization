@@ -192,3 +192,8 @@ ThoriumMod	DarkGate	PORTAL_USE	ignoreIfPlayerHasChaos=1;ignoreIfPlayerHoldsGate=
 ThoriumMod	EnergyProjector	NEVER	primary=1;proj=GraniteBarrier	primary placement guarded
 CalamityMod	SarosPossession	RECAST	cond=slotsFull;hold=1	used again at full slots the aura fires the Totality Ray (damage x its slots, 2x falling to 1x while held), which lives while the button is held; held while he fights. Summon sweep 2026-11-22: levy 12.5k dps with the ray, the commander 14.8k with it and 2.4k with the aura alone
 CalamityMod	BorealisBomber	NEVER	castUp=6	summon: the bomber is cast 6 tiles above the levy's target. Summon sweep 2026-11-22: cast beside the levy 155 damage a second, on the target 0, 6 tiles above it 515
+Redemption	BlindJustice	NEVER		alt dash replaces the swing (redesweep 2026-11-25, 600 ticks, one levy against one pinned enemy: with the alt 0 damage, without 761)
+Redemption	BloodLetter	NEVER		alt measured 0.17 of a player primary-only 0.44
+Redemption	GhastlyRecurve	NEVER		alt spawns the placeholder arrow, held primary 0.66 -> 0.80 of a player
+Redemption	HyperTechRevolvers	NEVER		with the alt 1.61 of a player, primary-only 0.75
+Redemption	ForgottenGreatsword	NEVER		alt spawn read as a shot from the commander; primary-only the same damage with nothing at her

@@ -1,0 +1,170 @@
+weapon	before	before_ratio	after	after_ratio	player_damage	levy_damage	note
+AkkaRoseSentry	BROKEN	0.00	PARITY	0.84	12128	10221	
+AldersStaff	unmeasured(levy works)	-	unmeasured(levy works)	-	0	136	reference player did no damage
+AndroidHologram	WEAK	0.21	WEAK	0.21	4525	928	ratio 0.20
+AntlerStaff	unmeasured(levy works)	-	unmeasured(levy works)	-	0	368	reference player did no damage
+BileLauncher	unmeasured(levy works)	-	unmeasured(levy works)	-	0	4146	reference player did no damage
+Bindeklinge	BROKEN	0.00	PARITY	0.61	763	463	
+BladeOfTheMountain	unmeasured(levy 0)	-	WEAK	0.55	1450	796	ratio 0.51
+BlastBattery	STRONG	2.60	STRONG	3.34	14726	49178	
+BlazingBalisong	benched	-	PARITY	0.87	2577	2250	
+BlightedBoline	benched	-	PARITY	0.83	681	562	
+BlightedRoot	unmeasured(levy 0)	-	unmeasured(levy 0)	-	0	0	reference player did no damage
+BlindJustice	unmeasured(levy 0)	-	WEAK	0.10	7226	750	ratio 0.10
+BloodLetter	benched	-	WEAK	0.45	1536	696	ratio 0.45
+BloodstainedPike	STRONG	7.85	STRONG	3.67	147	539	
+BronzeWand	PARITY	0.96	PARITY	0.85	594	503	
+BuddingBoline	benched	-	PARITY	0.62	1366	846	ratio 0.60
+CalciteWand	PARITY	0.98	PARITY	0.95	399	378	
+CantripStaff	PARITY	0.93	PARITY	0.96	525	502	
+Chernobyl	STRONG	44.10	STRONG	44.12	49	2162	
+ChickenEgg	benched	-	benched	-	0	0	
+ChickendWand	PARITY	0.63	WEAK	0.58	707	411	ratio 0.57
+ChompingChains	unmeasured(levy works)	-	unmeasured(levy works)	-	0	424	reference player did no damage
+Constellations	PARITY	1.16	PARITY	1.04	35405	36910	
+ContagionSpreader	PARITY	0.90	PARITY	0.98	974	959	
+CorpseWalkerStaff	unmeasured(levy works)	-	unmeasured(levy works)	-	0	162	reference player did no damage
+CorruptedDAN	BROKEN	0.00	WEAK	0.45	2382	1082	ratio 0.39
+CorruptedDoubleRifle	benched	-	PARITY	0.82	6326	5217	
+CosmosChains	STRONG	5.50	STRONG	5.34	18138	96811	
+CruxCardAnglonSkeletons	benched	-	benched	-	0	0	
+CruxCardCalavia	benched	-	benched	-	0	0	
+CruxCardForestNymph	benched	-	benched	-	0	0	
+CruxCardGathicSkeletons	benched	-	benched	-	0	0	
+CruxCardGladestone	benched	-	benched	-	0	0	
+CruxCardMossyGoliath	benched	-	benched	-	0	0	
+CruxCardSkeleton	benched	-	benched	-	0	0	
+CruxCardSkeletonAssassin	benched	-	benched	-	0	0	
+CruxCardSkullDigger	benched	-	benched	-	0	0	
+CruxCardTied	benched	-	benched	-	0	0	
+CrystalGlaive	PARITY	0.79	PARITY	0.69	3728	2566	
+CursedGrassBlade	unmeasured(levy works)	-	unmeasured(levy works)	-	0	547	reference player did no damage
+CursedThornBow	benched	-	PARITY	0.75	2506	1873	ratio 0.41
+CyberChakram	PARITY	0.90	PARITY	1.00	7080	7092	
+CystlingSummon	WEAK	0.49	WEAK	0.50	520	262	ratio 0.50
+DAN	benched	-	PARITY	0.64	1598	1020	ratio 0.57
+DaerelsSilverwoodBow	PARITY	0.82	PARITY	0.74	1441	1068	
+DarkSteelBow	PARITY	0.73	PARITY	0.87	13907	12069	
+DeathMetal	WEAK	0.41	WEAK	0.40	4173	1664	ratio 0.39
+DepletedCrossbow	PARITY	0.70	PARITY	0.65	17909	11574	
+Divinity	unmeasured(levy 0)	-	unmeasured(levy 0)	-	0	0	reference player did no damage
+DoubleRifle	benched	-	PARITY	0.91	2627	2400	
+DragonCleaver	unmeasured(levy works)	-	STRONG	4.49	2654	11906	
+DragonSlayersBow	WEAK	0.22	WEAK	0.22	4164	900	ratio 0.21
+DragonSlayersStaff	WEAK	0.04	STRONG	4.14	2125	8804	
+DrillRevolver	PARITY	0.92	PARITY	0.94	12549	11784	
+Dusksong	PARITY	0.87	PARITY	0.93	3278	3052	
+Dusksong2	PARITY	0.85	PARITY	0.85	2457	2079	
+EaglecrestGlove	PARITY	0.88	PARITY	0.84	488	410	
+EaglecrestJavelin	unmeasured(levy 0)	-	PARITY	0.76	133	101	
+EaglecrestSling	unmeasured(levy works)	-	unmeasured(levy works)	-	0	3820	reference player did no damage
+EggCracker	benched	-	benched	-	0	0	
+ElderWoodBow	benched	-	PARITY	0.83	368	307	
+ElderWoodCrossbow	PARITY	0.89	PARITY	0.96	505	483	
+ElderWoodStaff	unmeasured(levy 0)	-	unmeasured(levy 0)	-	0	0	reference player did no damage
+ElderWoodSword	unmeasured(levy works)	-	unmeasured(levy works)	-	0	405	reference player did no damage
+Electronade	PARITY	0.83	PARITY	0.80	16949	13629	
+EmpyreanBlind	STRONG	1.62	PARITY	1.17	23672	27649	
+ErhanMagnifyingGlass	unmeasured(levy 0)	-	unmeasured(levy 0)	-	0	0	reference player did no damage
+FanOShivs	PARITY	0.87	PARITY	0.66	501	332	
+FlakCannon	unmeasured(levy 0)	-	PARITY	1.12	2588	2905	
+FlintAndSteel	benched	-	benched	-	0	0	
+FoldedShotgun	benched	-	unmeasured(levy works)	-	0	1085	reference player did no damage
+ForestNymphsSickle	benched	-	benched	-	0	0	
+ForgottenGreatsword	WEAK	0.30	PARITY	0.97	20398	19685	fires from the commander
+ForgottenSword	WEAK	0.29	PARITY	0.99	4349	4284	
+GhastlyRecurve	STRONG	1.84	PARITY	0.77	2751	2111	
+GiantDandelion	PARITY	0.92	STRONG	1.32	250	331	
+GigapeiliContactor	PARITY	0.82	PARITY	0.88	12477	10941	
+GlobalDischarge	STRONG	1.50	STRONG	1.97	2247	4419	
+GoldChickenEgg	benched	-	benched	-	0	0	
+GraveSteelSecespita	benched	-	WEAK	0.49	618	305	ratio 0.49
+GravityHammer	unmeasured(levy 0)	-	PARITY	0.73	1548	1128	
+GreneggLauncher	WEAK	0.48	WEAK	0.25	536	135	ratio 0.22
+Hacksaw	unmeasured(levy 0)	-	PARITY	1.29	25600	32913	
+Halbirdhouse	WEAK	0.50	PARITY	1.14	777	885	
+HallowedHandGrenade	STRONG	1.49	PARITY	1.14	551	629	
+HammerOfProving	benched	-	benched	-	0	0	
+HolyBible	benched	-	benched	-	0	0	
+HoneycombStaff	BROKEN	0.00	PARITY	0.81	140	114	
+HydrasMaw	STRONG	1.74	STRONG	1.34	1459	1950	
+HyperTechRevolvers	benched	-	PARITY	0.81	4034	3274	
+Icefall	STRONG	71.05	STRONG	85.74	265	22722	
+Incisor	benched	-	WEAK	0.52	1744	907	ratio 0.50
+InfectedEye	unmeasured(levy works)	-	PARITY	1.06	38470	40880	
+InfectedTentacle	STRONG	2.07	STRONG	2.07	4165	8620	
+InfectiousGlaive	PARITY	0.65	PARITY	0.93	4049	3756	
+KeepersClaw	unmeasured(levy 0)	-	WEAK	0.50	575	289	ratio 0.47
+KeepersKnife	benched	-	PARITY	0.64	1033	664	
+KingsOakStaff	unmeasured(levy works)	-	unmeasured(levy works)	-	0	189	reference player did no damage
+Lament	unmeasured(levy works)	-	unmeasured(levy works)	-	0	21382	reference player did no damage
+LegoPistol	benched	-	benched	-	0	0	
+LightningRod	benched	-	benched	-	0	0	
+LightningStone	WEAK	0.27	WEAK	0.25	610	150	ratio 0.24
+LogStaff	BROKEN	0.00	WEAK	0.08	396	30	ratio 0.03
+LongEgg	benched	-	benched	-	0	0	
+LunarShot	benched	-	PARITY	0.92	982	905	
+MagmaStaff	WEAK	0.28	WEAK	0.28	2560	726	ratio 0.25
+Midnight	unmeasured(levy 0)	-	WEAK	0.57	26811	15246	ratio 0.52
+MoonflareStaff	unmeasured(levy works)	-	unmeasured(levy works)	-	0	210	reference player did no damage
+MythrilsBane	PARITY	1.06	PARITY	0.96	14700	14046	
+Nanoswarmer	PARITY	0.84	PARITY	0.91	4707	4281	
+NestWand	BROKEN	0.00	PARITY	0.91	218	198	
+NoblesHalberd	unmeasured(levy 0)	-	PARITY	0.67	570	380	
+OOFingergun	BROKEN	0.00	PARITY	0.88	13655	12007	
+ObsidianTecpatl	benched	-	WEAK	0.52	1578	815	ratio 0.49
+OversizedScrewdriver	unmeasured(levy 0)	-	unmeasured(levy works)	-	0	1589	reference player did no damage
+Petridish	PARITY	0.67	PARITY	0.71	34401	24302	
+PetrifiedWoodBow	benched	-	PARITY	0.88	590	518	
+PetrifiedWoodSword	unmeasured(levy works)	-	unmeasured(levy works)	-	0	1220	reference player did no damage
+PiercingNebulaWeapon	STRONG	9.03	STRONG	7.48	3407	25499	
+PlutoniumNukeRadio	STRONG	2.00	STRONG	1.84	10815	19918	
+PlutoniumRailgun	STRONG	2.67	STRONG	2.93	11277	33097	
+PocketSans	benched	-	benched	-	0	0	
+PoemOfIlmatar	BROKEN	0.00	STRONG	2.53	14807	37506	
+PortableHoloProjector	benched	-	benched	-	0	0	
+PrototypeAtomRifle	STRONG	1.47	STRONG	1.46	5338	7819	
+PulseBlade	unmeasured(levy works)	-	unmeasured(levy works)	-	0	2036	fires the item's placeholder shot KineticMine, which the player never fires; reference player did no damage
+PureIronBow	PARITY	0.95	PARITY	0.89	1289	1146	
+PureIronCrossbow	PARITY	0.95	PARITY	0.94	1156	1087	
+PureIronStaff	unmeasured(levy 0)	-	BROKEN	0.00	306	0	no damage idle; no damage with the commander holding
+PureIronSword	unmeasured(levy 0)	-	WEAK	0.57	1521	866	ratio 0.55
+Rockslide	unmeasured(levy works)	-	STRONG	11.43	937	10714	
+RootTendril	STRONG	3.89	STRONG	3.90	325	1268	
+Salamanisku	PARITY	0.89	PARITY	0.79	36465	28775	
+SeabreezeStaff	PARITY	0.87	PARITY	0.80	416	331	
+SilverRapier	PARITY	0.66	PARITY	0.62	1288	805	
+SkullDiggerFlail	unmeasured(levy works)	-	STRONG	1.42	1131	1607	
+SlayerFist	unmeasured(levy works)	-	PARITY	0.98	4316	4245	
+SlayerGun	benched	-	STRONG	1.38	5178	7156	
+SoulScepter	unmeasured(levy 0)	-	unmeasured(levy works)	-	0	653	reference player did no damage
+SoulSkewer	benched	-	WEAK	0.58	1065	617	ratio 0.57
+Spellsong	STRONG	2.16	PARITY	0.87	5268	4562	
+SteampunkMinigun	benched	-	unmeasured(levy works)	-	0	9404	reference player did no damage
+SunInThePalm	BROKEN	0.00	WEAK	0.23	21172	4906	ratio 0.23
+SunshardGreatstaff	WEAK	0.43	WEAK	0.40	5803	2340	ratio 0.40
+SussyEgg	benched	-	benched	-	0	0	
+SwarmerCannon	unmeasured(levy 0)	-	unmeasured(levy works)	-	0	20059	reference player did no damage
+SwordRemote	benched	-	benched	-	0	0	
+SwordSlicer	unmeasured(levy works)	-	PARITY	0.95	1185	1121	
+Synthesizer	WEAK	0.44	WEAK	0.45	1276	568	ratio 0.43
+Taikasauva	STRONG	1.40	PARITY	1.08	2004	2160	
+TeslaCoil	WEAK	0.02	WEAK	0.51	20776	10577	ratio 0.50
+TeslaGenerator	WEAK	0.09	PARITY	0.94	2257	2122	
+TidalWake	unmeasured(levy works)	-	unmeasured(levy works)	-	0	3420	reference player did no damage
+TinyCleaver	BROKEN	0.00	PARITY	1.13	5548	6286	
+Twinklestar	STRONG	3.06	STRONG	3.86	12041	46455	
+UkonRuno	unmeasured(levy 0)	-	unmeasured(levy 0)	-	0	0	reference player did no damage
+Ukonvasara	unmeasured(levy 0)	-	STRONG	3.65	12525	45757	
+UraniumRaygun	PARITY	0.90	PARITY	0.93	5935	5529	
+WireTaser	STRONG	3.87	STRONG	3.94	1209	4767	
+WornDagger	benched	-	PARITY	0.65	315	204	
+WraithSlayer	unmeasured(levy works)	-	STRONG	2.07	2807	5798	
+XeniumDrone	benched	-	benched	-	0	0	
+XeniumElectrolaser	PARITY	0.75	STRONG	2.20	15029	33039	
+XeniumGrenadeCannon	benched	-	benched	-	0	0	
+XeniumLance	WEAK	0.45	WEAK	0.48	18920	9144	ratio 0.47
+XeniumStaff	unmeasured(levy works)	-	unmeasured(levy works)	-	0	19013	reference player did no damage
+XenoXyston	unmeasured(levy 0)	-	PARITY	0.72	1858	1333	
+XenomiteScepter	PARITY	0.92	PARITY	0.78	3591	2806	
+Zweihander	unmeasured(levy 0)	-	PARITY	0.64	1132	725	ratio 0.59

@@ -164,6 +164,7 @@ namespace Levy.Content.NPCs
 			{
 				var weapons = SummonWeapons();
 				int n = weapons.Count;
+				if (SummonDebug && ++_dbgM % 10 == 1) Levy.Instance?.Logger.Info($"HARNESS-MINION-DBG tick n={n} weapon={Record?.Gear?.Weapon?.Name} main={_mainProfile?.IsSummon} state={State}");
 				bool has = n > 0;
 				var driven = new bool[n];
 				int childOwner = -1; // the first driven modded staff: the minion-flagged children its minions make count toward its flock
@@ -198,6 +199,7 @@ namespace Levy.Content.NPCs
 				if (!has) return;
 
 				int[] desired = AllotCasts(weapons);
+				if (SummonDebug && ++_dbgN % 5 == 0) Levy.Instance?.Logger.Info($"HARNESS-MINION-DBG upkeep n={n} desired={string.Join(',', desired)} cap={Dummy?.maxMinions} driven={string.Join(',', driven)} per={(n > 0 ? SlotsPerMinion(weapons[0]) : 0)} fits={(n > 0 ? FitsOneCast(weapons[0]) : false)}");
 				float budget = 0f; RecastShoot = -1;
 				for (int k = 0; k < n; k++) { budget += desired[k] * SlotsPerMinion(weapons[k]); if (RecastShoot < 0 && driven[k] && AltPolicies.IsRecast(weapons[k])) RecastShoot = weapons[k].shoot; }
 				MinionSlotBudget = budget;
@@ -243,6 +245,7 @@ namespace Levy.Content.NPCs
 		/// The real-minion flock (already collected into <c>_minionScratch</c>): retunes every minion's damage, dismisses any overflow (by slot total, so a half-slot pair counts right),
 		/// keeps a controller staff's companion (Desert Tiger, Abigail) right, and casts one more when a whole cast still fits.
 		/// </summary>
+		private int _dbgN, _dbgM;
 		private void MaintainRealMinions(Item weapon, int damage, int desired)
 		{
 			if (weapon.shoot >= ProjectileID.Count)
@@ -303,8 +306,9 @@ namespace Levy.Content.NPCs
 				_helperCd = LevyConstants.MinionHelperPasses;
 				if (CrowdBudget.MayAddProjectiles(1)) SoldierMinions.Helper(this, weapon, damage);
 			}
-			// the count guard keeps a staff whose minion reports no slot cost from casting without end
-			if (_minionSpawnCd > 0 || (!transientCast && have + perCast > want + LevyConstants.MinionSlotEpsilon) || _minionScratch.Count >= LevyConstants.MinionControllerMaxPerSoldier * 2) return;
+			if (SummonDebug && ++_dbgN % 3 == 0) Levy.Instance?.Logger.Info($"HARNESS-MINION-DBG maintain {weapon.Name} perCast={perCast} want={want} have={have} desired={desired} cd={_minionSpawnCd} n={_minionScratch.Count} transient={transientCast} fighting={fighting}");
+			// the count guard keeps a staff whose minion reports no slot cost from casting without end; with nothing out the first cast is made even when a whole cast is more than his slots (a player's cast keeps what fits, TrimMade does the same)
+			if (_minionSpawnCd > 0 || (!transientCast && have + perCast > want + LevyConstants.MinionSlotEpsilon && have > LevyConstants.MinionSlotEpsilon) || _minionScratch.Count >= LevyConstants.MinionControllerMaxPerSoldier * 2) return;
 			if (transient && !fighting) return; // a self-ending cast is made while fighting only
 			if (transient && !SoldierMinions.CanUse(this, weapon)) return; // and only when the staff allows a use, as for a player (the Universe Splitter waits while its field is out)
 

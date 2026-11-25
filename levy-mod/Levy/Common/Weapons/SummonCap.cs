@@ -108,6 +108,7 @@ namespace Levy.Common.Weapons
 			}
 			catch (Exception) { needs = false; }
 			NeedCache[(it.type, slots)] = needs;
+			if (needs) ModContent.GetInstance<Levy>()?.Logger.Info("Levy: " + it.Name + " asks for more minion slots than " + slots + ": not cast by a holder with so few.");
 			return needs;
 		}
 

@@ -146,7 +146,8 @@ namespace Levy.Common.Compat.Wotg
 			// RealityShatter_TelegraphTime, then falls down that lane at up to 107 px a tick with its contact damage on. Anything in the lane when it falls is hit; anything outside it is not.
 			if (st == "RealityShatter_CreateAndWaitForTelegraph" || st == "RealityShatter_SlamDownward")
 			{
-				float half = 700f + 90f;
+				// the lane the telegraph draws is 1400 px wide; what hurts is the Avatar's own hurtbox (601 by 697, scaled by its depth: boss.getRect()) falling through it, with 400 contact damage. The keep-out lane is that hurtbox plus a margin for a body and its dodge.
+				float half = Math.Max(boss.getRect().Width * 0.5f, 256f) + 230f;
 				_zones.Add(new Zone { Rect = new Rectangle((int)(boss.Center.X - half), (int)(boss.Center.Y - 600f), (int)(half * 2f), 24000), Keep = false, Why = "slam lane" });
 			}
 			// WhirlingIceStorm (AvatarOfEmptiness.BehaviorStates.WhirlingIceStorm.cs; Projectiles/FrostColumnTelegraph.cs and FrostColumn.cs): a column marked 1.25 s ahead (the telegraph carries no damage) then 540 px wide and
@@ -190,7 +191,7 @@ namespace Levy.Common.Compat.Wotg
 		}
 
 		/// <summary>
-		/// A body's goal moved for this tick's zones: out of a keep-out place (to the side of it the commander is on, or by its slot when he is in it), into a stand-in place (a grid in its lower half, one cell a body by slot).
+		/// A body's goal moved for this tick's zones: out of a keep-out place (to the side of it the commander is on, or by its slot when he is in it), into a stand-in place (a grid from the bottom edge up, one cell a body by slot).
 		/// <paramref name="urgent"/> is true when the body is in a place it must leave, or outside one it must reach: it goes at full speed.
 		/// </summary>
 		public static Vector2 AdjustForZones(NPC body, Vector2 want, int slot, Player cmd, out bool urgent)
@@ -207,7 +208,7 @@ namespace Levy.Common.Compat.Wotg
 					int cols = Math.Max(1, (r.Width - 2 * pad) / 30);
 					int col = slot % cols, row = slot / cols;
 					float x = r.X + pad + (col + 0.5f) * (r.Width - 2f * pad) / cols;
-					float y = Math.Min(r.Bottom - 30f, r.Center.Y + 10f + row * 30f);
+					float y = r.Bottom - 22f - row * 28f;   // the bottom of the shield first: a blood blob falls 130 px a tick and the shield kills it only when it overlaps it, so a body near the top is hit before that
 					Vector2 inside = new Vector2(x, y);
 					if (!r.Contains(body.Center.ToPoint())) urgent = true;
 					want = inside;
@@ -225,6 +226,21 @@ namespace Levy.Common.Compat.Wotg
 				}
 			}
 			return want;
+		}
+
+		/// <summary>
+		/// ArmPortalStrikes (AvatarOfEmptiness.BehaviorStates.ArmPortalStrikes.cs; Projectiles/DarkPortal.cs, PortalArmStrike.cs): every few ticks a portal opens within 200 px of where the target is (and is going), and an arm 90 px thick (51 ticks)
+		/// or an antimatter blast comes out of it toward the target. All of it is aimed at the commander and at the place he is flying to, so whoever flies in a tight ring round him is in every strike.
+		/// <paramref name="radiusTiles"/> is the least distance from the commander a body keeps while it lasts (0 when this is not that attack).
+		/// </summary>
+		public static float SpreadRadiusTiles
+		{
+			get
+			{
+				if (!Enabled || TestZones == false) return 0f;
+				Read();
+				return _state == "ArmPortalStrikes" ? 24f : 0f;
+			}
 		}
 
 		/// <summary>True when a point is the middle of the world, where the Avatar puts a player it sends to its universe.</summary>

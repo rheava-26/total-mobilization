@@ -154,7 +154,7 @@ namespace Levy.Common.Testing
 			Player p = Main.player[0];
 			if (Vector2.Distance(p.Center, _cmdAt) > 400f) { _shifts++; _lastShiftTick = _tick; _cmdAt = p.Center; _anchor = p.Center; if (Trace) _mod.Logger.Info($"[AvatarBehave] TRACE t={_tick} the commander was moved to tile ({p.Center.X / 16f:0},{p.Center.Y / 16f:0}) state {(_boss != null && _boss.active ? CurrentState(_boss) : "-")}"); }
 		}
-		private static NPC _boss; private static int _cmdKills;
+		private static NPC _boss; private static int _cmdKills, _goneNotes; private static readonly HashSet<int> _goneLogged = new(); private static readonly Dictionary<int, (Vector2 pos, Vector2 vel, int life)> _seen = new();
 
 		private static void Arena()
 		{
@@ -218,8 +218,8 @@ namespace Levy.Common.Testing
 		private sealed class Result
 		{
 			public Acc All = new(), Flier = new(), Foot = new(), Hook = new(); public int Hits, Ticks, Lost, Shifts, AliveAtEnd; public long Damage; public double Near2s, Near10s; public int Near2sN, Near10sN;
-			public int Lines, Floating, Reforced, CmdKills; public long InSphere; public bool BossAlive; public readonly HashSet<string> States = new();
-			public readonly Dictionary<string, long> StateTicks = new(); public readonly Dictionary<string, int> HitBy = new();
+			public int Lines, Floating, Reforced, CmdKills, Moments, Dropped, Voice, FightLines; public long InSphere; public bool BossAlive; public readonly HashSet<string> States = new();
+			public readonly Dictionary<string, long> StateTicks = new(); public readonly Dictionary<string, int> HitBy = new(), ZoneTicks = new(); public long Urgent;
 		}
 
 		private sealed record Scn(string Name, int Phase, string[] States, int Ticks, bool Send, bool Zone = false);
@@ -234,7 +234,7 @@ namespace Levy.Common.Testing
 			var cfg = global::Levy.Common.Config.LevyConfig.Get; if (cfg != null) { _savedBossTarget ??= cfg.BossesTargetSoldiers; cfg.BossesTargetSoldiers = true; }
 			ModContent.TryFind("NoxusBoss/AvatarOfEmptiness", out ModNPC av);
 			BossDownedSystem.SetDownedForTest(av.Type, true);
-			_shifts = 0; _lastShiftTick = -100000; _tick = 0; _cmdKills = 0;
+			_shifts = 0; _lastShiftTick = -100000; _tick = 0; _cmdKills = 0; _goneNotes = 0; _goneLogged.Clear(); _seen.Clear();
 			_anchor = new Vector2(Cx * 16f, (FloorY - 12) * 16f); _cmdAt = _anchor;
 			KeepCommander(); Step(2);
 			var levies = new List<(SoldierNPC s, Cls c)>();
@@ -252,7 +252,7 @@ namespace Levy.Common.Testing
 			NPC boss = Main.npc[bi]; _boss = boss; boss.timeLeft = 99999; boss.netOffset = Vector2.Zero;
 			int timedAt = sc.Send ? SuckMax() - 100 : 0;
 			ForceStates(boss, sc.States, sc.Phase, sc.Send ? "SendPlayerToMyUniverse" : null, timedAt);
-			int lines0 = WotgScenes.Log.Count, fl0 = DialogueSystem.FloatingDelivered;
+			int lines0 = WotgScenes.Log.Count, fl0 = DialogueSystem.FloatingDelivered, mom0 = WotgScenes.MomentsStarted, drop0 = WotgScenes.CuesDropped, voice0 = WotgScenes.VoiceTicks, fight0 = WotgScenes.FightLines;
 			var hitSeen = new HashSet<long>();
 			var nearCheck = new List<(int at, bool two)>();
 			int shiftsSeen = 0, lastForce = -1000;
@@ -270,6 +270,7 @@ namespace Levy.Common.Testing
 				r.States.Add(st); r.StateTicks[st] = r.StateTicks.GetValueOrDefault(st) + 1;
 				r.Ticks++;
 				Player cm = Main.player[0];
+				foreach (var z in AvatarFight.Zones) r.ZoneTicks[z.Why] = r.ZoneTicks.GetValueOrDefault(z.Why) + 1;
 				if (_shifts > shiftsSeen) { shiftsSeen = _shifts; nearCheck.Add((_lastShiftTick + 120, true)); nearCheck.Add((_lastShiftTick + 600, false)); r.Shifts++; }
 				for (int q = nearCheck.Count - 1; q >= 0; q--)
 				{
@@ -281,7 +282,13 @@ namespace Levy.Common.Testing
 				foreach (var (s, c) in levies)
 				{
 					NPC n = s.NPC;
-					if (!n.active) continue;
+					if (!n.active)
+					{
+						if (_goneLogged.Add(n.whoAmI * 100000 + (int)(sc.Name.GetHashCode() & 0xff) * 0) && _goneNotes++ < 8 && _seen.TryGetValue(n.whoAmI, out var ls))
+							Note($"GONE t={t} {c} state {st} void={AvatarFight.Void} last at ({(ls.pos.X - cm.Center.X) / 16f:0},{(ls.pos.Y - cm.Center.Y) / 16f:0}) of the commander, v=({ls.vel.X:0.0},{ls.vel.Y:0.0}) life {ls.life} dead={s.Record?.Dead} avatar at ({(boss.Center.X - cm.Center.X) / 16f:0},{(boss.Center.Y - cm.Center.Y) / 16f:0}) vy {boss.velocity.Y:0}");
+						continue;
+					}
+					_seen[n.whoAmI] = (n.Center, n.velocity, n.life);
 					Rectangle body = n.Hitbox;
 					for (int pj = 0; pj < Main.maxProjectiles; pj++)
 					{
@@ -303,10 +310,10 @@ namespace Levy.Common.Testing
 						if (!stand) acc.Aloft++;
 					}
 				}
-				if (Trace && t % 120 == 0) _mod.Logger.Info($"[AvatarBehave] TRACE t={t} state={st} void={AvatarFight.Void} cmd=({cm.Center.X / 16f:0},{cm.Center.Y / 16f:0}) levies: " + string.Join(" ", levies.Where((l, i) => i % 3 == 0 && l.s.NPC.active).Select(l => $"{l.c.ToString()[0]}({(l.s.NPC.Center.X - cm.Center.X) / 16f:0},{(l.s.NPC.Center.Y - cm.Center.Y) / 16f:0})v{l.s.NPC.velocity.Y:0}")));
+				if (Trace && (t % 120 == 0 || (t >= 100 && t < 240 && t % 10 == 0 && st.StartsWith("RealityShatter")))) _mod.Logger.Info($"[AvatarBehave] TRACE t={t} state={st} void={AvatarFight.Void} zones={AvatarFight.Zones.Count} avatarDx={(boss.Center.X - cm.Center.X) / 16f:0} zone[{string.Join(";", AvatarFight.Zones.Select(z => z.Why + " x " + ((z.Rect.Left - cm.Center.X) / 16f).ToString("0") + ".." + ((z.Rect.Right - cm.Center.X) / 16f).ToString("0") + " y " + ((z.Rect.Top - cm.Center.Y) / 16f).ToString("0") + ".." + ((z.Rect.Bottom - cm.Center.Y) / 16f).ToString("0")))}] cmd=({cm.Center.X / 16f:0},{cm.Center.Y / 16f:0}) levies: " + string.Join(" ", levies.Where((l, i) => i % 3 == 0 && l.s.NPC.active).Select(l => $"{l.c.ToString()[0]}({(l.s.NPC.Center.X - cm.Center.X) / 16f:0},{(l.s.NPC.Center.Y - cm.Center.Y) / 16f:0})v{l.s.NPC.velocity.X:0},{l.s.NPC.velocity.Y:0}")));
 			}
 			r.Lost = levies.Count(l => !l.s.NPC.active); r.CmdKills = _cmdKills;
-			r.Lines = WotgScenes.Log.Count - lines0; r.Floating = DialogueSystem.FloatingDelivered - fl0;
+			r.Lines = WotgScenes.Log.Count - lines0; r.Floating = DialogueSystem.FloatingDelivered - fl0; r.Moments = WotgScenes.MomentsStarted - mom0; r.Dropped = WotgScenes.CuesDropped - drop0; r.Voice = WotgScenes.VoiceTicks - voice0; r.FightLines = WotgScenes.FightLines - fight0;
 			return r;
 		}
 		private static Vector2 WeaveOffset(int t) => new Vector2((float)Math.Sin(t * 2f * Math.PI / 900f) * 16f * 16f, (float)Math.Sin(t * 2f * Math.PI / 600f + 1f) * 5f * 16f);
@@ -316,7 +323,7 @@ namespace Levy.Common.Testing
 			Acc A = r.All; double n = Math.Max(1, A.Ticks);
 			string cls(Acc a) => P(100.0 * a.Far / Math.Max(1, a.Ticks));
 			return $"{name}: {r.Ticks} ticks, moved {r.Shifts}x; mean distance {F(A.Dist / n)} tiles, stranded(>40) {P(100.0 * A.Far / n)} (fliers {cls(r.Flier)}, foot {cls(r.Foot)}, hookers {cls(r.Hook)}), lost(>100) {P(100.0 * A.Lost / n)}, falling {P(100.0 * A.Fall / n)}, aloft {P(100.0 * A.Aloft / n)} (fliers {P(100.0 * r.Flier.Aloft / Math.Max(1, r.Flier.Ticks))}, foot {P(100.0 * r.Foot.Aloft / Math.Max(1, r.Foot.Ticks))}); " +
-				$"near after move 2s {(r.Near2sN > 0 ? P(r.Near2s / r.Near2sN) : "-")}, 10s {(r.Near10sN > 0 ? P(r.Near10s / r.Near10sN) : "-")}; hits {r.Hits} (dmg {r.Damage}) [{string.Join(",", r.HitBy.OrderByDescending(kv => kv.Value).Take(4).Select(kv => kv.Key + ":" + kv.Value))}], in annihilation sphere {r.InSphere} body-ticks; lines {r.Lines} scripted + {r.Floating - r.Lines} other floating in {F(r.Ticks / 3600.0)} min; levies lost {r.Lost}; the commander would have died {r.CmdKills}x; attack put back {r.Reforced}x; states [{string.Join(",", r.StateTicks.OrderByDescending(kv => kv.Value).Take(4).Select(kv => kv.Key + ":" + kv.Value))}]";
+				$"near after move 2s {(r.Near2sN > 0 ? P(r.Near2s / r.Near2sN) : "-")}, 10s {(r.Near10sN > 0 ? P(r.Near10s / r.Near10sN) : "-")}; hits {r.Hits} (dmg {r.Damage}) [{string.Join(",", r.HitBy.OrderByDescending(kv => kv.Value).Take(4).Select(kv => kv.Key + ":" + kv.Value))}], in annihilation sphere {r.InSphere} body-ticks; lines {r.Lines} scripted ({r.FightLines} worried, {r.Moments} moments started, {r.Dropped} cues dropped, the boss held the floor {r.Voice} ticks) + {r.Floating - r.Lines} other floating in {F(r.Ticks / 3600.0)} min; levies lost {r.Lost}; the commander would have died {r.CmdKills}x; attack put back {r.Reforced}x; attack rules active [{string.Join(",", r.ZoneTicks.Select(kv => kv.Key + ":" + kv.Value))}]; states [{string.Join(",", r.StateTicks.OrderByDescending(kv => kv.Value).Take(4).Select(kv => kv.Key + ":" + kv.Value))}]";
 		}
 
 		private static readonly Scn[] All =
@@ -329,7 +336,7 @@ namespace Levy.Common.Testing
 			new("Send, AbsoluteZeroOutburst (frost)", 1, new[] { "SendPlayerToMyUniverse", "AbsoluteZeroOutburst" }, 1800, true),
 			new("Send, BloodiedFountainBlasts (blood)", 1, new[] { "SendPlayerToMyUniverse", "BloodiedFountainBlasts" }, 1300, true, true),
 			new("Send, Unclog (blood)", 1, new[] { "SendPlayerToMyUniverse", "Unclog" }, 1500, true),
-			new("Send, ArmPortalStrikes (dark)", 1, new[] { "SendPlayerToMyUniverse", "ArmPortalStrikes" }, 1200, true),
+			new("Send, ArmPortalStrikes (dark)", 1, new[] { "SendPlayerToMyUniverse", "ArmPortalStrikes" }, 1200, true, true),
 			new("Send, RealityShatter (dark)", 1, new[] { "SendPlayerToMyUniverse", "RealityShatter_CreateAndWaitForTelegraph" }, 1800, true, true),
 			new("Send, EnterBloodWhirlpool + AntishadowOnslaught (phase 4)", 2, new[] { "SendPlayerToMyUniverse", "EnterBloodWhirlpool", "AntishadowOnslaught" }, 1800, true),
 			new("Send, UniversalAnnihilation (phase 4)", 2, new[] { "SendPlayerToMyUniverse", "UniversalAnnihilation" }, 1800, true),

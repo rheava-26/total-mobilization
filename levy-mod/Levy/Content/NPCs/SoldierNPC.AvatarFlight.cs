@@ -26,18 +26,25 @@ namespace Levy.Content.NPCs
 		private const float AvLeashTiles = 26f, AvRejoinTiles = 45f, AvRejoinFarTiles = 120f;
 		/// <summary>Tiles above its own feet the commander must be before a levy with no wings is carried (outside the dimension).</summary>
 		private const float AvCarryAboveTiles = 28f;
+		/// <summary>The speed and acceleration (px a tick) of a body leaving a marked lane or reaching Solyn's shield: a player with infinite flight crosses 800 px in the 77 ticks the slam's telegraph lasts.</summary>
+		private const float AvUrgentSpeedPx = 17f, AvUrgentAccelPx = 1.7f;
 		/// <summary>Harness telemetry: ticks a body flew, was carried, was held; slots it was brought to; times the ground took it back.</summary>
 		internal static long AvFlyTicks, AvCarryTicks, AvHoldTicks, AvRejoins, AvYields;
 		private uint _avOwnedTick = uint.MaxValue; private int _avSlot = -1, _avSlotTick = -10000, _avFar, _avYieldUntil, _avProgTick; private float _avProgDist = float.MaxValue; private bool _avWasOwned;
 
 		/// <summary>True when the fight owned this body's movement this tick (the air layer and the other tile-reading layers stand aside).</summary>
 		private bool AvatarOwnsTick => _avOwnedTick == Main.GameUpdateCount;
+		/// <summary>True when the fight owned this body this tick or last (the brain runs before the movement in a tick).</summary>
+		private bool AvatarOwnsRecently => Main.GameUpdateCount - _avOwnedTick <= 8u;
 
-		/// <summary>The slot's offset from the commander (px, centre to centre): a golden-angle ring, wider than tall, a little above him.</summary>
+		/// <summary>The slot's offset from the commander (px, centre to centre): a golden-angle ring, wider than tall, a little above him (6 tiles out for the first, about 14 for the fifteenth: the Avatar's area attacks are aimed at him).</summary>
 		private Vector2 AvatarSlotOffset(int idx)
 		{
 			float ang = idx * 2.3999632f;
-			float rad = 3.5f + 1.7f * (float)Math.Sqrt(idx);
+			float rad = 6f + 2f * (float)Math.Sqrt(idx);
+			float spread = AvatarFight.SpreadRadiusTiles;
+			// an attack aimed at the commander's own spot: a round ring beyond its reach
+			if (spread > 0f) { float r = Math.Max(spread, rad * 1.6f); return new Vector2((float)Math.Cos(ang) * r, (float)Math.Sin(ang) * r) * LevyConstants.TilePx; }
 			return new Vector2((float)Math.Cos(ang) * rad * 1.25f, (float)Math.Sin(ang) * rad * 0.55f - 1.5f) * LevyConstants.TilePx;
 		}
 
@@ -84,13 +91,21 @@ namespace Levy.Content.NPCs
 			return above >= AvCarryAboveTiles ? 2 : 0;
 		}
 
+		/// <summary>The fight let go of this body (it is over, or the body came down to the ground it can use): a body let go in the air comes down as after a teleport, no fall that counts against it.</summary>
+		private void AvRelease()
+		{
+			if (!_avWasOwned) return;
+			_avWasOwned = false;
+			_fallImmuneTicks = TeleportFallImmunityTicks; _fallStartRow = int.MinValue;
+		}
+
 		/// <summary>One tick of the fight's movement. True when it owned the tick (the caller skips the ground movement).</summary>
 		private bool AvatarFlightTick()
 		{
-			if (!AvatarFight.Applies) { _avWasOwned = false; return false; }
+			if (!AvatarFight.Applies) { AvRelease(); return false; }
 			int mode = AvatarMode(out Player cmd);
 			NPC npc = NPC; uint now = Main.GameUpdateCount;
-			if (mode == 0) { _avWasOwned = false; return false; }
+			if (mode == 0) { AvRelease(); return false; }
 			if (!_avWasOwned) { _avWasOwned = true; HookReset(false); _path.Clear(); _flying = false; _dodgeTicks = 0; _dashTicks = 0; ResetStuck(); _avProgDist = float.MaxValue; _avProgTick = (int)now; }
 			_avOwnedTick = now;
 			_jumpsUsed = 0; _rocketTime = _kitRocketMax; _drainAcc = 0f;
@@ -101,7 +116,7 @@ namespace Levy.Content.NPCs
 			Vector2 slot = AvatarSlotCenter(cmd);
 			// the commander was moved, or out of sight and far: back in the slot
 			float distTiles = Vector2.Distance(npc.Center, cmd.Center) / 16f;
-			if (distTiles > AvRejoinTiles)
+			if (distTiles > (AvatarFight.Zones.Count > 0 ? AvRejoinFarTiles : AvRejoinTiles))   // a body clearing a marked lane is far from the commander on purpose
 			{
 				bool moved = AvatarFightSystem.MovedRecently(cmd.whoAmI, 600);
 				if (++_avFar >= 6 && (moved || AvatarFight.Void || distTiles > AvRejoinFarTiles || !VisibleToAnyPlayer())) { AvatarRejoin(cmd, AvatarFight.Void); slot = AvatarSlotCenter(cmd); }
@@ -135,9 +150,9 @@ namespace Levy.Content.NPCs
 			_flying = true;
 
 			Vector2 to = want - npc.Center; float d = to.Length();
-			float cap = d > 40f * 16f ? 18f : d > 16f * 16f || urgent ? 11f : Math.Max(FlySpeed * 1.4f, 7.5f);
+			float cap = d > 40f * 16f ? 18f : urgent ? AvUrgentSpeedPx : d > 16f * 16f ? 11f : Math.Max(FlySpeed * 1.4f, 7.5f);
 			Vector2 desired = d < 4f ? Vector2.Zero : to / d * (urgent ? cap : Math.Min(cap, d * 0.1f + 0.5f));
-			float acc = d > 16f * 16f || urgent ? 0.9f : 0.45f;
+			float acc = urgent ? AvUrgentAccelPx : d > 16f * 16f ? 0.9f : 0.45f;
 			npc.velocity.X += MathHelper.Clamp(desired.X - npc.velocity.X, -acc, acc);
 			npc.velocity.Y += MathHelper.Clamp(desired.Y - npc.velocity.Y, -acc, acc);
 			npc.velocity.Y -= Gravity(); // UpdateNPC adds gravity after the AI

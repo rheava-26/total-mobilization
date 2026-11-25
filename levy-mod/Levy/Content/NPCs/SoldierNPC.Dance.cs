@@ -20,6 +20,8 @@ namespace Levy.Content.NPCs
 		/// <summary>Test switches (matrix harness): bit 1 boss-weighted threats, 2 fast scan, 4 dash i-frames, 8 corner escape, 16 ground dance, 32 hover lift.</summary>
 		internal static int DanceOff = 0;
 		internal static bool DOn(int bit) => (DanceOff & bit) == 0;
+		/// <summary>Lab (LEVY_DANCE_AIRREACH=0): air legs ignore the weapon's reach again, to measure what the bound changes.</summary>
+		private static readonly bool AirLegAnywhere = Environment.GetEnvironmentVariable("LEVY_DANCE_AIRREACH") == "0";
 		private int _danceDir, _danceLegEnd, _danceHopNext;
 		internal int DanceLegs, DanceHops, DanceFlights, DanceFlips;
 		private const int DanceLegMinTicks = 40, DanceLegMaxTicks = 95, DanceRunTiles = 10, DanceHopMinTicks = 40, DanceHopMaxTicks = 95, DanceHoverMinTiles = 5, DanceHoverSpreadTiles = 4;
@@ -56,7 +58,7 @@ namespace Levy.Content.NPCs
 					float x = npc.Center.X + dir * DanceRunTiles * LevyConstants.TilePx;
 					// the ground leg is picked where the weapon still fires (SpotFires); an air leg (a hop counts) holds to the same: it never runs on past the weapon's own reach (a boomerang's 22 tiles), though it may always run back toward the boss
 					float destTiles = Math.Abs(seg.Center.X - x) / LevyConstants.TilePx;
-					bool inReach = destTiles <= range * LevyConstants.ShootableRangeFrac || destTiles <= distTiles;
+					bool inReach = AirLegAnywhere || destTiles <= range * LevyConstants.ShootableRangeFrac || destTiles <= distTiles;
 					if (inReach && AirLaneSafe(dir, DanceRunTiles)) { dest = new Vector2(x, npc.Center.Y); have = true; }
 				}
 				else

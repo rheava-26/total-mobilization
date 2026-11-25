@@ -327,14 +327,14 @@ namespace Levy.Common.Testing
 						// a wall of the box within 6 px; a hug is the same while the commander is more than ten tiles from that wall
 						Player cm = Main.player[0];
 						bool wallL = n.Left.X - _lo.X < 6f, wallR = _hi.X - n.Right.X < 6f, wallT = n.TopLeft.Y - _lo.Y < 6f, wallB = _hi.Y - n.BottomRight.Y < 6f;
-						if (wallL || wallR || wallT || wallB) acc.WallTicks++;
+						if (wallL || wallR || wallT) acc.WallTicks++;   // the bottom wall is the arena's floor: standing on it is not pinned to it
 						{
 							bool nL = n.Left.X - _lo.X < 48f, nR = _hi.X - n.Right.X < 48f, nT = n.TopLeft.Y - _lo.Y < 48f, nB = _hi.Y - n.BottomRight.Y < 48f;
 							if ((nL && cm.Left.X - _lo.X > 192f) || (nR && _hi.X - cm.Right.X > 192f) || (nT && cm.TopLeft.Y - _lo.Y > 192f) || (nB && _hi.Y - cm.BottomRight.Y > 192f)) acc.NearTicks++;
 							acc.HistX[Math.Clamp((int)((n.Center.X - _lo.X) / Math.Max(1f, _hi.X - _lo.X) * 10f), 0, 9)]++;
 							acc.HistY[Math.Clamp((int)((n.Center.Y - _lo.Y) / Math.Max(1f, _hi.Y - _lo.Y) * 10f), 0, 9)]++;
 						}
-						if ((wallL && cm.Left.X - _lo.X > 160f) || (wallR && _hi.X - cm.Right.X > 160f) || (wallT && cm.TopLeft.Y - _lo.Y > 160f) || (wallB && _hi.Y - cm.BottomRight.Y > 160f)) acc.HugTicks++;
+						if ((wallL && cm.Left.X - _lo.X > 160f) || (wallR && _hi.X - cm.Right.X > 160f) || (wallT && cm.TopLeft.Y - _lo.Y > 160f)) acc.HugTicks++;
 						bool stand = Collision.SolidCollision(n.position + new Vector2(0f, n.height), n.width, 4, true);
 						if (!stand) acc.AirTicks++;
 						acc.AltSum += (FloorY * 16f - n.Bottom.Y) / 16f;

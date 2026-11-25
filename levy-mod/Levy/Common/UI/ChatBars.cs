@@ -76,7 +76,7 @@ namespace Levy.Common.UI
 			layers.Insert(i, new LegacyGameInterfaceLayer("Levy: Chat Bars", () => { DrawAll(Main.spriteBatch); return true; }, InterfaceScaleType.Game));
 		}
 
-		private sealed class BarLayout { public string[] Rows; public int W, H; public int Rev; }
+		private sealed class BarLayout { public string[] Rows; public int W, H; public int Rev; public float[][] LetterX; public string[][] Letters; }
 
 		private static void DrawAll(SpriteBatch sb)
 		{
@@ -139,6 +139,33 @@ namespace Levy.Common.UI
 			return new Vector2((int)((h >> 8) % 3u) - 1, (int)((h >> 12) % 3u) - 1);
 		}
 
+		/// <summary>
+		/// The tremor of ONE letter of a shaking row: each letter has its own offset, new every <see cref="LevyConstants.ChatShakeStepTicks"/> ticks, so the line shivers letter by letter instead of moving as a block.
+		/// Up to <see cref="LevyConstants.ChatShakeLetterPx"/> pixels each way (one more pixel for the strongest shake), from a hash of the tick, speaker, row and letter: no RNG, no allocation. <paramref name="shake"/> is the share of steps that move a letter.
+		/// </summary>
+		internal static Vector2 LetterJitter(float shake, int speaker, int row, int letter, int now)
+		{
+			if (shake <= 0f) return Vector2.Zero;
+			Vector2 j = Jitter(shake, speaker, row * 4099 + letter + 1, now);
+			if (j == Vector2.Zero) return j;
+			float amp = LevyConstants.ChatShakeLetterPx + (shake >= 1f ? 1f : 0f);
+			return j * amp;
+		}
+
+		/// <summary>The left edge of each letter of a row and one string per letter, worked out once per line (the rows never change), so drawing a shaking line allocates nothing.</summary>
+		private static void EnsureLetters(DynamicSpriteFont font, float sc, BarLayout lay)
+		{
+			if (lay.Letters != null) return;
+			var xs = new float[lay.Rows.Length][]; var ls = new string[lay.Rows.Length][];
+			for (int r = 0; r < lay.Rows.Length; r++)
+			{
+				string row = lay.Rows[r];
+				xs[r] = new float[row.Length]; ls[r] = new string[row.Length];
+				for (int i = 0; i < row.Length; i++) { xs[r][i] = i == 0 ? 0f : font.MeasureString(row.Substring(0, i)).X * sc; ls[r][i] = row[i].ToString(); }
+			}
+			lay.LetterX = xs; lay.Letters = ls;
+		}
+
 		/// <summary>The part of the screen the Game-scale layer shows (zoom shrinks it around the centre), less a margin.</summary>
 		public static Rectangle VisibleArea()
 		{
@@ -163,8 +190,23 @@ namespace Levy.Common.UI
 				string row = lay.Rows[r];
 				int take = Math.Min(left, row.Length);
 				left -= row.Length; // the rows hold no more characters than the text, so the last row is complete by the time the typewriter ends
+				Vector2 basePos = new Vector2(rect.X + LevyConstants.ChatBarPad, rect.Y + LevyConstants.ChatBarPad + r * lineH);
+				if (shake > 0f)
+				{
+					// a shaking line: every letter drawn on its own with its own tremor
+					EnsureLetters(font, sc, lay);
+					float[] xs = lay.LetterX[r]; string[] letters = lay.Letters[r];
+					Color ink = Ink * alpha, edge = new Color(8, 18, 50) * alpha;
+					for (int i = 0; i < take; i++)
+					{
+						if (row[i] == ' ') continue;
+						Vector2 lp = basePos + new Vector2(xs[i], 0f) + LetterJitter(shake, speaker, r, i, now);
+						Utils.DrawBorderStringFourWay(sb, font, letters[i], lp.X, lp.Y, ink, edge, Vector2.Zero, sc);
+					}
+					continue;
+				}
 				string shown = row.Substring(0, take);
-				Vector2 pos = new Vector2(rect.X + LevyConstants.ChatBarPad, rect.Y + LevyConstants.ChatBarPad + r * lineH) + Jitter(shake, speaker, r, now);
+				Vector2 pos = basePos;
 				Utils.DrawBorderStringFourWay(sb, font, shown, pos.X, pos.Y, Ink * alpha, new Color(8, 18, 50) * alpha, Vector2.Zero, sc);
 			}
 		}

@@ -166,12 +166,39 @@ namespace Levy.Common.Systems
 		internal static void TestClearArmyCaps() => _armyCaps.Clear();
 	}
 
-	/// <summary>Sends the player's active army size (Levy: Performance) to the server when he enters a world: the server keeps it only for the session.</summary>
+	/// <summary>
+	/// Sends the player's active army size (Levy: Performance) to the server when he enters a world: the server keeps it only for the session.
+	/// The size is also written into the character's own file, so it comes back with the character when the settings file did not keep it (a failed or never-made save, a reinstalled game, a copied character).
+	/// </summary>
 	public class ActiveArmyPlayer : Terraria.ModLoader.ModPlayer
 	{
+		/// <summary>The size this character's file holds (0: no limit), and whether the file held one at all.</summary>
+		public int Saved; public bool HasSaved;
+
+		/// <summary>
+		/// The size to start with: the settings file's, unless it holds no limit while the character's file holds a size, which is then put back. A size set in the settings file (not 0) always wins.
+		/// A character with no saved size keeps the settings file's.
+		/// </summary>
+		public static int Resolve(int configSize, bool hasSaved, int savedSize) => configSize <= 0 && hasSaved && savedSize > 0 ? Math.Clamp(savedSize, 0, LevyConstants.ActiveArmyMax) : configSize;
+
+		public override void SaveData(Terraria.ModLoader.IO.TagCompound tag)
+		{
+			int size = Player.whoAmI == Main.myPlayer && !Main.dedServ ? UI.UIActions.ActiveArmySize : Saved;
+			if (HasSaved || size > 0 || Player.whoAmI == Main.myPlayer) tag["activeArmy"] = size;
+		}
+
+		public override void LoadData(Terraria.ModLoader.IO.TagCompound tag)
+		{
+			HasSaved = tag.ContainsKey("activeArmy"); Saved = HasSaved ? tag.GetInt("activeArmy") : 0;
+		}
+
 		public override void OnEnterWorld()
 		{
-			if (Player.whoAmI == Main.myPlayer) UI.UIActions.SendActiveArmy(false);
+			if (Player.whoAmI != Main.myPlayer) return;
+			int size = Resolve(UI.UIActions.ActiveArmySize, HasSaved, Saved);
+			if (size != UI.UIActions.ActiveArmySize) UI.UIActions.SetActiveArmy(size); // writes the settings file again and sends it
+			else UI.UIActions.SendActiveArmy(false);
+			Saved = size; HasSaved = true;
 		}
 	}
 }

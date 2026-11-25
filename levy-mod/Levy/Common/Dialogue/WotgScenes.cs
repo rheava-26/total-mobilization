@@ -5,6 +5,7 @@ using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ModLoader;
 using Terraria.ModLoader.IO;
+using Levy.Common.Compat.Wotg;
 using Levy.Common.Config;
 using Levy.Common.Soldiers;
 using Levy.Common.Systems;
@@ -263,6 +264,7 @@ namespace Levy.Common.Dialogue
 
 		private static void Enqueue(string pool, int speakers, int due, int step, int expire, string comrade = null)
 		{
+			if (global::Levy.Common.Compat.Wotg.AoeVoice.MutesScene(pool)) return;   // the Avatar of Emptiness is up: no joke or banter pool speaks (Compat/Wotg/AoeVoice.cs)
 			for (int k = 0; k < speakers; k++) Queue.Add(new Cue { Pool = pool, Due = due + k * step + Main.rand.Next(12), Expire = due + k * step + expire, Comrade = comrade });
 			Queue.Sort((a, b) => a.Due.CompareTo(b.Due));
 		}
@@ -275,6 +277,7 @@ namespace Levy.Common.Dialogue
 			Cue c = Queue[0];
 			if (now - c.Due < 0) return;
 			Queue.RemoveAt(0);
+			if (global::Levy.Common.Compat.Wotg.AoeVoice.MutesScene(c.Pool)) { CuesDropped++; return; }
 			SoldierNPC s = PickSpeaker(c);
 			if (s == null) { CuesDropped++; return; }
 			var ctx = new DialogueContext { Player = s.Record.CommanderName, Comrade = c.Comrade };
@@ -370,6 +373,7 @@ namespace Levy.Common.Dialogue
 		internal static string ChatLine(SoldierNPC s)
 		{
 			if (!Enabled || s?.Record == null) return null;
+			if (global::Levy.Common.Compat.Wotg.AoeVoice.Active && !TestFight.HasValue) { var c0 = new DialogueContext { Player = s.Record.CommanderName }; return DialogueSystem.PickLine("ENGAGE", s.Record, c0) ?? DialogueSystem.PickLine("ENGAGE", s.Record, c0, true); }   // right-click while the Avatar is up: a plain callout
 			WotgFight f = TestFight ?? (AnyNpc(AvatarType) ? WotgFight.Avatar : AnyNpc(NamelessType) ? WotgFight.Nameless : AnyNpc(RiftType) ? WotgFight.Rift : GenesisOn ? WotgFight.Genesis : WotgFight.None);
 			string pool = f == WotgFight.Genesis ? "SCENE_GENESIS" : FightPool(f);
 			if (pool == null) return null;
@@ -410,6 +414,7 @@ namespace Levy.Common.Dialogue
 		internal static bool IsFightChat(string text)
 		{
 			if (string.IsNullOrEmpty(text)) return false;
+			if (AoeVoice.IsPlainText(text)) return true;
 			foreach (string pool in new[] { "SCENE_GENESIS", "SCENE_RIFT_FIGHT", "SCENE_AVATAR_FIGHT", "SCENE_NAMELESS_FIGHT" })
 			{
 				var lines = DialogueTable.Get(pool);

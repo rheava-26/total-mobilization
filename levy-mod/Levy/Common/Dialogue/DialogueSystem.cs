@@ -35,7 +35,7 @@ namespace Levy.Common.Dialogue
 		{
 			if (s == null || s.Record == null || s.NPC == null || !s.NPC.active || s.Hostile) return; // a hostile body speaks through its band, not the levy table
 			if (LevyUtil.IsClient) return; // the server decides and tells the clients
-			if (global::Levy.Common.Death.NoxusFights.Hush && ChannelOf(trigger, out _) != DialogueChannel.ChatLog) { global::Levy.Common.Death.NoxusFights.HushDropped++; return; } // silent through the fight
+			if (global::Levy.Common.Death.NoxusFights.Hush && ChannelOf(trigger, out _) != DialogueChannel.ChatLog && !global::Levy.Common.Compat.Wotg.AoeVoice.Allows(trigger)) { global::Levy.Common.Death.NoxusFights.HushDropped++; return; } // silent through the fight, but for the plain combat callouts while the Avatar of Emptiness is up (Compat/Wotg/AoeVoice.cs)
 			SoldierRecord rec = s.Record;
 			if (rec.Kind == SoldierKind.Militia && !MilitiaMayBark(trigger)) return;
 			int idx = s.NPC.whoAmI;
@@ -427,6 +427,7 @@ namespace Levy.Common.Dialogue
 			if (s == null || s.NPC == null || !s.NPC.active || string.IsNullOrEmpty(text)) return;
 			if (!RiftMood.AllowFloating(triggerByte)) return; // under the rift sky the army says less (and nothing while the sun is covered)
 			FloatingDelivered++;
+			global::Levy.Common.Compat.Wotg.AoeVoice.FloatLog?.Add((triggerByte, text));
 			if (Main.netMode == NetmodeID.Server)
 			{
 				int idx = s.NPC.whoAmI;

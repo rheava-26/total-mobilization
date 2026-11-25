@@ -305,14 +305,17 @@ namespace Levy.Common.Weapons
 				ModContent.GetInstance<Levy>()?.Logger.Warn("Levy: modded minion " + (p.ModProjectile?.FullName ?? p.type.ToString()) + " died within " + LevyConstants.ModdedMinionShortLifeTicks + " ticks of spawning " + n + " times in a row for a soldier; its staff falls back to the stand-in minion.");
 		}
 
+		/// <summary>The children a modded flock may have alive for a holder with <paramref name="slots"/> minion slots: what a player with those slots holds (the heaviest staff measured keeps 12 a slot at its peak), never under the old fixed floor.</summary>
+		internal static int ChildrenAliveLimit(int slots) => Math.Max(LevyConstants.ModdedMinionMaxChildrenAlive, LevyConstants.ModdedMinionChildrenPerSlot * Math.Max(1, slots));
+
 		/// <summary>
 		/// A modded flock whose minions flood the world with projectiles (more than <see cref="LevyConstants.ModdedMinionMaxChildSpawnsPerPass"/> created in one upkeep pass, or more than
-		/// <see cref="LevyConstants.ModdedMinionMaxChildrenAlive"/> alive): the excess projectiles are ended now and the staff uses the stand-in from then on (remembered per staff, logged once).
+		/// <see cref="ChildrenAliveLimit"/> alive on <see cref="LevyConstants.ModdedMinionFloodPasses"/> passes in a row): the excess projectiles are ended now and the staff uses the stand-in from then on (remembered per staff, logged once).
 		/// </summary>
-		internal static void FloodGuard(SoldierNPC s, Item weapon, int spawned, int alive)
+		internal static void FloodGuard(SoldierNPC s, Item weapon, int spawned, int alive, int limit)
 		{
 			if (BadTypes.Add(weapon.shoot))
-				ModContent.GetInstance<Levy>()?.Logger.Warn("Levy: modded minion of " + weapon.Name + " flooded the world with projectiles (" + spawned + " created in one pass, " + alive + " alive); its staff falls back to the stand-in minion.");
+				ModContent.GetInstance<Levy>()?.Logger.Warn("Levy: modded minion of " + weapon.Name + " flooded the world with projectiles (" + spawned + " created in one pass, " + alive + " alive, the limit for " + Math.Max(1, limit) + " alive); its staff falls back to the stand-in minion.");
 			KillAll(s);
 			int me = s.NPC.whoAmI;
 			for (int i = 0; i < Main.maxProjectiles; i++)

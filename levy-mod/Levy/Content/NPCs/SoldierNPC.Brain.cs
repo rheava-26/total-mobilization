@@ -2291,7 +2291,7 @@ namespace Levy.Content.NPCs
 			if (cmd == null || (cmd.dead && !EnemyTargeting.LostFightHolds(NPC.Center))) { SetState(Home != null && !NearHome() ? SoldierState.ReturnHome : SoldierState.Idle); ClearGoal(); return; }
 
 			float distTiles = LevyUtil.TileDistance(NPC.Center, cmd.Center);
-			if (!cmd.dead && distTiles > LevyConstants.TeleportDistance && now - _lastTeleportTick >= LevyConstants.TeleportCooldownTicks && !VisibleToAnyPlayer())
+			if (!cmd.dead && distTiles > LevyConstants.TeleportDistance && now - _lastTeleportTick >= LevyConstants.TeleportCooldownTicks && !AvatarOwnsRecently && !VisibleToAnyPlayer())   // (in the Avatar fight the body's own rules bring it back: SoldierNPC.AvatarFlight.cs; the ground search here finds the caves round the middle of the world)
 			{
 				CatchUpTeleport(cmd);
 				_lastTeleportTick = now;

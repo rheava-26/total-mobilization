@@ -58,7 +58,7 @@ namespace Levy.Common.Config
 		[Range(4, 200)] [DefaultValue(60)] public int MaxLevies;
 		[DefaultValue(true)] public bool CapLeviesByStage;
 		[Range(1, 40)] [DefaultValue(10)] public int MilitiaFieldCap;
-		/// <summary>Manpower each housed town NPC adds to the pool. The Conscription book raises it in the same proportion (15 for 9).</summary>
+		/// <summary>Manpower each housed town NPC adds to the pool. The Conscription book raises it in the same proportion (25 for 15).</summary>
 		[Range(1, 100)] [DefaultValue(LevyConstants.ManpowerPerNpc)] public int ManpowerPerTownNpc;
 		/// <summary>Ceiling of the manpower pool shared by every Barracks on the pylon network. 0 means no ceiling (the townsfolk count alone sets it).</summary>
 		[Range(0, 2000)] [DefaultValue(LevyConstants.ManpowerNetworkCap)] public int ManpowerCap;
@@ -100,6 +100,8 @@ namespace Levy.Common.Config
 		[DefaultValue(true)] public bool AmbientChatter;
 		/// <summary>Levies speak lines written for Wrath of the Gods's fights (the Genesis, the Avatar, the Nameless Deity) in place of their ordinary chatter, between the boss's own moments (Common/Dialogue/WotgScenes.cs). Off: they stay silent through those fights.</summary>
 		[DefaultValue(true)] public bool WotgFightChatter;
+		/// <summary>In the Avatar of Emptiness fight the army comes along when the commander is moved into the Avatar's dimensions or through its portals, and flies with them: levies with wings stay in the air beside the commander and the rest are carried where there is no ground to stand on (Common/Compat/Wotg/AvatarFight.cs).</summary>
+		[DefaultValue(true)] public bool AvatarFightArmyFlies;
 		[Range(60, 600)] [DefaultValue(200)] public int FreeReinRadius;
 		[DefaultValue(true)] public bool FreeReinPastimes;
 

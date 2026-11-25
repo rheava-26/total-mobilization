@@ -39,6 +39,8 @@ namespace Levy.Common.Testing
 			public float MaxSlots, MaxSingleSlots, CmdSlots; public string CmdBuffNames = "";
 			/// <summary>The parity table's steady state: sums over the last third of the window of the live minions that take a slot, of all live minions and towers, and of their slots; the ticks counted; the peak of the slot-bearing count.</summary>
 			public long TailSlotted, TailAll, TailTicks; public double TailSlots; public int MaxSlotted, OverTicks;
+			/// <summary>The projectiles the minions made that are not minions themselves (a levy's: tagged to him; the player's: hers), the peak over the window and the tail average: what the flood guard counts.</summary>
+			public int MaxKids; public long TailKids; public float TailKidsAvg => TailTicks > 0 ? (float)TailKids / TailTicks : 0f;
 			public float TailSlottedAvg => TailTicks > 0 ? (float)TailSlotted / TailTicks : 0f;
 			public float TailAllAvg => TailTicks > 0 ? (float)TailAll / TailTicks : 0f;
 			public float TailSlotsAvg => TailTicks > 0 ? (float)(TailSlots / TailTicks) : 0f;
@@ -161,7 +163,7 @@ namespace Levy.Common.Testing
 					if (sn != null && sn.NPC.active) { st.Capacity = Math.Max(st.Capacity, sn.MinionCapacity(w)); st.MaxMinions = Math.Max(st.MaxMinions, sn.Dummy?.maxMinions ?? 0); if (Main.GameUpdateCount < sn.RecastHoldUntil) st.HoldTicks++; }
 					if (saros) { float u = AltPolicies.ReadMeter(commander ? cmd : sn?.Dummy, "sarosEclipseBeamUsage"); if (!float.IsNaN(u)) { st.UsageMax = Math.Max(st.UsageMax, u); st.UsageEnd = u; } }
 					Vector2 cmdC = cmd.Center, levyC = sn != null && sn.NPC.active ? sn.NPC.Center : at;
-					int alive = 0, owned = 0, slotted = 0; float slots = 0f;
+					int alive = 0, owned = 0, slotted = 0, kids = 0; float slots = 0f;
 					for (int i = 0; i < Main.maxProjectiles; i++)
 					{
 						Projectile p = Main.projectile[i];
@@ -175,6 +177,7 @@ namespace Levy.Common.Testing
 						{
 							st.AliveTicks.TryGetValue(pn, out int at0); st.AliveTicks[pn] = at0 + 1;
 							if (SumDebug && !commander && k % 90 == 0 && p.minion) SNote($"  dbg {label} t={k} {pn} ai=({p.ai[0]:0.##},{p.ai[1]:0.##},{p.ai[2]:0.##}) slots={p.minionSlots} dmg={p.damage} orig={p.originalDamage} fromTarget={((p.Center - (_sweepTarget?.Center ?? levyC)) / 16f).ToString()} fromLevy={(p.Center - levyC).Length() / 16f:0.0}t vel={p.velocity.Length():0.0}");
+							if (!p.minion && !p.sentry) kids++;
 							if (p.minion || p.sentry)
 							{
 								alive++; slots += p.minionSlots; if (p.minionSlots > 0.01f) slotted++; st.MaxSingleSlots = Math.Max(st.MaxSingleSlots, p.minionSlots); st.MinionTicks++;
@@ -197,7 +200,8 @@ namespace Levy.Common.Testing
 					}
 					st.MaxAlive = Math.Max(st.MaxAlive, alive); st.MaxSlots = Math.Max(st.MaxSlots, slots); st.MaxSlotted = Math.Max(st.MaxSlotted, slotted);
 					if (slots > Math.Max(1, st.MaxMinions) + 0.01f) st.OverTicks++;
-					if (k >= ticks - ticks / 3) { st.TailTicks++; st.TailSlotted += slotted; st.TailAll += alive; st.TailSlots += slots; }
+					st.MaxKids = Math.Max(st.MaxKids, kids);
+					if (k >= ticks - ticks / 3) { st.TailKids += kids; st.TailTicks++; st.TailSlotted += slotted; st.TailAll += alive; st.TailSlots += slots; }
 					if (!commander)
 					{
 						st.CmdOwned = Math.Max(st.CmdOwned, owned); st.CmdMinions = Math.Max(st.CmdMinions, cmd.numMinions); st.CmdSlots = Math.Max(st.CmdSlots, cmd.slotsMinions);
@@ -310,7 +314,7 @@ namespace Levy.Common.Testing
 		private const float SumSelfEndingShare = 0.85f;
 
 		private static string SumRowText(string label, int n, SumStat pc, SumStat lv, string verdict) =>
-			$"ROW | {label} | slots {n} (player {pc.MaxMinions}, levy {lv.MaxMinions}) | player n {pc.TailSlottedAvg:0.0} (all {pc.TailAllAvg:0.0}, peak {pc.MaxSlotted}) | levy n {lv.TailSlottedAvg:0.0} (all {lv.TailAllAvg:0.0}, peak {lv.MaxSlotted}) | player slots {pc.TailSlotsAvg:0.0} (peak {pc.MaxSlots:0.##}) | levy slots {lv.TailSlotsAvg:0.0} (peak {lv.MaxSlots:0.##}) | levy casts {lv.Casts} (player uses {pc.Uses}) helpers {lv.Helpers}, ticks over the slots player {pc.OverTicks} levy {lv.OverTicks} | {verdict}";
+			$"ROW | {label} | slots {n} (player {pc.MaxMinions}, levy {lv.MaxMinions}) | player n {pc.TailSlottedAvg:0.0} (all {pc.TailAllAvg:0.0}, peak {pc.MaxSlotted}) | levy n {lv.TailSlottedAvg:0.0} (all {lv.TailAllAvg:0.0}, peak {lv.MaxSlotted}) | player slots {pc.TailSlotsAvg:0.0} (peak {pc.MaxSlots:0.##}) | levy slots {lv.TailSlotsAvg:0.0} (peak {lv.MaxSlots:0.##}) | kids player {pc.TailKidsAvg:0.0} (peak {pc.MaxKids}) levy {lv.TailKidsAvg:0.0} (peak {lv.MaxKids}) | levy casts {lv.Casts} (player uses {pc.Uses}) helpers {lv.Helpers}, ticks over the slots player {pc.OverTicks} levy {lv.OverTicks} | {verdict}";
 
 		/// <summary>Runs the parity table for <paramref name="list"/>; a row of an <paramref name="asserted"/> staff fails the check unless it is PARITY (or NONE for a staff the kit cannot use).</summary>
 		private static void SumParityTable(List<(int type, string label)> list, int ticks, int[] slotSet, bool asserted)
@@ -328,7 +332,7 @@ namespace Levy.Common.Testing
 						SumStat lv = SumRun(type, label, ticks, false, n);
 						string v = SumVerdict(lv, pc, n, SoldierNPC.TransientStaff(fi));
 						tally[v] = tally.GetValueOrDefault(v) + 1;
-						_mod.Logger.Info("[SummonParity] " + SumRowText(label, n, pc, lv, v + (sentry ? " (tower)" : "")));
+						_mod.Logger.Info("[SummonParity] " + SumRowText(label, n, pc, lv, v + (sentry ? " (tower)" : "") + (SoldierMinions.IsBadStaff(fi.shoot) ? " (stand-in: bad staff)" : "")));
 						if (asserted) SCheck($"parity table: {label} at {n} slots: the levy keeps what the player keeps ({v}: player {pc.TailSlottedAvg:0.0} minions / {pc.TailSlotsAvg:0.0} slots, levy {lv.TailSlottedAvg:0.0} / {lv.TailSlotsAvg:0.0}, levy peak {lv.MaxSlots:0.##} of {lv.MaxMinions})", v == "PARITY" || v == "NONE");
 					}
 					catch (Exception e) { _mod.Logger.Info($"[SummonParity] ROW | {label} | slots {n} | threw {e.GetType().Name}: {e.Message}"); if (asserted) SCheck($"parity table: {label} at {n} slots threw {e.GetType().Name}", false); }

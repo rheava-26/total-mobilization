@@ -104,6 +104,7 @@ namespace Levy.Content.NPCs
 			TickGoalJumpDebounce(grounded);
 			bool air = UpdateAerial(grounded);
 			if (_gapAssist > 0 && !air) TickGapAssist(grounded);
+			if (AvatarFlightTick()) { WhyM = Why.MBusyAir; MirrorDummyControls(); return; } // the Avatar of Emptiness fight: the army flies with the commander and is carried where nothing holds it up (SoldierNPC.AvatarFlight.cs)
 
 			if (_doorBusy > 0) _doorBusy--;
 			NudgeOffPlayers();

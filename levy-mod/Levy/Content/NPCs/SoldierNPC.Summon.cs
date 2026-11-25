@@ -31,7 +31,7 @@ namespace Levy.Content.NPCs
 		internal int MinionHits;
 		/// <summary>Projectiles this soldier's minions have created (flood guard tally), the value the last upkeep pass saw, and the live count that pass found.</summary>
 		internal int ChildSpawns;
-		private int _childSpawnsSeen, _childrenAlive;
+		private int _childSpawnsSeen, _childrenAlive, _childrenOverPasses;
 		/// <summary>The minion slots his upkeep keeps filled (each staff's casts times its slots, summed): what a RECAST staff's minion reads as its owner's slots while it updates (SoldierMinions.RunUpdate).</summary>
 		internal float MinionSlotBudget;
 		/// <summary>Set when one of his driven minions was born or changed its slots this tick (SoldierMinions.RunUpdate): the next tick runs a trim-only pass, so a minion that sizes itself from the 1000 slots its AI is told it has is cut to his real slots at once, not at the next 20-tick upkeep.</summary>
@@ -260,7 +260,9 @@ namespace Levy.Content.NPCs
 			if (!trimOnly && weapon.shoot >= ProjectileID.Count)
 			{
 				int spawned = ChildSpawns - _childSpawnsSeen; _childSpawnsSeen = ChildSpawns;
-				if (spawned > LevyConstants.ModdedMinionMaxChildSpawnsPerPass || _childrenAlive > LevyConstants.ModdedMinionMaxChildrenAlive) { SoldierMinions.FloodGuard(this, weapon, spawned, _childrenAlive); return; }
+				int childLimit = SoldierMinions.ChildrenAliveLimit(Dummy != null ? Dummy.maxMinions : 1);
+				_childrenOverPasses = _childrenAlive > childLimit ? _childrenOverPasses + 1 : 0;
+				if (spawned > LevyConstants.ModdedMinionMaxChildSpawnsPerPass || _childrenOverPasses >= LevyConstants.ModdedMinionFloodPasses) { _childrenOverPasses = 0; SoldierMinions.FloodGuard(this, weapon, spawned, _childrenAlive, childLimit); return; }
 			}
 			// never more slots than his gear gives: a player's minions that do not fit end themselves (a cast of 4-slot drones with 1 slot out: none stay); his upkeep ends them
 			float perCast = SlotsPerMinion(weapon), want = Math.Min(desired * perCast, Dummy != null ? Math.Max(1, Dummy.maxMinions) : 1f), have = 0f;

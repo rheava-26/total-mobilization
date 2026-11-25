@@ -25,8 +25,9 @@ Mods: {
 				DisplayName: Recruitment Office
 				Tooltip:
 					'''
-					Right click to run a rush recruiting drive at any time
-					A rush drive costs twice as much
+					Right click to run a rush recruiting drive
+					Rests for one in-game day after a drive
+					A drive costs 4 times the daily wage per recruit, doubled for every rush drive since dawn
 					Serves its settlement, or the whole pylon network
 					'''
 			}
@@ -112,7 +113,7 @@ Mods: {
 				DisplayName: A Guide to Conscription
 				Tooltip:
 					'''
-					Increases manpower per town NPC to 15
+					Increases manpower per town NPC to 25
 					Consumed on use, once per world
 					'''
 			}
@@ -602,6 +603,11 @@ Mods: {
 					Tooltip: During the Avatar and Nameless Deity fights, levies speak lines written for the fight instead of their usual chatter. Off, they stay silent.
 				}
 
+				AvatarFightArmyFlies: {
+					Label: Levies fly with the commander in the Avatar fight
+					Tooltip: The army follows the commander into the Avatar's dimensions and through its portals. Levies with wings stay airborne beside the commander. The others are carried where there is no ground.
+				}
+
 				FreeReinRadius: {
 					Label: Free Rein range
 					Tooltip: How far Free Rein levies roam from home, in tiles
@@ -985,7 +991,7 @@ Mods: {
 			LogisticalCenterInUse: Items are stored in the {0} slots this center provides. Sort the Armory or take them out first.
 			GuideHint: Throw your junk in the Armory and the town will arm itself. A Field Manual, crafted from a little wood, has the whole story.
 			RecruitingDrive: "{0} ran a recruiting drive: manpower restored for {1}."
-			RushRecruitingDrive: Rush drive in {0}: {1} recruits for {2}.
+			RushRecruitingDrive: Rush drive in {0}: {1} recruits for {2}. The next rush drive costs {3} per recruit.
 			HazardPay: Hazard pay issued at {0}: {1}.
 		}
 

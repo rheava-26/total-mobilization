@@ -316,7 +316,7 @@ namespace Levy.Common.Testing
 		private static void AbBenchCheck(int type, string label, int ticks, int slots, int tiles)
 		{
 			string self = SoldierMinions.BenchSelfTest();
-			ABCheck("A/B bench rules: one levy's thrown exception benches that levy alone, retries after the bench and benches the staff for all only when three levies threw" + (self.Length > 0 ? " (" + self + ")" : ""), self.Length == 0);
+			ABCheck("A/B bench rules: a throw inside one levy's minion benches that levy alone, retries after the bench and benches the staff for all only when three levies threw" + (self.Length > 0 ? " (" + self + ")" : ""), self.Length == 0);
 			int notes0 = SoldierMinions.BenchNotes;
 			AbResult r = AbRun(type, label, false, ticks, slots, tiles, null, false, 2, true);
 			AbCtx c = r.Ctx;
@@ -398,7 +398,7 @@ namespace Levy.Common.Testing
 						_mod.Logger.Info("[SummonAB] " + AbRowText(pc, lv, v));
 						if (jw != null) AbJson(jw, pc, lv, v);
 						// the ship asserts what the A/B is sure of: the stand-in player really hurts the enemy (else the row says nothing) and the levy's minions fight, with at least half the player's damage (the rows are two boots of a random fight, a staff 0.9 one time is 0.7 the next)
-						if (!all) ABCheck($"A/B {label}: the stand-in player deals damage ({pc.Hits} hits, {Fx(pc.Dps, "0")} dps) and the levy's minions fight as hers do ({v}: dps levy {Fx(lv.Dps, "0")} = x{Fx(pc.Dps > 0 ? lv.Dps / pc.Dps : 0)}; engaged {Fx(pc.Engaged)} vs {Fx(lv.Engaged)}; near owner {Fx(pc.Near)} vs {Fx(lv.Near)})", pc.Hits > 0 && lv.Hits > 0 && lv.Dps >= 0.5f * pc.Dps);
+						if (!all) ABCheck($"A/B {label}: the stand-in player deals damage ({pc.Hits} hits, {Fx(pc.Dps, "0")} dps) and the levy's minions fight as hers do ({v}: dps levy {Fx(lv.Dps, "0")} = x{Fx(pc.Dps > 0 ? lv.Dps / pc.Dps : 0)}; engaged {Fx(pc.Engaged)} vs {Fx(lv.Engaged)}; near owner {Fx(pc.Near)} vs {Fx(lv.Near)})", pc.Hits > 0 && lv.Hits > 0 && (sentry || lv.Dps >= 0.5f * pc.Dps)); // a tower: both fire (a levy plants one tower per 300 ticks where the stand-in has all her slots at once, so its ratio over a short window is a pacing number, not a check)
 					}
 					catch (Exception e) { _mod.Logger.Info($"[SummonAB] ROW | {label} | threw {e.GetType().Name}: {e.Message} @ {(e.StackTrace ?? "").Split('\n')[0].Trim()}"); if (!all) ABCheck($"A/B {label} threw {e.GetType().Name}", false); }
 				}

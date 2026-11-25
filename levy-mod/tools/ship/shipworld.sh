@@ -141,7 +141,7 @@ report() { # $1 = label, $2 = run dir
   grep -F "[ScalArena] self-check pass=" "$L" | sed 's/^/  /'
   grep -F '[ScalArena] OBSERVED' "$L" | sed -E 's/^\[[^]]*\] \[[^]]*\] //' | cut -c1-300 | sed 's/^/  /'
   grep -F '[ScalArena] FAIL' "$L" | head -10 | cut -c1-300 | sed 's/^/  /'
-  echo "CombatFix (Supreme Calamitas's bullet hell on the whole arena while an army fights her, solo vanilla; Regroup & Engage leashed to the commander in a boss fight; shots into a wall; a boss attack's own immunity window; the Emptiness Spray never erasing a levy; the one-time config default change; Calamity parts skip without Calamity): PASS=$(grep -c -F '[CombatFix] PASS ' "$L") FAIL=$(grep -c -F '[CombatFix] FAIL ' "$L")"
+  echo "CombatFix (Supreme Calamitas's bullet hell on the whole arena while an army fights her, solo vanilla; Regroup & Engage leashed to the commander in a boss fight; shots into a wall; a boss attack's own immunity window; the Emptiness Spray killing a levy through its normal death; the one-time config default change; Calamity parts skip without Calamity): PASS=$(grep -c -F '[CombatFix] PASS ' "$L") FAIL=$(grep -c -F '[CombatFix] FAIL ' "$L")"
   grep -F "[CombatFix] self-check pass=" "$L" | sed 's/^/  /'
   grep -F '[CombatFix] OBSERVED' "$L" | sed -E 's/^\[[^]]*\] \[[^]]*\] //' | cut -c1-600 | sed 's/^/  /'
   grep -F '[CombatFix] FAIL' "$L" | head -10 | cut -c1-300 | sed 's/^/  /'

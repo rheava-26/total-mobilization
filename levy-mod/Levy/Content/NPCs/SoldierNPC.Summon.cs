@@ -179,7 +179,7 @@ namespace Levy.Content.NPCs
 				int childOwner = -1; // the first driven modded staff: the minion-flagged children its minions make count toward its flock
 				for (int k = 0; k < n; k++)
 				{
-					driven[k] = weapons[k].shoot > 0 && SoldierMinions.CanDrive(weapons[k].shoot);
+					driven[k] = weapons[k].shoot > 0 && SoldierMinions.CanDrive(weapons[k].shoot, NPC.whoAmI);
 					if (driven[k] && childOwner < 0 && weapons[k].shoot >= ProjectileID.Count) childOwner = k;
 				}
 				int firstStandIn = -1;

@@ -38,11 +38,12 @@ namespace Levy.Common.Testing
 		/// <summary>What one run measured, per phase (0: the enemies on the right, 1: after the mirror).</summary>
 		private sealed class AbPhase
 		{
-			public int Ticks; public long MinionTicks, Engaged, NearOwner, Moving; public double SumDOwner, SumDTarget;
+			public int Ticks; public long MinionTicks, Engaged, NearOwner, Moving, Overlap; public double SumDOwner, SumDTarget;
 			public int Hits, MinionHits; public long Dmg, MinionDmg, ItemDmg; public int FirstHit = -1;
 			public float EngagedShare => MinionTicks > 0 ? (float)Engaged / MinionTicks : 0f;
 			public float NearShare => MinionTicks > 0 ? (float)NearOwner / MinionTicks : 0f;
 			public float MovingShare => MinionTicks > 0 ? (float)Moving / MinionTicks : 0f;
+			public float OverlapShare => MinionTicks > 0 ? (float)Overlap / MinionTicks : 0f;
 			public float AvgDOwner => MinionTicks > 0 ? (float)(SumDOwner / MinionTicks / 16.0) : 0f;
 			public float AvgDTarget => MinionTicks > 0 ? (float)(SumDTarget / MinionTicks / 16.0) : 0f;
 			public float Dps => Dmg * 60f / Math.Max(1, Ticks);
@@ -51,13 +52,14 @@ namespace Levy.Common.Testing
 
 		private sealed class AbResult
 		{
-			public string Label, Who; public readonly Dictionary<int, int> HitsByBody = new(); public int ImmTicks, ImmMax; public AbPhase[] P = { new AbPhase(), new AbPhase() }; public SumStat Stat; public string Rec = "";
+			public AbCtx Ctx; public string Label, Who; public readonly Dictionary<int, int> HitsByBody = new(); public int ImmTicks, ImmMax; public AbPhase[] P = { new AbPhase(), new AbPhase() }; public SumStat Stat; public string Rec = "";
 			public long Dmg => P[0].Dmg + P[1].Dmg; public int Hits => P[0].Hits + P[1].Hits; public int MinionHits => P[0].MinionHits + P[1].MinionHits;
 			public long MinionTicks => P[0].MinionTicks + P[1].MinionTicks; public int Ticks => P[0].Ticks + P[1].Ticks;
 			public float Dps => Dmg * 60f / Math.Max(1, Ticks);
 			public float Engaged => MinionTicks > 0 ? (float)(P[0].Engaged + P[1].Engaged) / MinionTicks : 0f;
 			public float Near => MinionTicks > 0 ? (float)(P[0].NearOwner + P[1].NearOwner) / MinionTicks : 0f;
 			public float Moving => MinionTicks > 0 ? (float)(P[0].Moving + P[1].Moving) / MinionTicks : 0f;
+			public float Overlap => MinionTicks > 0 ? (float)(P[0].Overlap + P[1].Overlap) / MinionTicks : 0f;
 			public float DOwner => MinionTicks > 0 ? (float)((P[0].SumDOwner + P[1].SumDOwner) / MinionTicks / 16.0) : 0f;
 			public float DTarget => MinionTicks > 0 ? (float)((P[0].SumDTarget + P[1].SumDTarget) / MinionTicks / 16.0) : 0f;
 			public float AvgMinions => Ticks > 0 ? (float)MinionTicks / Ticks : 0f;
@@ -68,6 +70,16 @@ namespace Levy.Common.Testing
 		{
 			public AbResult R; public int Ticks, Tiles; public bool Record, Focus, Sentry, FollowMode; public string StaffName = ""; public int Levies = 1; public readonly HashSet<int> Bodies = new(); public int Adds = int.TryParse(Environment.GetEnvironmentVariable("LEVY_SUMMONAB_ADDS"), out int ad) ? ad : 0; public string RecDir, RecName; public bool Commander; public int Body = -1; public Vector2 At; public bool Mirrored;
 			public int MirrorTick => Ticks / 2;
+			/// <summary>The bench check (see <see cref="AbBenchCheck"/>): at tick 60 the first levy's first real minion of the staff throws inside its update; what was seen right after, in the middle of the bench and at the end.</summary>
+			public bool BenchTest; public int BenchShoot; public readonly int[] BenchSeen = new int[8]; public bool BenchedFirst, BenchedSecond, BenchWide, CanDriveSecond;
+			private void BenchPre(int k)
+			{
+				if (!BenchTest || Commander || Bodies.Count < 2) return;
+				int a = Bodies.Min(), b = Bodies.Max();
+				if (k == 60) { SoldierMinions.LabBenchTicks = 240; SoldierMinions.LabThrows = 0; SoldierMinions.LabThrowType = BenchShoot; SoldierMinions.LabThrowSoldier = a; }
+				if (k == 66) { BenchedFirst = SoldierMinions.IsBenched(BenchShoot, a, Main.GameUpdateCount); BenchedSecond = SoldierMinions.IsBenched(BenchShoot, b, Main.GameUpdateCount); BenchWide = SoldierMinions.BenchedForAll(BenchShoot); CanDriveSecond = SoldierMinions.CanDrive(BenchShoot, b); }
+				if (k == 200 || k == Ticks - 1) { int o = k == 200 ? 0 : 4; BenchSeen[o] = AbRealOf(a); BenchSeen[o + 1] = AbRealOf(b); BenchSeen[o + 2] = AbStandInsOf(a); BenchSeen[o + 3] = AbStandInsOf(b); }
+			}
 			private bool _recOn; private int _cur => Mirrored ? 1 : 0; private int _sinceMirror;
 
 			public void Begin(bool commander, int body, Vector2 at)
@@ -94,6 +106,7 @@ namespace Levy.Common.Testing
 			/// <summary>Before tick k: at the half, the enemy line moves to the mirror image on the other side of the owner.</summary>
 			public void Pre(int k)
 			{
+				BenchPre(k);
 				if (FollowMode)
 				{
 					// the commander walks back and forth (amplitude AbFollowAmp tiles, period AbFollowPeriod ticks) in front of the enemies; the player carries the staff along that path, the levy follows the commander along it
@@ -148,6 +161,7 @@ namespace Levy.Common.Testing
 			public void Post(int k, SoldierNPC sn)
 			{
 				if (AbDebug && k == 0) { Player c0 = Main.player[0]; ABNote($"  dbg {R.Label} [{R.Who}] t=0 MouseWorld={Main.MouseWorld} mouse=({Main.mouseX},{Main.mouseY}) screen={Main.screenPosition} zoom={Main.GameViewMatrix?.Zoom} playerCenter={c0.Center} dir={c0.direction} item={c0.HeldItem?.Name} gravDir={c0.gravDir} mouseWorld255={(Main.player[255] == null ? "null" : Main.player[255].Center.ToString())}"); }
+				if (AbDebug && k % 60 == 0 && !Commander) ABNote($"  dbg {R.Label} [levy] t={k} levyPos=({(sn != null ? sn.NPC.Center.X / 16f : -1):0.0},{(sn != null ? sn.NPC.Center.Y / 16f : -1):0.0}) vel=({(sn != null ? sn.NPC.velocity.X : 0):0.0},{(sn != null ? sn.NPC.velocity.Y : 0):0.0}) at=({At.X / 16f:0.0},{At.Y / 16f:0.0}) enemy=({(_sweepTarget != null ? _sweepTarget.Center.X / 16f : -1):0.0}) state={sn?.State}");
 				AbPhase ph = R.P[_cur]; ph.Ticks++; if (Mirrored) _sinceMirror++;
 				if (_sweepTarget != null && _sweepTarget.active) { int im = _sweepTarget.immune[Commander ? 0 : 255]; if (im > 0) R.ImmTicks++; R.ImmMax = Math.Max(R.ImmMax, im); }
 				Player cmd = Main.player[0];
@@ -170,6 +184,7 @@ namespace Levy.Common.Testing
 					if (dOwner < 6 * 16f) ph.NearOwner++;
 					if (dT <= Math.Max(6 * 16f, 0.5f * nearestOwnerToEnemy)) ph.Engaged++;
 					if (p.velocity.LengthSquared() > 0.25f) ph.Moving++;
+					if (_sweepTarget != null && _sweepTarget.active && p.Hitbox.Intersects(_sweepTarget.Hitbox)) ph.Overlap++;
 				}
 			}
 
@@ -202,13 +217,19 @@ namespace Levy.Common.Testing
 		private static bool _abLocalUpdate = Environment.GetEnvironmentVariable("LEVY_SUMMONAB_LOCALUPDATE") != "0";
 
 		/// <summary>One staff for one owner: the numbers of <see cref="AbCtx"/> plus SumRun's own stat.</summary>
-		private static AbResult AbRun(int type, string label, bool commander, int ticks, int slots, int tiles, string recDir, bool focus, int levies = 1)
+		private static int AbRealOf(int body) { int n = 0; for (int i = 0; i < Main.maxProjectiles; i++) { Projectile p = Main.projectile[i]; if (p.active && p.minion && SoldierMinions.OwnedBy(p, body)) n++; } return n; }
+		private static int AbStandInsOf(int body) { int n = 0, t = ModContent.ProjectileType<global::Levy.Content.Projectiles.SoldierMinion>(); for (int i = 0; i < Main.maxProjectiles; i++) { Projectile p = Main.projectile[i]; if (p.active && p.type == t && (int)p.ai[0] == body) n++; } return n; }
+
+		private static AbResult AbRun(int type, string label, bool commander, int ticks, int slots, int tiles, string recDir, bool focus, int levies = 1, bool bench = false)
 		{
 			var res = new AbResult { Label = label, Who = commander ? "player" : "levy" };
 			string safe = new string(label.Select(c => char.IsLetterOrDigit(c) ? c : '_').ToArray());
 			_ab = new AbCtx { R = res, StaffName = SumItem(type).Name, Levies = levies, Sentry = WeaponClassifier.GetProfile(SumItem(type)).Family == WeaponFamily.Sentry, Ticks = ticks, Tiles = tiles, Record = !string.IsNullOrEmpty(recDir), Focus = focus, RecDir = recDir, FollowMode = Environment.GetEnvironmentVariable("LEVY_SUMMONAB_MODE") == "follow", RecName = (Environment.GetEnvironmentVariable("LEVY_SUMMONAB_MODE") == "follow" ? "abf_" : levies > 1 ? "abarmy" + levies + "_" : "ab_") + res.Who + "_" + safe };
+			if (bench) { _ab.BenchTest = true; _ab.BenchShoot = SumItem(type).shoot; }
+			AbCtx ctx = _ab;
 			try { res.Stat = SumRun(type, label, ticks, commander, slots); }
-			finally { _ab = null; }
+			finally { _ab = null; SoldierMinions.LabThrowSoldier = -1; SoldierMinions.LabBenchTicks = 0; }
+			res.Ctx = ctx;
 			return res;
 		}
 
@@ -221,8 +242,9 @@ namespace Levy.Common.Testing
 			if (!pMin && !lMin && pc.Hits == 0 && lv.Hits == 0) return "NONE";
 			if (pc.Hits == 0)
 			{
-				// a tower the stand-in places never fires in this harness (observed 2026-11-25: the Frost Hydra, Queen Spider and Houndius Shootius towers it plants stand and shoot nothing, with its target in reach and Main.myPlayer = its slot; the cause is not found),
-				// and the DD2 tower items cannot be used outside the Old One's Army at all: neither says anything about the levy
+				// a tower the stand-in places that still never fires: the DD2 tower items cannot be used outside the Old One's Army at all, and the few whose own AI needs more than a stand-in gives (observed 2026-11-25: the Caustic Croaker, the Atlas Munitions Beacon's pods,
+				// the Cadaverous Carrion, the Spikecrag and the Pulse Turret do nothing for her, the last three also for the levy); neither says anything about the levy. (The Frost Hydra, Queen Spider, Houndius and the like never fired because she clicked on while each new tower
+				// replaced the oldest before its wind-up was over: she now stops at her turret slots, see SumRun.)
 				if (sentry) return pc.Stat.Uses == 0 ? "PLAYER-CANT-USE" : "TOWER-NOT-COMPARED";
 				if (pc.Stat.Uses == 0 && pc.Stat.Casts == 0) return "PLAYER-CANT-USE";
 				return lv.Hits > 0 ? "PLAYER0" : "BOTH0";
@@ -231,7 +253,11 @@ namespace Levy.Common.Testing
 			float ratio = pc.Dps > 0 ? lv.Dps / pc.Dps : 0f;
 			if (lv.Hits == 0) fl.Add("NOHIT");
 			else if (ratio < AbWeak) fl.Add("WEAK");
-			else if (ratio > AbStrong) fl.Add("STRONG");
+			else if (ratio > AbStrong)
+			{
+				// a staff that grows with every use (the Void Eater Marionette: 0.6 + 0.4 a slot on contact, 1.1 a slot on its fireballs): the stand-in's clicks do not all register (her item animation stalls under the harness), so her worm peaks at 2 slots where the levy's has 6; the row compares two sizes of one minion
+				if (lv.Stat.MaxSlots >= pc.Stat.MaxSlots + 1.5f) fl.Add("STRONG-MORE-SLOTS"); else fl.Add("STRONG");
+			}
 			if (!sentry && pc.MinionTicks > 100)
 			{
 				if (lv.MinionTicks < 30) fl.Add("NOMINION");
@@ -252,13 +278,13 @@ namespace Levy.Common.Testing
 
 		private static string AbRowText(AbResult pc, AbResult lv, string verdict)
 		{
-			return $"ROW | {pc.Label} | {verdict} | dps player {Fx(pc.Dps, "0")} levy {Fx(lv.Dps, "0")} (x{Fx(pc.Dps > 0 ? lv.Dps / pc.Dps : 0)}) | life-delta dps player {Fx(pc.Stat.Dps, "0")} levy {Fx(lv.Stat.Dps, "0")} | hits player {pc.Hits} levy {lv.Hits} | minions player {Fx(pc.AvgMinions, "0.0")} levy {Fx(lv.AvgMinions, "0.0")} | engaged player {Fx(pc.Engaged)} levy {Fx(lv.Engaged)} | near-owner player {Fx(pc.Near)} levy {Fx(lv.Near)} | moving player {Fx(pc.Moving)} levy {Fx(lv.Moving)} | d-owner tiles player {Fx(pc.DOwner, "0.0")} levy {Fx(lv.DOwner, "0.0")} | d-target tiles player {Fx(pc.DTarget, "0.0")} levy {Fx(lv.DTarget, "0.0")} | after-mirror engaged player {Fx(pc.P[1].EngagedShare)} levy {Fx(lv.P[1].EngagedShare)}, dps player {Fx(pc.P[1].Dps, "0")} levy {Fx(lv.P[1].Dps, "0")}, first hit player {pc.P[1].FirstHit} levy {lv.P[1].FirstHit} | casts player {pc.Stat.Uses} levy {lv.Stat.Casts} | slots player {pc.Stat.MaxMinions} levy {lv.Stat.MaxMinions}{(pc.Stat.Err.Length > 0 ? " | player ERR " + pc.Stat.Err : "")}{(lv.Stat.Err.Length > 0 ? " | levy ERR " + lv.Stat.Err : "")}";
+			return $"ROW | {pc.Label} | {verdict} | dps player {Fx(pc.Dps, "0")} levy {Fx(lv.Dps, "0")} (x{Fx(pc.Dps > 0 ? lv.Dps / pc.Dps : 0)}) | life-delta dps player {Fx(pc.Stat.Dps, "0")} levy {Fx(lv.Stat.Dps, "0")} | hits player {pc.Hits} levy {lv.Hits} | minions player {Fx(pc.AvgMinions, "0.0")} levy {Fx(lv.AvgMinions, "0.0")} | engaged player {Fx(pc.Engaged)} levy {Fx(lv.Engaged)} | near-owner player {Fx(pc.Near)} levy {Fx(lv.Near)} | moving player {Fx(pc.Moving)} levy {Fx(lv.Moving)} | d-owner tiles player {Fx(pc.DOwner, "0.0")} levy {Fx(lv.DOwner, "0.0")} | d-target tiles player {Fx(pc.DTarget, "0.0")} levy {Fx(lv.DTarget, "0.0")} | after-mirror engaged player {Fx(pc.P[1].EngagedShare)} levy {Fx(lv.P[1].EngagedShare)}, dps player {Fx(pc.P[1].Dps, "0")} levy {Fx(lv.P[1].Dps, "0")}, first hit player {pc.P[1].FirstHit} levy {lv.P[1].FirstHit} | alive on average (minions and towers) player {Fx(pc.Stat.MinionTicks / (float)Math.Max(1, pc.Stat.Ticks), "0.0")} levy {Fx(lv.Stat.MinionTicks / (float)Math.Max(1, lv.Stat.Ticks), "0.0")} | slots taken (peak) player {Fx(pc.Stat.MaxSlots)} levy {Fx(lv.Stat.MaxSlots)} | overlap with the enemy per minion-tick player {Fx(pc.Overlap)} levy {Fx(lv.Overlap)} | turret slots player {pc.Stat.Turrets} levy {lv.Stat.Turrets} | casts player {pc.Stat.Uses} levy {lv.Stat.Casts} | slots player {pc.Stat.MaxMinions} levy {lv.Stat.MaxMinions}{(pc.Stat.Err.Length > 0 ? " | player ERR " + pc.Stat.Err : "")}{(lv.Stat.Err.Length > 0 ? " | levy ERR " + lv.Stat.Err : "")}";
 		}
 
 		private static void AbJson(StreamWriter w, AbResult pc, AbResult lv, string verdict)
 		{
 			string Ph(AbPhase p) => $"{{\"ticks\":{p.Ticks},\"dmg\":{p.Dmg},\"hits\":{p.Hits},\"minionHits\":{p.MinionHits},\"minionDmg\":{p.MinionDmg},\"itemDmg\":{p.ItemDmg},\"minionTicks\":{p.MinionTicks},\"engaged\":{Fx(p.EngagedShare, "0.###")},\"near\":{Fx(p.NearShare, "0.###")},\"moving\":{Fx(p.MovingShare, "0.###")},\"dOwner\":{Fx(p.AvgDOwner, "0.##")},\"dTarget\":{Fx(p.AvgDTarget, "0.##")},\"firstHit\":{p.FirstHit}}}";
-			string Side(AbResult r) => $"{{\"dps\":{Fx(r.Dps, "0.#")},\"lifeDps\":{Fx(r.Stat.Dps, "0.#")},\"dmg\":{r.Dmg},\"hits\":{r.Hits},\"minionHits\":{r.MinionHits},\"avgMinions\":{Fx(r.AvgMinions, "0.##")},\"engaged\":{Fx(r.Engaged, "0.###")},\"near\":{Fx(r.Near, "0.###")},\"moving\":{Fx(r.Moving, "0.###")},\"dOwner\":{Fx(r.DOwner, "0.##")},\"dTarget\":{Fx(r.DTarget, "0.##")},\"casts\":{(r.Who == "player" ? r.Stat.Uses : r.Stat.Casts)},\"slots\":{r.Stat.MaxMinions},\"maxAlive\":{r.Stat.MaxAlive},\"err\":{JQ(r.Stat.Err)},\"rec\":{JQ(string.IsNullOrEmpty(r.Rec) ? "" : Path.GetFileName(r.Rec))},\"a\":{Ph(r.P[0])},\"b\":{Ph(r.P[1])}}}";
+			string Side(AbResult r) => $"{{\"dps\":{Fx(r.Dps, "0.#")},\"lifeDps\":{Fx(r.Stat.Dps, "0.#")},\"dmg\":{r.Dmg},\"hits\":{r.Hits},\"minionHits\":{r.MinionHits},\"avgMinions\":{Fx(r.AvgMinions, "0.##")},\"engaged\":{Fx(r.Engaged, "0.###")},\"near\":{Fx(r.Near, "0.###")},\"moving\":{Fx(r.Moving, "0.###")},\"overlap\":{Fx(r.Overlap, "0.###")},\"dOwner\":{Fx(r.DOwner, "0.##")},\"dTarget\":{Fx(r.DTarget, "0.##")},\"casts\":{(r.Who == "player" ? r.Stat.Uses : r.Stat.Casts)},\"slots\":{r.Stat.MaxMinions},\"maxAlive\":{r.Stat.MaxAlive},\"err\":{JQ(r.Stat.Err)},\"rec\":{JQ(string.IsNullOrEmpty(r.Rec) ? "" : Path.GetFileName(r.Rec))},\"a\":{Ph(r.P[0])},\"b\":{Ph(r.P[1])}}}";
 			w.WriteLine($"{{\"label\":{JQ(pc.Label)},\"verdict\":{JQ(verdict)},\"player\":{Side(pc)},\"levy\":{Side(lv)}}}");
 			w.Flush();
 		}
@@ -276,11 +302,44 @@ namespace Levy.Common.Testing
 		private static string JQ(string s) => "\"" + (s ?? "").Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\n", " ") + "\"";
 
 		/// <summary>The ship sample: one staff for each way a minion behaves (a walker, a flyer, a shooter, a swarm, a chain, a tower, a whip's summon tag excluded: whips are not minions).</summary>
-		private static readonly short[] AbSampleVanilla = { ItemID.SlimeStaff, ItemID.RavenStaff, ItemID.OpticStaff, ItemID.XenoStaff, ItemID.StardustDragonStaff, ItemID.EmpressBlade, ItemID.VampireFrogStaff, ItemID.FlinxStaff };
-		private static readonly string[] AbSampleCal = { "EtherealSubjugator", "CorvidHarbringerStaff", "EnchantedConch" };
+		private static readonly short[] AbSampleVanilla = { ItemID.SlimeStaff, ItemID.RavenStaff, ItemID.OpticStaff, ItemID.XenoStaff, ItemID.StardustDragonStaff, ItemID.EmpressBlade, ItemID.VampireFrogStaff, ItemID.FlinxStaff, ItemID.QueenSpiderStaff };
+		/// <summary>Calamity sample: the Infected Remote (the Plague Princess hung beside a standing levy and never fought: 0 hits) and the Abandoned Slime Staff (its cast factor on the damage was lost at the first upkeep: half the player's per hit) are here to hold those fixes; the Queen Spider above is a tower the stand-in must now get to fire.</summary>
+		private static readonly string[] AbSampleCal = { "EtherealSubjugator", "CorvidHarbringerStaff", "EnchantedConch", "InfectedRemote", "AbandonedSlimeStaff" };
 		/// <summary>The staves whose army run is part of the ship sample: contact minions on the game's static ID immunity (one cooldown per projectile type, shared by every owner), the ones that shared one cooldown across the whole army.</summary>
 		private static readonly int[] AbArmySample = { ItemID.SlimeStaff, ItemID.VampireFrogStaff, ItemID.FlinxStaff };
 		private const int AbArmyShipN = 3;
+
+		/// <summary>
+		/// ONE THROWN EXCEPTION BENCHES THE STAFF FOR ONE LEVY ONLY. Two levies hold the Slime Staff; at tick 60 the first levy's real minion throws inside its update (as another mod's hook would). Asserted: only that levy is benched (the staff
+		/// is not bad for everyone, the other levy still drives it), the other keeps its real minions while the first uses stand-ins, and after the bench (shortened to 240 ticks here) the first has real minions again. Plus the bench rules on a made-up staff.
+		/// </summary>
+		private static void AbBenchCheck(int type, string label, int ticks, int slots, int tiles)
+		{
+			string self = SoldierMinions.BenchSelfTest();
+			ABCheck("A/B bench rules: one levy's thrown exception benches that levy alone, retries after the bench and benches the staff for all only when three levies threw" + (self.Length > 0 ? " (" + self + ")" : ""), self.Length == 0);
+			int notes0 = SoldierMinions.BenchNotes;
+			AbResult r = AbRun(type, label, false, ticks, slots, tiles, null, false, 2, true);
+			AbCtx c = r.Ctx;
+			bool shoot = c != null && c.BenchedFirst && !c.BenchedSecond && !c.BenchWide && c.CanDriveSecond;
+			ABNote($"bench {label}: thrown {SoldierMinions.BenchNotes - notes0}, first levy benched {c?.BenchedFirst}, second {c?.BenchedSecond}, staff bad for all {c?.BenchWide} (second can drive {c?.CanDriveSecond}); mid-bench real/stand-in first {c?.BenchSeen[0]}/{c?.BenchSeen[2]} second {c?.BenchSeen[1]}/{c?.BenchSeen[3]}; at the end first {c?.BenchSeen[4]}/{c?.BenchSeen[6]} second {c?.BenchSeen[5]}/{c?.BenchSeen[7]}");
+			ABCheck($"A/B bench {label}: the throw benched the levy it threw for only (benched {c?.BenchedFirst}, other levy benched {c?.BenchedSecond}, staff bad for everyone {c?.BenchWide})", shoot && SoldierMinions.BenchNotes - notes0 >= 1);
+			ABCheck($"A/B bench {label}: meanwhile the benched levy holds stand-ins ({c?.BenchSeen[0]} real, {c?.BenchSeen[2]} stand-in) and the other keeps its real minions ({c?.BenchSeen[1]} real)", c != null && c.BenchSeen[0] == 0 && c.BenchSeen[1] > 0);
+			ABCheck($"A/B bench {label}: after the bench the first levy runs real minions again ({c?.BenchSeen[4]} real at the end)", c != null && c.BenchSeen[4] > 0 && c.BenchSeen[5] > 0);
+		}
+
+		/// <summary>
+		/// TWO LEVIES WITH TENRYU. Calamity's dragon heads scan every projectile of their owner for their segments and throw on a second tail; every levy's minion is owner 255, so the other levy's dragon is parked off the owner slot for the update.
+		/// Asserted: nothing threw (no bench note, the staff not bad), both levies' dragons hit the enemy.
+		/// </summary>
+		private static void AbOwnerScanCheck(int type, string label, int ticks, int slots, int tiles)
+		{
+			int notes0 = SoldierMinions.BenchNotes, parks0 = SoldierMinions.ModdedParks; int shoot = SumItem(type).shoot;
+			AbResult r = AbRun(type, label, false, ticks, Math.Max(slots, 6), tiles, null, false, 2);
+			int hitters = r.HitsByBody.Count(kv => kv.Value > 0);
+			ABNote($"owner scan {label}: 2 levies, hits by levy [{string.Join(",", r.HitsByBody.OrderBy(kv => kv.Key).Select(kv => kv.Value))}], dps {Fx(r.Dps, "0")}, throws {SoldierMinions.BenchNotes - notes0}, parked updates {SoldierMinions.ModdedParks - parks0}, minions per levy {Fx(r.AvgMinions / 2, "0.0")}");
+			ABCheck($"A/B owner scan {label}: two levies with the staff, no minion threw and the staff stays real ({SoldierMinions.BenchNotes - notes0} throws, bad for everyone {SoldierMinions.IsBadStaff(shoot)})", SoldierMinions.BenchNotes == notes0 && !SoldierMinions.IsBadStaff(shoot));
+			ABCheck($"A/B owner scan {label}: both levies' minions hit the enemy ({hitters} of 2 levies hit it)", hitters == 2);
+		}
 
 		private static void SummonAbCheck()
 		{
@@ -330,6 +389,8 @@ namespace Levy.Common.Testing
 						bool sentry = WeaponClassifier.GetProfile(SumItem(type)).Family == WeaponFamily.Sentry;
 						AbResult pc = AbRun(type, label, true, ticks, slots, tiles, rec ? outDir : null, focus);
 						AbResult lv = AbRun(type, label, false, ticks, slots, tiles, rec ? outDir : null, focus);
+						// a tower that shoots only at the target its owner right-clicked (Calamity's Perdition reads Owner.HasMinionAttackTargetNPC) does nothing for a player who never clicks: she clicks (the levy's minions are always given their target)
+						if (sentry && pc.Hits == 0 && pc.Stat.Uses > 0 && !focus) { AbResult pf = AbRun(type, label, true, ticks, slots, tiles, rec ? outDir : null, true); if (pf.Hits > 0) { ABNote($"{label}: the tower fires only at an enemy its owner right-clicked; the player row is the focused run ({pf.Hits} hits)"); pc = pf; } }
 						string v = AbVerdict(pc, lv, sentry);
 						int armyHere = armyN > 1 ? armyN : !all && Array.IndexOf(AbArmySample, type) >= 0 ? AbArmyShipN : 0;
 						if (armyHere > 1 && !sentry && lv.Hits > 0) { float armyShare = AbArmyRow(type, label, lv, armyHere, ticks, slots, tiles, jw); if (!all && armyN <= 1) ABCheck($"A/B army {label}: {armyHere} levies with the staff do {armyHere} times one levy's damage, as {armyHere} players would (share {Fx(armyShare)}, at least 0.7)", armyShare >= 0.7f); }
@@ -340,6 +401,15 @@ namespace Levy.Common.Testing
 						if (!all) ABCheck($"A/B {label}: the stand-in player deals damage ({pc.Hits} hits, {Fx(pc.Dps, "0")} dps) and the levy's minions fight as hers do ({v}: dps levy {Fx(lv.Dps, "0")} = x{Fx(pc.Dps > 0 ? lv.Dps / pc.Dps : 0)}; engaged {Fx(pc.Engaged)} vs {Fx(lv.Engaged)}; near owner {Fx(pc.Near)} vs {Fx(lv.Near)})", pc.Hits > 0 && lv.Hits > 0 && lv.Dps >= 0.5f * pc.Dps);
 					}
 					catch (Exception e) { _mod.Logger.Info($"[SummonAB] ROW | {label} | threw {e.GetType().Name}: {e.Message} @ {(e.StackTrace ?? "").Split('\n')[0].Trim()}"); if (!all) ABCheck($"A/B {label} threw {e.GetType().Name}", false); }
+				}
+				if (!all)
+				{
+					try
+					{
+						AbBenchCheck(ItemID.SlimeStaff, "Terraria:SlimeStaff", Math.Min(ticks, 720), slots, tiles);
+						if (cal && calMod.TryFind("KingofConstellationsTenryu", out ModItem ten)) AbOwnerScanCheck(ten.Type, "CalamityMod:KingofConstellationsTenryu", Math.Min(ticks, 720), slots, tiles);
+					}
+					catch (Exception e) { ABCheck("summon A/B bench / owner-scan checks threw " + e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(), false); }
 				}
 			}
 			catch (Exception e) { ABCheck("summon A/B threw " + e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(), false); }
@@ -369,8 +439,14 @@ namespace Levy.Common.Testing
 			if (On && p.sentry && p.owner == 0 && _sent++ % 120 == 0 && _sent < 600) Levy.Instance.Logger.Info($"[SummonAB] OBSERVED SENTRY SPY {p.ModProjectile?.Name ?? ProjectileID.Search.GetName(p.type)} ai=({p.ai[0]},{p.ai[1]}) at={p.Center} myPlayer={Main.myPlayer} owner={p.owner} net={Main.netMode} dead={Main.player[0].dead} active={Main.player[0].active} mouse=({Main.mouseX},{Main.mouseY}) enemies={Main.npc.Count(n => n.active && n.CanBeChasedBy(p))} canhit=[{string.Join(";", Main.npc.Where(n => n.active && n.CanBeChasedBy(p)).Select(n => Collision.CanHit(p.position, p.width, p.height, n.position, n.width, n.height) + "@" + (int)(System.Math.Abs(p.Center.X - n.Center.X) + System.Math.Abs(p.Center.Y - n.Center.Y))))}] attack={Main.player[p.owner].MinionAttackTargetNPC} size={p.width}x{p.height} pos={p.position} npcpos={string.Join(";", Main.npc.Where(n => n.active && n.CanBeChasedBy(p)).Select(n => n.position + " " + n.width + "x" + n.height))}");
 			return true;
 		}
+		private static int _sentPost;
 		public override void PostAI(Projectile p)
 		{
+			if (On && p.sentry && p.owner == 0 && _sentPost < 400 && Main.GameUpdateCount % 3 == 0)
+			{
+				_sentPost++; int ti = (int)p.ai[1]; NPC tn = ti >= 0 && ti < Main.maxNPCs ? Main.npc[ti] : null;
+				Levy.Instance.Logger.Info($"[SummonAB] OBSERVED SENTRY POST type={p.type}({ProjectileID.Search.GetName(p.type)}) who={p.whoAmI} ai=({p.ai[0]},{p.ai[1]}) localAI=({p.localAI[0]},{p.localAI[1]}) vel={p.velocity} aiStyle={p.aiStyle} active={p.active} timeLeft={p.timeLeft} dmg={p.damage}/{p.originalDamage} friendly={p.friendly} npcProj={p.npcProj} target[{ti}]={(tn == null ? "-" : tn.active + "/chase" + tn.CanBeChasedBy(p) + "/" + tn.FullName)} myPlayer={Main.myPlayer} tick={Main.GameUpdateCount}");
+			}
 			if (!On || !p.minion || p.owner != 0 || _n >= 3) return;
 			if ((float.IsNaN(p.position.X) || float.IsNaN(p.velocity.X)) && !float.IsNaN(_pos.X))
 			{

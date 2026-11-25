@@ -99,6 +99,16 @@ namespace Levy.Common.Weapons
 		private static readonly List<int> GroupMinionOwners = new();
 		private static readonly List<Projectile> DragonSegmentsNow = new();
 		private static readonly List<int> DragonSegmentOwners = new();
+		// Every driven projectile on the shared owner 255 this tick (minions and the shots a driven minion keeps on 255) with its soldier, and whether more than one soldier has any: the modded minions that scan "every projectile of my
+		// owner" (Tenryu's dragons collect their segments that way: two soldiers' tails collide in one dictionary) get the other soldiers' projectiles parked for their update (see ParkOtherSoldiersIndexed).
+		private static readonly List<Projectile> DrivenNow = new();
+		private static readonly List<int> DrivenNowOwners = new();
+		private static int _drivenFirstSoldier = -1;
+		private static bool _drivenMulti;
+		/// <summary>Lab switch (env LEVY_PARKMODDED=0): modded minions see the other soldiers' projectiles on their owner slot again, as before the owner-scan fix (the A/B before / after).</summary>
+		private static readonly bool ParkModded = Environment.GetEnvironmentVariable("LEVY_PARKMODDED") != "0";
+		/// <summary>Lab counter: updates of modded minions that ran with the other soldiers' projectiles parked.</summary>
+		internal static int ModdedParks;
 
 		/// <summary>The slot-aliasing bookkeeping of <see cref="AliasDummy"/>: the real Player that stood in the dragon's owner slot while the soldier's dummy took its place.</summary>
 		private static Player _aliasBackup;
@@ -132,7 +142,7 @@ namespace Levy.Common.Weapons
 		internal static void Reset()
 		{
 			BadTypes.Clear(); ShortLives.Clear(); LearnedBuff.Clear(); Parked.Clear(); ParkedAll.Clear(); ParkedDragons.Clear(); CastSlots.Clear(); LateSlotted.Clear(); Stackers.Clear(); NoRealShoot.Clear(); EmptyCasts.Clear(); Helpers.Clear();
-			GroupMinionsNow.Clear(); GroupMinionOwners.Clear(); DragonSegmentsNow.Clear(); DragonSegmentOwners.Clear();
+			GroupMinionsNow.Clear(); GroupMinionOwners.Clear(); DragonSegmentsNow.Clear(); DragonSegmentOwners.Clear(); DrivenNow.Clear(); DrivenNowOwners.Clear(); _drivenFirstSoldier = -1; _drivenMulti = false; Benches.Clear();
 			PendingBody = null; _faked = false; EnsureAliasRestored(); ClearFrame();
 		}
 
@@ -209,7 +219,10 @@ namespace Levy.Common.Weapons
 		internal static bool OwnedBy(Projectile p, int soldierIndex) =>
 			IsDriven(p) && p.GetGlobalProjectile<SoldierProjectileTag>().SoldierIndex == soldierIndex;
 
-		/// <summary>Whether the staff's minion is run as a real vanilla projectile (vanilla type, a minion, not a known-unsupported one, not one that threw).</summary>
+		/// <summary>Whether the staff's minion is run as a real vanilla projectile for THIS soldier: <see cref="CanDrive(int)"/> and the soldier is not benched for the staff (one of its real minions threw lately).</summary>
+		public static bool CanDrive(int shoot, int soldierIndex) => CanDrive(shoot) && !IsBenched(shoot, soldierIndex, Main.GameUpdateCount);
+
+		/// <summary>Whether the staff's minion is run as a real vanilla projectile (vanilla type, a minion, not a known-unsupported one, not one that threw for several soldiers). A soldier it threw for alone is <see cref="IsBenched"/>.</summary>
 		public static bool CanDrive(int shoot)
 		{
 			if (shoot <= 0 || Undriven.Contains(shoot) || BadTypes.Contains(shoot)) return false;
@@ -269,13 +282,88 @@ namespace Levy.Common.Weapons
 			return type;
 		}
 
-		/// <summary>Remembers that this type misbehaved under the dummy; its staff keeps the stand-in from now on.</summary>
-		private static void MarkBad(Projectile p, Exception e)
+		/// <summary>Who threw for one staff root: the soldiers (NPC index) that threw, each with its last throw, its count and the tick its bench ends.</summary>
+		private sealed class BenchInfo { public readonly Dictionary<int, (uint last, int strikes, uint until)> By = new(); public bool Logged; }
+		private static readonly Dictionary<int, BenchInfo> Benches = new();
+		/// <summary>Lab: when set (> 0) the bench length in ticks instead of <see cref="LevyConstants.MinionBenchTicks"/> (the A/B bench check retries within its window).</summary>
+		internal static int LabBenchTicks;
+		/// <summary>Lab: the next driven minion of this type of this soldier throws once inside its update, as if another mod's hook had (see the summon A/B bench check).</summary>
+		internal static int LabThrowSoldier = -1, LabThrowType, LabThrows;
+		/// <summary>Lab counters: throws noted, and staves benched for everyone.</summary>
+		internal static int BenchNotes, BenchTypeWide;
+
+		/// <summary>True while <paramref name="soldierIndex"/> is benched for the staff whose shot is <paramref name="root"/> (a real minion of it threw for this soldier less than its bench ago).</summary>
+		internal static bool IsBenched(int root, int soldierIndex, uint now) =>
+			Benches.Count > 0 && Benches.TryGetValue(root, out BenchInfo b) && b.By.TryGetValue(soldierIndex, out var e) && now < e.until;
+
+		/// <summary>
+		/// A real minion of <paramref name="root"/> threw while driven for soldier <paramref name="soldierIndex"/>. That soldier alone uses the stand-in for the staff for the bench (retried after it, longer with each further throw); logged once per staff with the exception.
+		/// Only when <see cref="LevyConstants.MinionBenchLevies"/> different soldiers have thrown for it within <see cref="LevyConstants.MinionBenchWindowTicks"/> is the staff benched for everyone for the session (a bug in the staff or in a mod it
+		/// meets, not in one levy's state). Returns true when that happened.
+		/// </summary>
+		internal static bool NoteThrow(int root, int soldierIndex, uint now, Exception e, string what)
+		{
+			if (!Benches.TryGetValue(root, out BenchInfo b)) Benches[root] = b = new BenchInfo();
+			BenchNotes++;
+			b.By.TryGetValue(soldierIndex, out var prev);
+			if (prev.strikes > 0 && now < prev.until) return false; // the rest of that soldier's flock throwing before the upkeep has dismissed it: the same event, not another strike
+			int strikes = (prev.strikes > 0 && now - prev.last <= LevyConstants.MinionBenchWindowTicks ? prev.strikes : 0) + 1;
+			long baseLen = LabBenchTicks > 0 ? LabBenchTicks : LevyConstants.MinionBenchTicks, cap = LabBenchTicks > 0 ? LabBenchTicks * 8L : LevyConstants.MinionBenchMaxTicks;
+			long len = Math.Min(baseLen << Math.Min(strikes - 1, 10), cap);
+			b.By[soldierIndex] = (now, strikes, now + (uint)len);
+			int recent = 0; foreach (var kv in b.By) if (now - kv.Value.last <= LevyConstants.MinionBenchWindowTicks) recent++;
+			bool wide = recent >= LevyConstants.MinionBenchLevies && BadTypes.Add(root);
+			if (wide) BenchTypeWide++;
+			Levy lv = ModContent.GetInstance<Levy>();
+			bool lab = what == "self-test" || e.Message.StartsWith("lab-injected"); // the bench checks' own throws: logged without the exception, which the ship's exception count would take for a real one
+			string why = lab ? e.Message : e.GetType().Name + ": " + e.Message;
+			if (what == "self-test") return wide;
+			if (wide) lv?.Logger.Warn("Levy: real minion of staff shot " + root + " (" + what + ") threw for " + recent + " different soldiers within " + LevyConstants.MinionBenchWindowTicks / 60 + " s; its staff falls back to the stand-in minion for everyone: " + why);
+			else if (!b.Logged) { b.Logged = true; lv?.Logger.Warn("Levy: real minion of staff shot " + root + " (" + what + ") threw while driven for soldier " + soldierIndex + "; that soldier uses the stand-in minion for " + len / 60 + " s, then tries the real one again (others are not affected): " + (lab ? why : e.ToString())); }
+			return wide;
+		}
+
+		/// <summary>Whether the staff is benched for every soldier (several of them threw). Test / log use.</summary>
+		internal static bool BenchedForAll(int root) => BadTypes.Contains(root);
+
+		/// <summary>A real minion threw under the dummy: its soldier is benched for the staff (see <see cref="NoteThrow"/>); the minion is dropped by the caller.</summary>
+		private static void MarkBad(Projectile p, SoldierNPC body, Exception e)
 		{
 			int root = FamilyRoot(p.type);
-			Item staff = MiscProjSwap.BodyOf(p)?.SummonWeaponFor(p.type);
+			Item staff = body?.SummonWeaponFor(p.type);
 			if (p.type >= ProjectileID.Count && staff != null && staff.shoot > 0) root = staff.shoot; // a modded child that throws takes its staff back to the stand-in
-			if (BadTypes.Add(root)) ModContent.GetInstance<Levy>()?.Logger.Warn("Levy: real minion type " + p.type + " (" + (p.ModProjectile?.FullName ?? "vanilla") + ") threw while driven for a soldier; its staff falls back to the stand-in minion: " + e);
+			NoteThrow(root, body != null ? body.NPC.whoAmI : -1, Main.GameUpdateCount, e, p.type + " " + (p.ModProjectile?.FullName ?? "vanilla"));
+			if (body != null) body.FlockDirty = true; // the upkeep looks at the flock now: the benched soldier's real minions of the staff are dismissed and its stand-ins made
+		}
+
+		/// <summary>Self-check of the bench rules with a made-up staff root and explicit ticks (no real staff is touched): one soldier's throw benches only that soldier, the bench ends and doubles, three soldiers bench the staff for all. Returns what failed, empty when all hold.</summary>
+		internal static string BenchSelfTest()
+		{
+			var bad = new List<string>();
+			int root = -7001; uint t0 = 100000;
+			int savedLab = LabBenchTicks; LabBenchTicks = 0;
+			var savedBad = new HashSet<int>(BadTypes);
+			int notes = BenchNotes, wide0 = BenchTypeWide;
+			try
+			{
+				Benches.Remove(root); BadTypes.Remove(root);
+				uint len = (uint)LevyConstants.MinionBenchTicks;
+				bool wide = NoteThrow(root, 3, t0, new InvalidOperationException("self-test"), "self-test");
+				if (wide) bad.Add("one throw benched the staff for everyone");
+				if (!IsBenched(root, 3, t0 + 1)) bad.Add("the soldier that threw is not benched");
+				if (IsBenched(root, 4, t0 + 1)) bad.Add("another soldier is benched by it");
+				if (BadTypes.Contains(root)) bad.Add("the staff is type-wide bad after one throw");
+				if (IsBenched(root, 3, t0 + len + 1)) bad.Add("the bench does not end (no retry)");
+				NoteThrow(root, 3, t0 + len + 5, new InvalidOperationException("self-test"), "self-test");
+				if (!IsBenched(root, 3, t0 + len + 5 + len + 1)) bad.Add("a second throw of the same soldier does not bench it longer");
+				if (BadTypes.Contains(root)) bad.Add("two throws of ONE soldier benched the staff for everyone");
+				NoteThrow(root, 4, t0 + 2 * len, new InvalidOperationException("self-test"), "self-test");
+				if (BadTypes.Contains(root)) bad.Add("two soldiers already bench the staff for everyone");
+				bool w3 = NoteThrow(root, 5, t0 + 2 * len + 1, new InvalidOperationException("self-test"), "self-test");
+				if (!w3 || !BadTypes.Contains(root)) bad.Add("three soldiers do not bench the staff for everyone");
+			}
+			finally { Benches.Remove(root); BadTypes.Clear(); foreach (int b in savedBad) BadTypes.Add(b); LabBenchTicks = savedLab; BenchNotes = notes; BenchTypeWide = wide0; }
+			return string.Join("; ", bad);
 		}
 
 		/// <summary>Consecutive immediate self-kills per staff shot (a modded cast that died within a few ticks of spawning).</summary>
@@ -344,10 +432,34 @@ namespace Levy.Common.Weapons
 		{
 			if (!p.active) return;
 			if (p.TryGetGlobalProjectile(out SoldierProjectileTag dt)) dt.Dismissed = true; // an upkeep decision, not the minion dying by itself
-			if (Main.netMode != NetmodeID.Server || !IsDragonType(p.type) || p.owner == Main.myPlayer) { p.Kill(); return; }
+			if (Main.netMode != NetmodeID.Server || !IsDragonType(p.type) || p.owner == Main.myPlayer) { KillAlone(p); return; }
 			int saved = Main.myPlayer;
 			try { Main.myPlayer = p.owner; p.Kill(); }
 			finally { Main.myPlayer = saved; }
+		}
+
+		private static readonly List<Projectile> ParkedKill = new();
+		/// <summary>
+		/// Kill() for a modded minion outside its own update: its OnKill may scan "every projectile of my owner" (the dragon segments of Tenryu end every head of their owner), so the other soldiers' driven projectiles sit on the parked owner for the call.
+		/// A kill inside a driven minion's own frame (already parked there) is a plain Kill.
+		/// </summary>
+		private static void KillAlone(Projectile p)
+		{
+			SoldierProjectileTag t = null;
+			if (!ParkModded || _frameProj != null || !p.minion || p.type < ProjectileID.Count || p.owner != Slot || !p.TryGetGlobalProjectile(out t) || t.SoldierIndex < 0) { p.Kill(); return; }
+			int me = t.SoldierIndex;
+			ParkedKill.Clear();
+			try
+			{
+				for (int i = 0; i < Main.maxProjectiles; i++)
+				{
+					Projectile q = Main.projectile[i];
+					if (!q.active || q.whoAmI == p.whoAmI || q.owner != Slot || !q.TryGetGlobalProjectile(out SoldierProjectileTag qt) || qt.SoldierIndex < 0 || qt.SoldierIndex == me || !(q.minion || qt.DrivenChild)) continue;
+					q.owner = ParkedOwner; ParkedKill.Add(q);
+				}
+				p.Kill();
+			}
+			finally { foreach (Projectile q in ParkedKill) if (q.owner == ParkedOwner) q.owner = Slot; ParkedKill.Clear(); }
 		}
 
 		// =====================================================================================================
@@ -480,6 +592,7 @@ namespace Levy.Common.Weapons
 		/// </summary>
 		internal static void Retune(SoldierNPC s, Projectile p, Item weapon, int desiredDamage)
 		{
+			if (p.TryGetGlobalProjectile(out SoldierProjectileTag ft) && ft.DamageFactor != 1f) desiredDamage = Math.Max(1, (int)Math.Round(desiredDamage * ft.DamageFactor)); // the staff's own factor on the cast's damage (AdoptMade stored it), kept by every upkeep retune
 			p.knockBack = weapon.knockBack;
 			DamageClass cls = p.DamageType ?? DamageClass.Summon;
 			float ratio = 1f;
@@ -516,11 +629,17 @@ namespace Levy.Common.Weapons
 		/// <summary>
 		/// Modded staves cast where a player's cursor is, at the enemy, when their minion does worse for being made beside its owner: the Enchanted Conch's Hermit Crab sprawled 22 tiles from its owner and 15 from the enemy and did 0.27 to
 		/// 0.54 of the player's damage (summon A/B 2026-11-25, three boots); cast at the target it does 0.67 every time. Most staves lose by it (Ethereal Subjugator, Caustic Staff, Black Hawk Remote 0.9 down to 0.2), so it is a short list,
-		/// not the default (LEVY_SUMMON_CASTAT=target casts every modded staff there, for the A/B). NOT fixed by it: the Infected Remote, whose Plague Princess leaves its AI at once while it is within 10 tiles of its owner
-		/// (PlaguePrincess.DoBehavior_HoverNearOwner returns before it looks for a target), so a minion that settles beside a standing levy never fights (0 hits in 2 of 3 boots whichever way it is cast).
+		/// not the default (LEVY_SUMMON_CASTAT=target casts every modded staff there, for the A/B). The Infected Remote is a different case, see <see cref="CastFarNames"/>.
 		/// </summary>
 		private static readonly HashSet<string> CastAtTargetNames = new() { "EnchantedConch" };
 		internal static bool CastsAtTarget(Item weapon) => weapon?.ModItem != null && weapon.ModItem.Mod.Name == "CalamityMod" && CastAtTargetNames.Contains(weapon.ModItem.Name);
+		/// <summary>
+		/// Staves whose minion idles for as long as it is inside a bubble around its owner and leaves that bubble only by its own momentum: the Infected Remote's Plague Princess returns from her AI while she is within 10 tiles of her owner,
+		/// before she looks for a target (PlaguePrincess.DoBehavior_HoverNearOwner), and she is born with no speed. A player's cursor is rarely that close and he keeps moving, so she is born outside the bubble and arrives with speed; a levy casts at his own feet and stands still, and
+		/// the Princess then hung beside him for the whole fight (0 hits in 720 ticks against 98 for the player's). These casts are made that far (px) from the soldier, towards his target (else the way he faces), where a player's cursor would be. Measured: the summon A/B.
+		/// </summary>
+		private static readonly Dictionary<string, float> CastFarNames = new() { ["InfectedRemote"] = 14f * 16f };
+		internal static float CastFarPx(Item weapon) => weapon?.ModItem != null && weapon.ModItem.Mod.Name == "CalamityMod" && CastFarNames.TryGetValue(weapon.ModItem.Name, out float px) ? px : 0f;
 		private static List<Projectile> RunShoot(SoldierNPC s, Item weapon, int damage, out bool threw)
 		{
 			// a self-ending cast (a bomber, a fist, a field: see SoldierNPC.TransientStaff) is aimed where a player aims it, at the enemy he fights; a minion that stays is cast beside the soldier. Casting every modded staff at the
@@ -543,6 +662,15 @@ namespace Levy.Common.Weapons
 			{
 				Vector2 aim = s.AimCursor() - new Vector2(0f, 16f * AltPolicies.CastUp(weapon));
 				if (SoldierNPC.TransientStaff(weapon) || !Collision.SolidCollision(aim - LevyConstants.MinionSpawnProbe * 0.5f, (int)LevyConstants.MinionSpawnProbe.X, (int)LevyConstants.MinionSpawnProbe.Y)) at = aim;
+			}
+			float far = CastFarPx(weapon);
+			if (far > 0f)
+			{
+				bool hasTarget = s.TargetIndex >= 0 && s.TargetIndex < Main.maxNPCs && Main.npc[s.TargetIndex].active;
+				Vector2 dir = hasTarget ? Main.npc[s.TargetIndex].Center - s.NPC.Center : Vector2.Zero;
+				if (dir.LengthSquared() < 1f) dir = new Vector2(s.NPC.direction == 0 ? 1f : s.NPC.direction, -0.15f);
+				dir.Normalize();
+				at = s.NPC.Center + dir * far; // a flier that ignores tiles: no wall test
 			}
 			List<Projectile> made;
 			SaveBuffs(d);
@@ -597,19 +725,19 @@ namespace Levy.Common.Weapons
 		/// <summary>True for the minion a cast is "of" (the staff's own shot or a variant of it); the other parts a Shoot makes are companions that count through their own slots.</summary>
 		private static bool IsMainPiece(Item weapon, Projectile p) => p.type == weapon.shoot || InFamily(weapon.shoot, p.type);
 
-		/// <summary>The damage a made piece should be retuned to: the cast's damage, scaled by the staff's own factor for that piece (a helper the Shoot gives double damage keeps it).</summary>
-		private static int PieceDamage(Item weapon, Projectile p, int damage)
+		/// <summary>The factor a piece a staff's Shoot just made carries on the cast's damage (the Abandoned Slime's 0.8 + 0.2 a free slot, a companion given double damage); 1 when it has none. Stored on the projectile's tag and applied by every <see cref="Retune"/>.</summary>
+		private static float PieceFactor(Item weapon, Projectile p, int damage)
 		{
-			if (weapon.damage <= 0 || p.originalDamage <= 0 || p.originalDamage == damage) return damage;
-			return Math.Max(1, (int)Math.Round(damage * Math.Clamp(p.originalDamage / (float)weapon.damage, 0.1f, 10f)));
+			if (weapon.damage <= 0 || p.originalDamage <= 0 || p.originalDamage == damage) return 1f;
+			return Math.Clamp(p.originalDamage / (float)weapon.damage, 0.1f, 10f);
 		}
 
 		/// <summary>Takes a minion a staff's Shoot made as a driven minion of the soldier (owner 255, tagged, retuned).</summary>
 		private static void AdoptMade(SoldierNPC s, Item weapon, Projectile p, int damage, bool cast)
 		{
 			p.npcProj = true; p.noDropItem = true; p.friendly = true; p.hostile = false;
-			if (p.TryGetGlobalProjectile(out SoldierProjectileTag tag)) { tag.SoldierIndex = s.NPC.whoAmI; tag.Cast = cast; }
-			Retune(s, p, weapon, PieceDamage(weapon, p, damage));
+			if (p.TryGetGlobalProjectile(out SoldierProjectileTag tag)) { tag.SoldierIndex = s.NPC.whoAmI; tag.Cast = cast; tag.DamageFactor = PieceFactor(weapon, p, damage); }
+			Retune(s, p, weapon, damage);
 			p.netUpdate = true;
 		}
 
@@ -957,7 +1085,7 @@ namespace Levy.Common.Weapons
 		{
 			uint now = Main.GameUpdateCount;
 			bool authority = LevyUtil.IsServerOrSingle;
-			GroupMinionsNow.Clear(); GroupMinionOwners.Clear(); DragonSegmentsNow.Clear(); DragonSegmentOwners.Clear();
+			GroupMinionsNow.Clear(); GroupMinionOwners.Clear(); DragonSegmentsNow.Clear(); DragonSegmentOwners.Clear(); DrivenNow.Clear(); DrivenNowOwners.Clear(); _drivenFirstSoldier = -1; _drivenMulti = false;
 			for (int i = 0; i < Main.maxProjectiles; i++)
 			{
 				Projectile p = Main.projectile[i];
@@ -967,6 +1095,7 @@ namespace Levy.Common.Weapons
 					// a staff that refuses a use while its ray is out (the Saros Possession) and a minion that holds its fire while that ray lives all read these counts
 					if (p.active && p.owner == Slot && !p.minion && p.TryGetGlobalProjectile(out SoldierProjectileTag ct) && ct.DrivenChild && ct.SoldierIndex >= 0 && MiscProjSwap.BodyOf(p) is SoldierNPC cb && cb.Dummy != null)
 					{
+						NoteDriven(p, ct.SoldierIndex);
 						PrepDummy(cb, now, authority);
 						if (p.type < cb.Dummy.ownedProjectileCounts.Length) cb.Dummy.ownedProjectileCounts[p.type]++;
 					}
@@ -974,6 +1103,7 @@ namespace Levy.Common.Weapons
 				}
 				// index the minions whose Update parks their neighbours (see ParkOtherFlocks / ParkOtherDragons): one entry per driven minion, with its soldier read once, here
 				bool dragon = IsDragonType(p.type);
+				if (p.owner == Slot) NoteDriven(p, p.GetGlobalProjectile<SoldierProjectileTag>().SoldierIndex);
 				if (dragon || GroupIndexed.Contains(p.type))
 				{
 					int owner = p.GetGlobalProjectile<SoldierProjectileTag>().SoldierIndex;
@@ -988,6 +1118,12 @@ namespace Levy.Common.Weapons
 				if (p.type == ProjectileID.StormTigerGem) d.highestStormTigerGemOriginalDamage = Math.Max(d.highestStormTigerGemOriginalDamage, p.originalDamage);
 				else if (p.type == ProjectileID.AbigailCounter) d.highestAbigailCounterOriginalDamage = Math.Max(d.highestAbigailCounterOriginalDamage, p.originalDamage);
 			}
+		}
+
+		private static void NoteDriven(Projectile p, int soldier)
+		{
+			DrivenNow.Add(p); DrivenNowOwners.Add(soldier);
+			if (_drivenFirstSoldier < 0) _drivenFirstSoldier = soldier; else if (soldier != _drivenFirstSoldier) _drivenMulti = true;
 		}
 
 		/// <summary>Once a tick per soldier, before its first driven projectile is counted: the dummy's minion counters zeroed, its clock set and its attack target chosen (see <see cref="PrepareTick"/>).</summary>
@@ -1164,7 +1300,9 @@ namespace Levy.Common.Weapons
 				if (authority && savedMyPlayer != ownerSlot) { _trueMyPlayer = savedMyPlayer; _faked = true; Main.myPlayer = ownerSlot; }
 				if (GroupIndexed.Contains(p.type)) { parked = true; ParkOtherFlocks(p, body.NPC.whoAmI); } // flag first: a throw halfway still restores what was moved
 				if (IsDragonType(p.type)) { parkedDragons = true; ParkOtherDragons(p, body.NPC.whoAmI); }
+				// a modded minion that scans "every projectile of my owner" (Tenryu's dragons build their segment table that way and throw on a second soldier's tail) sees only its own soldier's projectiles, as it does for a player
 				if (recastMinion || firstTick) { parkedAll = true; ParkOtherSoldiers(p, body.NPC.whoAmI); }
+				else if (ParkModded && _drivenMulti && p.minion && p.type >= ProjectileID.Count && ownerSlot == Slot) { parkedAll = true; ModdedParks++; ParkOtherSoldiersIndexed(p, body.NPC.whoAmI); }
 				// a gear helper whose AI reads its owner's cursor (Luxor's Gift turns to Calamity's per-player mouseWorld) sees the levy's aim, as a soldier shot does (OwnerPuppet): the dummy's own cursor is never set, and a cursor
 				// on the owner's centre gives a zero direction, which made the helper's position NaN
 				// the same for any modded minion or minion shot whose own code reads its owner's cursor (the Saros ray turns to Calamity's per-player cursor): on a single-player machine the plain cursor is the COMMANDER's mouse.
@@ -1178,6 +1316,7 @@ namespace Levy.Common.Weapons
 					if (cal != null) { (calDelta, calRot) = AltPolicies.GetCalAimPublic(cal); AltPolicies.SetCalAimPublic(cal, aim - d.MountedCenter); }
 				}
 				_frameProj = p; _frameBody = body; _frameOwnerSlot = ownerSlot; _strikeArmed = false; _realContext = false; // the context RunStrike lifts around a strike, and puts back
+				if (LabThrowSoldier >= 0 && body.NPC.whoAmI == LabThrowSoldier && p.type == LabThrowType && LabThrows < 1) { LabThrows++; throw new InvalidOperationException("lab-injected throw (as another mod's hook would)"); }
 				float slotsBefore = p.minionSlots;
 				orig(p, i);
 				// a modded minion that was just born, or that sized itself in this update from the 1000 slots its AI is told its owner has (the Void Eater Marionette adds the slots it asks for, Glacial Embrace's spikes take one each), is checked
@@ -1192,7 +1331,7 @@ namespace Levy.Common.Weapons
 			catch (Exception e)
 			{
 				// never take the game down for one odd minion: log it once, drop this one, and let its staff use the stand-in from now on
-				MarkBad(p, e);
+				MarkBad(p, body, e);
 				try { if (authority && p.active) Dismiss(p); } catch (Exception) { }
 				p.active = false;
 			}
@@ -1328,6 +1467,20 @@ namespace Levy.Common.Weapons
 			}
 		}
 
+		/// <summary>The same as <see cref="ParkOtherSoldiers"/> from this tick's index of driven projectiles (no walk of the whole projectile array), and the shots a driven minion keeps on 255 go too: one cheap pass per modded minion update, and only when a second soldier has any.</summary>
+		private static void ParkOtherSoldiersIndexed(Projectile p, int soldierIndex)
+		{
+			ParkedAll.Clear();
+			for (int k = 0; k < DrivenNow.Count; k++)
+			{
+				if (DrivenNowOwners[k] == soldierIndex) continue;
+				Projectile q = DrivenNow[k];
+				if (!q.active || q.whoAmI == p.whoAmI || q.owner != Slot) continue;
+				q.owner = ParkedOwner;
+				ParkedAll.Add(q);
+			}
+		}
+
 		private static void UnparkOtherSoldiers()
 		{
 			foreach (Projectile q in ParkedAll) if (q.owner == ParkedOwner) q.owner = Slot;
@@ -1387,6 +1540,7 @@ namespace Levy.Common.Weapons
 	{
 		public override void Load()
 		{
+			Logging.IgnoreExceptionContents("lab-injected throw"); // the summon A/B's bench check throws on purpose; tML's own "silently caught" log line would count as an exception in the ship report
 			On_Projectile.Update += UpdateDetour;
 			On_NPC.StrikeNPC_HitInfo_bool_bool += StrikeDetour;
 			On_Projectile.GetByUUID_int_int += UuidDetour;

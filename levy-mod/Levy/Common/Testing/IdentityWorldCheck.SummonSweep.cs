@@ -35,7 +35,7 @@ namespace Levy.Common.Testing
 
 		private sealed class SumStat
 		{
-			public string Label, Mode, Err = ""; public long Damage; public int Ticks, Casts, Helpers, Sentries, Stacks, Recasts, HoldTicks; public float UsageMax = -1f, UsageEnd = -1f; public int Uses, Capacity, MaxMinions, MaxAlive, MinionTicks, NearLevyTicks, AtCmdTicks, CmdMinions, CmdOwned, CmdBuffs, LevyFrom;
+			public string Label, Mode, Err = ""; public long Damage; public int Ticks, Casts, Helpers, Sentries, Stacks, Recasts, HoldTicks; public float UsageMax = -1f, UsageEnd = -1f; public int Uses, Capacity, MaxMinions, Turrets, MaxAlive, MinionTicks, NearLevyTicks, AtCmdTicks, CmdMinions, CmdOwned, CmdBuffs, LevyFrom;
 			public float MaxSlots, MaxSingleSlots, CmdSlots; public string CmdBuffNames = "";
 			/// <summary>The parity table's steady state: sums over the last third of the window of the live minions that take a slot, of all live minions and towers, and of their slots; the ticks counted; the peak of the slot-bearing count.</summary>
 			public long TailSlotted, TailAll, TailTicks; public double TailSlots; public int MaxSlotted, OverTicks;
@@ -140,6 +140,7 @@ namespace Levy.Common.Testing
 			var buffs0 = new HashSet<int>(); for (int i = 0; i < cmd.buffType.Length; i++) if (cmd.buffType[i] > 0 && cmd.buffTime[i] > 0) buffs0.Add(cmd.buffType[i]);
 			int c0 = SoldierMinions.CastTally, h0 = SoldierMinions.HelperTally, s0 = SoldierMinions.SentryTally, k0 = SoldierMinions.StackTally, r0 = SoldierMinions.RecastTally;
 			bool saros = label.EndsWith(":SarosPossession");
+			bool tower = w.sentry || WeaponClassifier.GetProfile(w).Family == WeaponFamily.Sentry;
 			Main.rand = new Terraria.Utilities.UnifiedRandom(5151);
 			KeepCommander(); PinSweepTarget(); PinRogueAdds(); CursorOnCommander(); Step(4);
 			_ab?.Begin(commander, body, at);
@@ -158,6 +159,13 @@ namespace Levy.Common.Testing
 					{
 						float own = 0f; for (int i = 0; i < Main.maxProjectiles; i++) { Projectile q = Main.projectile[i]; if (q.active && q.owner == 0 && q.minion) own += q.minionSlots; } // her minions' slots (a server never resets her slotsMinions)
 						bool full = cmd.maxMinions > 0 && own > 0.01f && own + SoldierNPC.SlotsPerMinion(w) > cmd.maxMinions + 0.01f;
+						if (tower)
+						{
+							// a tower staff fills her turret slots, not her minion slots: a player who keeps clicking replaces the oldest tower each time (Player.UpdateMaxTurrets), and every new tower starts its wind-up again (the Frost Hydra's first shot is 120 ticks after it stands), so
+							// the stand-in's towers never fired while she clicked on forever (observed 2026-11-25: 24 casts, towers up, 0 hits). A player stops when her towers stand.
+							int towers = 0; for (int i = 0; i < Main.maxProjectiles; i++) { Projectile q = Main.projectile[i]; if (q.active && q.owner == 0 && q.sentry && !(q.TryGetGlobalProjectile(out SoldierProjectileTag tq) && tq.SoldierIndex >= 0)) towers++; }
+							full = towers >= Math.Max(1, cmd.maxTurrets);
+						}
 						if (full && fullSince < 0) fullSince = k;
 						if (fullSince >= 0 && !again && k - fullSince >= 3 && cmd.itemAnimation == 0) again = true; // the button let go until the last use is over, then clicked and held
 						// her cursor is on the main target, the plain one and Calamity's own (a staff casts at it, the Saros ray turns to it): a server never updates Calamity's for her
@@ -168,6 +176,7 @@ namespace Levy.Common.Testing
 						try { StandInDrivesUse = true; int anim0 = cmd.itemAnimation; MegaCommanderUse(w, SumPress(w, k, fullSince, again)); if (cmd.itemAnimation > anim0) st.Uses++; } catch (Exception e) { st.Err = "cmd use " + (e is TargetInvocationException && e.InnerException != null ? e.InnerException.GetType().Name + ": " + e.InnerException.Message : e.GetType().Name); }
 						_cmdHolds = cmd.controlUseItem && w.channel;
 						st.MaxMinions = Math.Max(st.MaxMinions, cmd.maxMinions);
+						st.Turrets = Math.Max(st.Turrets, cmd.maxTurrets);
 					}
 					else CursorOnCommander();
 					if (cycle != 0) { bool gone = cycle < 0 || (k % cycle) >= cycle / 2; if (gone && !wasGone) { _sumGone = true; if (_sweepTarget != null) _sweepTarget.active = false; foreach (NPC a in _rogueAdds) if (a != null) a.active = false; } else if (!gone && wasGone) { _sumGone = false; SumLine(at); } wasGone = gone; }
@@ -176,7 +185,7 @@ namespace Levy.Common.Testing
 					foreach (NPC a in _rogueAdds) if (a != null && a.active) { int d = a.lifeMax - a.life; if (d > 0) st.Damage += d; }
 					st.Ticks++;
 					_ab?.Post(k, sn);
-					if (sn != null && sn.NPC.active) { st.Capacity = Math.Max(st.Capacity, sn.MinionCapacity(w)); st.MaxMinions = Math.Max(st.MaxMinions, sn.Dummy?.maxMinions ?? 0); if (Main.GameUpdateCount < sn.RecastHoldUntil) st.HoldTicks++; }
+					if (sn != null && sn.NPC.active) { st.Capacity = Math.Max(st.Capacity, sn.MinionCapacity(w)); st.MaxMinions = Math.Max(st.MaxMinions, sn.Dummy?.maxMinions ?? 0); st.Turrets = Math.Max(st.Turrets, sn.SentrySlots()); if (Main.GameUpdateCount < sn.RecastHoldUntil) st.HoldTicks++; }
 					if (saros) { float u = AltPolicies.ReadMeter(commander ? cmd : sn?.Dummy, "sarosEclipseBeamUsage"); if (!float.IsNaN(u)) { st.UsageMax = Math.Max(st.UsageMax, u); st.UsageEnd = u; } }
 					Vector2 cmdC = cmd.Center, levyC = sn != null && sn.NPC.active ? sn.NPC.Center : at;
 					int alive = 0, owned = 0, slotted = 0, kids = 0; float slots = 0f;

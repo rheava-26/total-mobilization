@@ -154,6 +154,20 @@ namespace Levy.Common.Weapons
 		internal static ChargePlan ChargeRelease(Item item) => item?.ModItem == null || item.ModItem.Mod.Name != "CalamityMod" ? null : _planOverride.TryGetValue(item.ModItem.Name, out ChargePlan o) ? o : ChargeReleaseTable.TryGetValue(item.ModItem.Name, out ChargePlan p) ? p : null;
 
 		/// <summary>
+		/// The stall rule of an AutoHoldMods mod's blade held through a swing projectile (<see cref="AutoHoldType"/>, melee class): a held weapon that has done nothing is let go once (<see cref="LevyConstants.HeldStallReleaseTicks"/>), because a
+		/// weapon that swings when the button goes UP never swings on a held one. A sword that swings on the release has hit nothing while it charges, so it is let go after a short wait and lives out its swing; one that fights while held
+		/// (a combo) hits at once, counts as having done something, and is never let go. Returns the (hold, linger) in ticks, or null for the general rule.
+		/// </summary>
+		internal static (int hold, int linger)? BladeStall(Item item)
+		{
+			if (item?.ModItem == null || Array.IndexOf(AutoHoldMods, item.ModItem.Mod.Name) < 0 || !item.channel || item.shoot <= 0) return null;
+			if (!(item.CountsAsClass(DamageClass.Melee) && !item.CountsAsClass(DamageClass.Ranged) && !item.CountsAsClass(DamageClass.Magic))) return null;
+			if (AutoHoldType(item, WeaponClassifier.ProjectileSample(item.shoot)) <= 0) return null;
+			return (BladeStallTicks, Math.Clamp(item.useTime * 3, 30, 90));
+		}
+		private const int BladeStallTicks = 30;
+
+		/// <summary>
 		/// Held weapons whose state lives in the holder's per-tick player step (Calamity's PostUpdateMiscEffects), not in the holdout: the Unstable Caster's Gauntlet's vis meter (+0.1 every 4 ticks while it is held) pays for every needle.
 		/// The levy's gear frame (which runs that step) runs every tick while he carries one, as it does for modded accessories: on the once-a-second stat pass the meter filled 60 times too slowly and the holdout ended on its first needle.
 		/// </summary>
@@ -209,6 +223,7 @@ namespace Levy.Common.Weapons
 
 		private static int FindHolder(Item item)
 		{
+			if (!Off && !ProjAiHooks.Off && !AutoHoldPlain.Contains(item.ModItem?.Name ?? "")) { int ah = AutoHoldType(item, item.shoot > 0 ? WeaponClassifier.ProjectileSample(item.shoot) : null); if (ah > 0) return ah; }
 			if (item.shoot > 0 && WeaponClassifier.ProjectileSample(item.shoot)?.ModProjectile != null && OwnerLockProbe.ReadsOwnerButton(item.shoot)) return item.shoot;
 			int idle = IdleHolder(item.type);
 			if (idle > 0) return idle;
@@ -321,11 +336,22 @@ namespace Levy.Common.Weapons
 		private static bool AutoHold(Item item, Projectile sample)
 		{
 			if (Array.IndexOf(AutoHoldMods, item.ModItem.Mod.Name) < 0 || AutoHoldPlain.Contains(item.ModItem.Name) || ForcePlain(item.ModItem.Name)) return false;
-			if (item.shoot <= 0 || sample?.ModProjectile == null || item.accessory) return false;
+			if (item.shoot <= 0 || item.accessory) return false;
 			if (!(item.CountsAsClass(DamageClass.Ranged) || item.CountsAsClass(DamageClass.Magic) || item.CountsAsClass(DamageClass.Melee) || WeaponClassifier.IsExtraCombat(item))) return false;
-			// the shot is built on the mod's own "held by its owner" base class (a swing, a stab or a gun drawn at the owner's hand), or it is a channel shot that reads its owner's button
-			if (ChainHas(sample.ModProjectile.GetType(), "TrueMeleeProjectile")) return true;
-			return item.channel && (OwnerLockProbe.ReadsOwnerButton(item.shoot) || OwnerLockProbe.ReadsUseButtons(item.shoot));
+			// the shot is built on the mod's own "held by its owner" base class (a swing, a stab or a gun drawn at the owner's hand): the item's shot, or the one its ModifyShootStats / Shoot hook names (an ammo gun's shoot is the placeholder 10)
+			if (AutoHoldType(item, sample) > 0) return true;
+			// or it is a channel shot that reads its owner's button
+			return sample?.ModProjectile != null && item.channel && (OwnerLockProbe.ReadsOwnerButton(item.shoot) || OwnerLockProbe.ReadsUseButtons(item.shoot));
+		}
+
+		/// <summary>The projectile type of an AutoHoldMods weapon's held "true melee" shot (the item's own shoot, else the one its hooks name), or 0.</summary>
+		internal static int AutoHoldType(Item item, Projectile sample)
+		{
+			if (item?.ModItem == null || Array.IndexOf(AutoHoldMods, item.ModItem.Mod.Name) < 0) return 0;
+			if (sample?.ModProjectile != null && ChainHas(sample.ModProjectile.GetType(), "TrueMeleeProjectile")) return item.shoot;
+			foreach (Type t in OwnerLockProbe.NamedProjectileTypes(item))
+				if (ChainHas(t, "TrueMeleeProjectile")) { int pt = TypeOf(t); if (pt > 0) return pt; }
+			return 0;
 		}
 
 		private static bool ChainHas(Type t, string name)

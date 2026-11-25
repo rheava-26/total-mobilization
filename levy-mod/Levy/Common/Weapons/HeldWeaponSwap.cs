@@ -456,7 +456,8 @@ namespace Levy.Common.Weapons
 				{
 					// a holdout with no charge plan that has been held a long while and made nothing: it loads or charges while the button is down and fires when it is LET GO (a player lets go; a pinned target never pauses the feed, so it
 					// was held for ever and never fired). The button is let go once, as a charge plan would, and the holdout lives out its release.
-					if (++g.HeldTicks > LevyConstants.HeldStallReleaseTicks && g.Made == 0) { g.CycleRelease = true; g.Released = true; g.ReleasedAt = g.HeldTicks; g.Linger = LevyConstants.HeldStallLingerTicks; StallReleases++; }
+					var bladeStall = ModShotKinds.BladeStall(item); // a charge-and-release blade (ModShotKinds.BladeStall) is let go sooner than the general rule
+					if (++g.HeldTicks > (bladeStall?.hold ?? LevyConstants.HeldStallReleaseTicks) && g.Made == 0) { g.CycleRelease = true; g.Released = true; g.ReleasedAt = g.HeldTicks; g.Linger = bladeStall?.linger ?? LevyConstants.HeldStallLingerTicks; StallReleases++; }
 				}
 				if (ModShotKinds.ChainExtras(item)) CountOwned(body); // vanilla counts a player's own projectiles in Player.Update; the dummy never runs it, and holdouts and their children test ownedProjectileCounts (Rancor's circle ends when it sees no holdout)
 				bool button = g.Biome != 0 ? BiomeBlades.WantsButton(body, p, g) : ark ? ArkSwings.WantsButton(p, g) : feed && !release; // the thrown scissors read the use button: held until the snap window opens, then let go

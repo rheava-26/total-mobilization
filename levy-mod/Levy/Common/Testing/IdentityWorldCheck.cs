@@ -170,6 +170,7 @@ namespace Levy.Common.Testing
 			if (Environment.GetEnvironmentVariable("LEVY_NESTSKIP_ALONE") == "1") { NestSkipCheck(); ClearSoldiers(); return; }
 			if (Environment.GetEnvironmentVariable("LEVY_ARMYSWEEP_ALONE") == "1") { UseCycleProbe(); ClearSoldiers(); ArmySweep(); ClearSoldiers(); return; }
 			if (Environment.GetEnvironmentVariable("LEVY_SR_ALONE") == "1") { StarsRiverCheck(); ClearSoldiers(); return; }
+			if (Environment.GetEnvironmentVariable("LEVY_REDE_ALONE") == "1") { RedemptionCheck(); ClearSoldiers(); return; }
 			if (Environment.GetEnvironmentVariable("LEVY_HOLDOUTWORLD_ALONE") == "1") { HoldoutWorldCheck(); ClearSoldiers(); return; }
 			if (Environment.GetEnvironmentVariable("LEVY_AMMOWORLD_ALONE") == "1") { AmmoWorldCheck(); ClearSoldiers(); return; }
 			if (Environment.GetEnvironmentVariable("LEVY_SUMMONSWEEP_ALONE") == "1") { SummonSweepCheck(); ClearSoldiers(); return; }
@@ -214,6 +215,7 @@ namespace Levy.Common.Testing
 			ArmySweep();
 			ClearSoldiers();
 			StarsRiverCheck(); // only with StarsAbove or StarlightRiver loaded
+			RedemptionCheck(); // only with Redemption loaded
 			ClearSoldiers();
 		}
 

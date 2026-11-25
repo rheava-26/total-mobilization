@@ -75,6 +75,8 @@ namespace Levy.Common.Testing
 		};
 
 		private static readonly Dictionary<string, int> _armyAmmo = new();
+		/// <summary>The stand-in player's tap cadence for channel weapons (ticks the button is held before it is let go for four); 0 = hold the button down throughout. A charge-and-release weapon never fires on a held button, so the sweep takes the better of the two for the reference.</summary>
+		private static int _armyTap;
 		/// <summary>LEVY_ARMYSWEEP_REACH=1 (on by default in a LEVY_ARMYSWEEP_MODS sweep): a weapon whose own reach is 10 tiles or less meets its enemy at blade distance, like a blade.</summary>
 		private static bool ArmyReachPlace => Environment.GetEnvironmentVariable("LEVY_ARMYSWEEP_REACH") == "1" || (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LEVY_ARMYSWEEP_MODS")) && Environment.GetEnvironmentVariable("LEVY_ARMYSWEEP_REACH") != "0");
 		private static readonly bool ArmyDebug = Environment.GetEnvironmentVariable("LEVY_ARMYSWEEP_DEBUG") == "1";
@@ -147,7 +149,8 @@ namespace Levy.Common.Testing
 		{
 			p.position = at - new Vector2(p.width / 2f, p.height); p.velocity = Vector2.Zero; p.statMana = p.statManaMax2; p.statLife = p.statLifeMax2;
 			bool grenade = it.channel && it.noUseGraphic && it.useStyle == ItemUseStyleID.Swing; // a held-then-thrown grenade (Doomsday Device) is charged with the button down and thrown on the release
-			bool press = grenade ? GrenadeInHand(255, it.shoot, out bool fullCharge) == null || !fullCharge : (it.autoReuse || it.channel || k % 2 == 0); // a grenade is held until its charge is full and let go (RogueGrenade: a full charge is the player's throw)
+			bool press = grenade ? GrenadeInHand(255, it.shoot, out bool fullCharge) == null || !fullCharge : (it.autoReuse || it.channel || k % 2 == 0);
+			if (_armyTap > 0 && it.channel && !grenade) press = k % (_armyTap + 4) < _armyTap; // a player who taps a charge-and-release weapon: the button down for _armyTap ticks, up for four, again // a grenade is held until its charge is full and let go (RogueGrenade: a full charge is the player's throw)
 			if ((it.sentry || it.buffType > 0 && it.shoot > 0 && (it.DamageType?.CountsAsClass(DamageClass.Summon) ?? false)) && p.ownedProjectileCounts.Length > 0) { int mine = 0; for (int i = 0; i < Main.maxProjectiles; i++) { Projectile q = Main.projectile[i]; if (q.active && q.owner == 255 && (it.sentry ? q.sentry : q.minion)) mine++; } if (mine > 0 && it.sentry) press = false; } // a player does not recast a sentry that is standing
 			if (forcePress >= 0) press = forcePress == 1; // the rogue sweep's stand-in decides its own button (IdentityWorldCheck.ArmyRogue.cs)
 			Main.screenPosition = p.Center - new Vector2(Main.screenWidth / 2f, Main.screenHeight / 2f); Main.mouseX = (int)(aim.X - Main.screenPosition.X); Main.mouseY = (int)(aim.Y - Main.screenPosition.Y);
@@ -175,6 +178,20 @@ namespace Levy.Common.Testing
 		{
 			if (_sweepTarget == null || !_sweepTarget.active) return;
 			int d = _sweepTarget.lifeMax - _sweepTarget.life; if (d > 0) { res.Dmg += d; _sweepTarget.life = _sweepTarget.lifeMax; }
+		}
+
+		/// <summary>The reference player for a weapon: the stand-in uses it, and a channel weapon is used three ways (the button held, tapped for 12 ticks, tapped for 40) with the best result kept: a charge-and-release weapon never fires on a held button, a player taps it.</summary>
+		private static ArmyRes ArmyPlayerBest(int type, int ammo, int ticks, int minions, int turrets, Item sample)
+		{
+			ArmyRes best = ArmyOne(type, ammo, ticks, true, false, minions, turrets);
+			if (sample != null && sample.channel && sample.shoot > 0)
+				foreach (int tap in new[] { 12, 40 })
+				{
+					_armyTap = tap;
+					try { ArmyRes alt = ArmyOne(type, ammo, ticks, true, false, minions, turrets); if (alt.Dmg > best.Dmg) best = alt; }
+					finally { _armyTap = 0; }
+				}
+			return best;
 		}
 
 		private static ArmyRes ArmyOne(int weaponType, int ammoType, int ticks, bool player, bool cmdHolds, int minionCap = 1, int turretCap = 1)
@@ -368,7 +385,7 @@ namespace Levy.Common.Testing
 					}
 					row.A = ArmyOne(type, ammo, ticks, false, false);
 					row.B = ArmyOne(type, ammo, ticks, false, true);
-					row.Player = ArmyOne(type, ammo, ticks, true, false, Math.Max(row.A.DummyMinions, row.B.DummyMinions), Math.Max(row.A.DummyTurrets, row.B.DummyTurrets)); // the stand-in gets the minion and sentry slots the levy's own player has
+					row.Player = ArmyPlayerBest(type, ammo, ticks, Math.Max(row.A.DummyMinions, row.B.DummyMinions), Math.Max(row.A.DummyTurrets, row.B.DummyTurrets), sample); // the stand-in gets the minion and sentry slots the levy's own player has
 					ArmyClassify(row); rows.Add(row);
 					Note($"army sweep {row.Status} {row.Label} [{row.Cls}, {row.Fam}; {row.Probe}] ratio idle {row.RatioA:0.00} / commander holding {row.RatioB:0.00} {row.Cause} || {row.Player} || {row.A} || {row.B}");
 					Note($"army seq {row.Label}: player [{string.Join(",", row.Player.Seq.Take(12))}] || levy idle [{string.Join(",", row.A.Seq.Take(12))}] || commander holding [{string.Join(",", row.B.Seq.Take(12))}]");

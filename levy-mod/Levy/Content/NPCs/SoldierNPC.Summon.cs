@@ -406,6 +406,7 @@ namespace Levy.Content.NPCs
 				if (IsMySentry(q)) { if (q.timeLeft < (SentryOld ? Projectile.SentryLifeTime : LevyConstants.SentryRefreshBelowTicks)) q.timeLeft = Projectile.SentryLifeTime; }
 				else _sentryIds.RemoveAt(k);
 			}
+			if (_sentryIds.Count > 0 && (Main.GameUpdateCount & 15u) == 0u) KeepSentryBuff();
 			if (++_sentryTick < LevyConstants.SentryMaintainIntervalTicks) return;
 			_sentryTick = 0;
 			try
@@ -451,6 +452,19 @@ namespace Levy.Content.NPCs
 			}
 		}
 
+		/// <summary>
+		/// A modded tower whose own AI asks its owner for the staff's summon buff (a sentry's <c>CheckActive</c>) is owned by the commander, who cast nothing and wears none: it ended itself on its first tick (Redemption's Log Staff, Nest Wand, Honeycomb Staff and
+		/// Tesla Generator did 0 damage). While the soldier's towers stand the buff is kept on the owner for a moment at a time; the buff's own update (it counts the owner's towers) ends it when they are gone.
+		/// </summary>
+		private void KeepSentryBuff()
+		{
+			Item weapon = SentryWeapon();
+			if (weapon == null || weapon.buffType <= 0 || weapon.shoot < ProjectileID.Count || Hostile || !Common.Weapons.OwnerLockProbe.ReadsOwnerBuff(weapon.shoot)) return;
+			int who = WeaponUse.OwnerFor(this);
+			if (who < 0 || who >= Main.maxPlayers || Main.player[who] == null || !Main.player[who].active || who == SoldierNPC.DummySlot) return;
+			Main.player[who].AddBuff(weapon.buffType, 60, true);
+		}
+
 		private static float Sq(float v) => v * v;
 
 		/// <summary>
@@ -480,6 +494,7 @@ namespace Levy.Content.NPCs
 				_sentryCd = LevyConstants.SentryRetryTicks;
 				return false;
 			}
+			KeepSentryBuff(); // a tower that asks its owner for the staff buff finds it on its first tick
 			DudTrace.Note(weapon, replacing != null ? "sentry-replant" : "sentry-plant");
 			SoldierMinions.SentryTally++;
 			replacing?.Kill();

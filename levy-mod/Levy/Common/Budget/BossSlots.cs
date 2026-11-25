@@ -47,6 +47,8 @@ namespace Levy.Common.Budget
 
 		/// <summary>Lab counters: spawns that found no slot, slots freed in all, by kind, and failures nothing could answer.</summary>
 		public static int Failed, Freed, FreedCritters, FreedHostiles, FreedReleased, FreedSummons, FreedPacked, FreedLevies, Unanswered;
+		/// <summary>Lab: what each ordinary hostile taken for a boss's room was (slot, name, mod, life), for the world check's notes.</summary>
+		public static readonly List<string> HostileDropLog = new();
 		private static bool _busy;
 		private static int _loggedFor = -1;
 
@@ -110,7 +112,7 @@ namespace Levy.Common.Budget
 			if (!EventOn())
 			{
 				v = Farthest(at, from, IsFillerHostile);
-				if (v >= 0) { Drop(v); Freed++; FreedHostiles++; return true; }
+				if (v >= 0) { if (HostileDropLog.Count < 16) HostileDropLog.Add($"slot {v} {Main.npc[v].TypeName} ({Main.npc[v].ModNPC?.Mod.Name ?? "vanilla"}, life {Main.npc[v].life}/{Main.npc[v].lifeMax}, timeLeft {Main.npc[v].timeLeft})"); Drop(v); Freed++; FreedHostiles++; return true; }
 			}
 			for (int i = 0; i < SlotReleasers.Count; i++)
 			{

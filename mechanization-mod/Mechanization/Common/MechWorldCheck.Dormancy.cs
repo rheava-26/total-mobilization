@@ -16,6 +16,13 @@ using Mechanization.Content.NPCs;
 
 namespace Mechanization.Common
 {
+	/// <summary>No natural enemy spawns while the room-for-a-boss trial of <see cref="MechWorldCheck"/> counts NPC slots (lab only; off the rest of the time).</summary>
+	public class DormSpawnGate : GlobalNPC
+	{
+		public static volatile bool On;
+		public override void EditSpawnRate(Player player, ref int spawnRate, ref int maxSpawns) { if (On) { maxSpawns = 0; spawnRate = int.MaxValue / 4; } }
+	}
+
 	/// <summary>
 	/// The world checks for the two machine rules (see <see cref="MachineDormancy"/>), logged as "[MachineDorm]" lines and a "[MachineDorm] self-check pass=N fail=N" summary:
 	///  1. dormancy: turrets and player-built drones far from every player pack (their NPC slots come back), restore as they were when she is near, survive a save and load (packed, live and near, live and far as a server boots), and are never deleted;
@@ -370,6 +377,7 @@ namespace Mechanization.Common
 			Player p = Main.player[0];
 			Vector2 standAt = new Vector2((cx - 150) * 16f, (FloorY - 40) * 16f);
 			_keepBossParts = true;
+			DormSpawnGate.On = Environment.GetEnvironmentVariable("LEVY_DORM_NOGATE") != "1"; // (LEVY_DORM_NOGATE=1: the lab A/B that shows the flicker) no natural spawn may take one of the three slots the trial leaves short (a hostile that spawns in the head's first tick makes the room four slots, not three)
 			var lastBat = new Dictionary<int, float>(); // each placed drone's battery the tick before it packed (it charges on its pad, so the record holds what it had then)
 			void StepSafe(int n) { for (int k = 0; k < n; k++) { p.immune = true; p.immuneTime = 30; if (standIn != null) Pin(standIn, standAt); foreach (DroneNPC d in Fielders()) lastBat[d.RecordId] = d.Battery; Step(1); } }
 			int FreeSlots() => MachineDormancy.FreeNpcSlots();
@@ -386,7 +394,7 @@ namespace Mechanization.Common
 			void ResetCounters()
 			{
 				BossSlots.Failed = BossSlots.Freed = BossSlots.FreedCritters = BossSlots.FreedHostiles = BossSlots.FreedReleased = BossSlots.FreedSummons = BossSlots.FreedPacked = BossSlots.FreedLevies = BossSlots.Unanswered = 0;
-				MachineDormancy.PackedForBoss = MachineDormancy.WakeHeld = 0; MachineDormancy.BossPackLog.Clear(); MachineBossRoomSystem.ReserveGarrison = MachineBossRoomSystem.ReservePacked = 0;
+				BossSlots.HostileDropLog.Clear(); MachineDormancy.PackedForBoss = MachineDormancy.WakeHeld = 0; MachineDormancy.BossPackLog.Clear(); MachineBossRoomSystem.ReserveGarrison = MachineBossRoomSystem.ReservePacked = 0;
 			}
 			int Summon(out int head) => Summon2(out head, out _);
 			int Summon2(out int head, out int brought)
@@ -440,9 +448,9 @@ namespace Mechanization.Common
 				int segs = Summon(out int head);
 				int others = BossSlots.FreedCritters + BossSlots.FreedHostiles + BossSlots.FreedReleased + BossSlots.FreedSummons;
 				string tally = $"free before {free0} for {need}; freed {BossSlots.Freed}: critters {BossSlots.FreedCritters}, hostiles {BossSlots.FreedHostiles}, garrison {BossSlots.FreedReleased}, summoned {BossSlots.FreedSummons}, machines packed {BossSlots.FreedPacked}, levies {BossSlots.FreedLevies}";
-				DNote("room for a boss, trial: " + tally + $"; segments {segs}; pack distances " + string.Join(", ", MachineDormancy.BossPackLog.ConvertAll(e => $"{e.packed / 16f:0}t (farthest left {e.farthestLeft / 16f:0}t)")));
+				DNote("room for a boss, trial: " + tally + $"; segments {segs}; pack distances " + string.Join(", ", MachineDormancy.BossPackLog.ConvertAll(e => $"{e.packed / 16f:0}t (farthest left {e.farthestLeft / 16f:0}t)")) + (BossSlots.HostileDropLog.Count > 0 ? "; hostiles taken: " + string.Join(" | ", BossSlots.HostileDropLog) : ""));
 				DChk($"room for a boss: {bossName} spawns whole into a world 3 slots short (segments {segs} of {segs0})", head >= 0 && segs == segs0);
-				DChk($"room for a boss: the room comes from packing placed machines and not one levy is benched ({tally}; levies {leviesBefore} -> {Levies()}, squeeze {BossSlots.Squeeze})", BossSlots.FreedPacked >= 2 && BossSlots.FreedPacked + others == 3 && BossSlots.FreedLevies == 0 && BossSlots.Squeeze == 0 && Levies() == leviesBefore);
+				DChk($"room for a boss: the room comes from packing placed machines and not one levy is benched ({tally}; levies {leviesBefore} -> {Levies()}, squeeze {BossSlots.Squeeze})", BossSlots.FreedPacked >= 2 && BossSlots.FreedPacked + others >= 3 && BossSlots.FreedLevies == 0 && BossSlots.Squeeze == 0 && Levies() == leviesBefore);
 				bool farthestFirst = MachineDormancy.BossPackLog.Count >= 2; foreach (var e in MachineDormancy.BossPackLog) farthestFirst &= e.packed >= e.farthestLeft;
 				DChk($"room for a boss: the machines farthest from the spawn pack first ({MachineDormancy.BossPackLog.Count} packs)", farthestFirst);
 				DChk($"room for a boss: what was packed is a record, not a loss (records {TurretSystem.Instance.RecordCount}+{FieldDroneSystem.Instance.RecordCount}, dormant {TurretSystem.Instance.DormantCount}+{FieldDroneSystem.Instance.DormantCount}, standing {Machines()})", TurretSystem.Instance.RecordCount == 2 && FieldDroneSystem.Instance.RecordCount == 2 && TurretSystem.Instance.DormantCount + FieldDroneSystem.Instance.DormantCount == BossSlots.FreedPacked + MachineBossRoomSystem.ReservePacked && Machines() == 4 - BossSlots.FreedPacked - MachineBossRoomSystem.ReservePacked);
@@ -500,7 +508,7 @@ namespace Mechanization.Common
 			}
 			finally
 			{
-				_keepBossParts = false;
+				_keepBossParts = false; DormSpawnGate.On = false;
 				if (standIn != null) standIn.active = false;
 				var left = new List<string>();
 				for (int i = 0; i < Main.maxNPCs; i++)

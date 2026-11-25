@@ -325,14 +325,14 @@ namespace Levy.Common.Testing
 			int idx = RosterSystem.Instance.SpawnBody(rec, SoldierX0Bottom);
 			if (idx < 0 || !rec.HasBody) { ok = false; return "FAIL: SpawnBody"; }
 			var sn = (SoldierNPC)Main.npc[idx].ModNPC;
-			sn.RefreshStats();
+			rec.InvalidateGearMana(); sn.RefreshStats();
 			var levyFull = SbSnap(sn.Dummy); setTextLevy = sn.Dummy.setBonus ?? "";
 			Item legSave = rec.Gear.Legs;
 			rec.Gear.Legs = new Item();
-			sn.RefreshStats();
+			rec.InvalidateGearMana(); sn.RefreshStats();
 			var levyBroken = SbSnap(sn.Dummy);
 			rec.Gear.Legs = legSave;
-			sn.RefreshStats();
+			rec.InvalidateGearMana(); sn.RefreshStats();
 			var levyFull2 = SbSnap(sn.Dummy);
 			string setTextLevy2 = sn.Dummy.setBonus ?? "";
 			// compare
@@ -438,6 +438,7 @@ namespace Levy.Common.Testing
 			_sbMaxOrbs = _sbMaxTitan = _sbMaxPal = _sbMaxNeb = _sbDodgeCd = _sbHolyReady = _sbBeetleSeen = _sbFrostSeen = _sbGuardianSeen = _sbLeafSeen = _sbMateMax = 0;
 			_sbMinStealth = 1f; _sbSmokeTicks = 0; _sbRogueProj.Clear(); _sbLightsOut.Clear(); _sbBuffsSeen.Clear(); _sbRegenMax = 0; _sbMinCmd = int.MaxValue; _sbMaxCmd = 0; _sbLevyLifeMin = int.MaxValue;
 			if (s.Event == "calmeter") SbFillMeters(_sbA.Dummy);
+			if (s.Event == "observe") SbObserveStart();
 			_sbCmdLife0 = cmd.statLife; _sbAL0 = _sbA.NPC.life; _sbBL0 = _sbB?.NPC.life ?? 0;
 			_sbPokerL0 = _sbPoker >= 0 ? Main.npc[_sbPoker].life : 0; _sbTargetL0 = _sbTarget >= 0 ? Main.npc[_sbTarget].life : 0;
 			return true;
@@ -459,6 +460,7 @@ namespace Levy.Common.Testing
 		{
 			SbPin();
 			if (_sbA == null || !_sbA.NPC.active) return;
+			if (s.Event == "observe") SbObserveTick();
 			if (s.Event == "calmeter" && !_sbBuffsSeen.Contains("AdrenalineMode")) SbFillMeters(_sbA.Dummy);
 			if (s.Event == "calmeter") SbRevenge(true);
 			NPC me = _sbA.NPC;
@@ -558,6 +560,7 @@ namespace Levy.Common.Testing
 			int dealt = tg != null ? _sbTargetL0 - tg.life : 0;
 			Player cmd = Main.player[0];
 			info = $"target damage {dealt}";
+			if (s.Event == "observe") return SbObserveVerify(s, out info);
 			if (s.Event != null && s.Event.StartsWith("calkey:"))
 			{
 				string[] parts = s.Event.Split(':');

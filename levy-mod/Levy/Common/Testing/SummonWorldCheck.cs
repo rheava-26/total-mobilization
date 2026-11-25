@@ -241,6 +241,7 @@ namespace Levy.Common.Testing
 			Item w = new Item(); w.SetDefaults(type);
 			if (!rec.Gear.CanHold(SoldierGear.SlotWeapon, w)) { Check($"{label}: a levy can hold it", false); return; }
 			rec.Gear.Weapon = w; rec.Gear.SetLocked(SoldierGear.SlotWeapon, true);
+			if (SummonCap.NeedsMoreSlots(w, 1)) { Item br = new Item(); br.SetDefaults(ItemID.SpookyBreastplate); rec.Gear.Set(SoldierGear.SlotBody, br); rec.Gear.SetLocked(SoldierGear.SlotBody, true); } // a staff that asks for more than the one bare slot (Lilies of Finality) is refused to a levy with so few, as to a player
 			rec.LoadoutLocked = true; rec.Order = SoldierOrder.Follow;
 			RosterSystem.Instance.Regulars.Add(rec);
 			Vector2 at = new Vector2(Cx * 16f + 8f, FloorY * 16f);

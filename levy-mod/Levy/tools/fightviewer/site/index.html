@@ -968,8 +968,8 @@ function ppos(r,src,f1,u,sp,dt){
   if(r.length>si&&r[si]>=0){const r1=fmap(f1,src,si).get(r[si]);if(r1&&r1[0]===r[0])return mv(r,r1,1,2,3,4,u,sp);}
   MV[0]=r[1]+r[3]*dt;MV[1]=r[2]+r[4]*dt;return MV;
 }
-// a projectile row of the page, as named fields: j (hostile) [type,x,y,vx,vy,damage,w,h,slot,penetrate,timeLeft], c (the commander's) [type,x,y,vx,vy,w,h,kind,slot,damage,penetrate,timeLeft],
-// m (a levy's minion or shot) [type,x,y,vx,vy,w,h,slot,owner,kind,damage,penetrate,timeLeft]. null = not recorded (files made before format 15 carry no penetrate or timeLeft).
+// a projectile row of the page, as named fields: j (hostile) [type,x,y,vx,vy,damage,w,h,slot,penetrate,expires], c (the commander's) [type,x,y,vx,vy,w,h,kind,slot,damage,penetrate,expires],
+// m (a levy's minion or shot) [type,x,y,vx,vy,w,h,slot,owner,kind,damage,penetrate,expires]. expires = the tick it runs out (time left = expires - now; field name tl). null = not recorded (files made before format 15 carry no penetrate or expiry).
 function pf(src,r){
   const o=(v,i)=>r.length>i&&v!=null?v:null;
   if(src==="j") return {type:r[0],vx:r[3],vy:r[4],dmg:r[5],w:r[6],h:r[7],pen:o(r[9],9),tl:o(r[10],10),own:"enemy",kind:0};
@@ -979,7 +979,7 @@ function pf(src,r){
 function ownerText(f){return f.own==="enemy"?"enemy (hostile)":f.own==="commander"?"the commander":"levy "+lname(f.lid);}
 function projInfo(src,r,dt){
   const f=pf(src,r), kn=f.kind===1?"minion":f.kind===2?"sentry":src==="j"?"hostile projectile":"shot";
-  return `${kn} ${nm("projectiles",f.type)}\nowner ${ownerText(f)}${f.dmg!=null?"\ndamage "+f.dmg:""}${f.pen!=null?"\npierce "+(f.pen<0?"endless":f.pen+" hit"+(f.pen===1?"":"s")+" left"):""}${f.tl!=null?"\ntime left "+(Math.max(0,f.tl-dt)/TPS).toFixed(1)+" s":""}${f.w?"\nhitbox "+f.w+" x "+f.h+" px":""}\nspeed ${(Math.hypot(f.vx,f.vy)*60/16).toFixed(1)} tiles/s\n(click for details)`;
+  return `${kn} ${nm("projectiles",f.type)}\nowner ${ownerText(f)}${f.dmg!=null?"\ndamage "+f.dmg:""}${f.pen!=null?"\npierce "+(f.pen<0?"endless":f.pen+" hit"+(f.pen===1?"":"s")+" left"):""}${f.tl!=null?"\ntime left "+(Math.max(0,f.tl-cur)/TPS).toFixed(1)+" s":""}${f.w?"\nhitbox "+f.w+" x "+f.h+" px":""}\nspeed ${(Math.hypot(f.vx,f.vy)*60/16).toFixed(1)} tiles/s\n(click for details)`;
 }
 function selRow(f0){
   if(!selP) return null; const rows=f0[selP.src]; if(!rows) return null; const si=SLOT[selP.src];
@@ -1011,7 +1011,7 @@ function updateCard(f0,f1,u,SP,g,sc,dpr){
     row("damage",f.dmg!=null?f.dmg:"not recorded")+
     row("HP","none (a projectile has no life; pierce is its hit count)")+
     row("pierce",f.pen!=null?(f.pen<0?"endless":f.pen+" hit"+(f.pen===1?"":"s")+" left"):"not recorded")+
-    row("time left",f.tl!=null?(Math.max(0,f.tl-dt)/TPS).toFixed(1)+" s":"not recorded")+
+    row("time left",f.tl!=null?(Math.max(0,f.tl-cur)/TPS).toFixed(1)+" s":"not recorded")+
     row("hitbox",f.w?f.w+" x "+f.h+" px":"-")+row("speed",(Math.hypot(f.vx,f.vy)*60/16).toFixed(1)+" tiles/s")+row("tile",tx+", "+ty)+row("type id",f.type)+`</div>`+
     (f.pen==null&&f.tl==null?`<div class="foot">Pierce and time left come with recordings of format 15 and later.</div>`:""));
 }
@@ -1028,13 +1028,13 @@ function updateBuffs(){
   if(!D||D.isEvent||D.pvp||!showBuff){el.hidden=true;return;}
   const ev=D.buffEv; el.hidden=false;
   if(!ev.length){setIf(el,`<h3>Commander buffs</h3><div class="small">None recorded in this file.</div>`);return;}
-  let lo=0,hi=ev.length-1; if(ev[0].t>cur){setIf(el,`<h3>Commander buffs</h3><div class="small">none yet</div>`);return;}
+  let lo=0,hi=ev.length-1; if(ev[0].t>cur){setIf(el,`<h3>Commander buffs: none yet</h3>`);return;}
   while(lo<hi){const m=(lo+hi+1)>>1;if(ev[m].t<=cur)lo=m;else hi=m-1;}
   const e=ev[lo], age=(cur-e.t), names=(D.names&&D.names.buffs)||{};
   const list=e.b.map(b=>({n:names[b[0]]||("buff #"+b[0]),s:(b[1]-age)/TPS,raw:b[1]})).filter(b=>b.s>0||b.raw>2e6).sort((a,b)=>b.s-a.s);
   const key=e.t+"|"+Math.floor(cur/30)+"|"+list.length; if(el.__k===key) return; el.__k=key;
   const body=list.length?list.slice(0,14).map(b=>`<div class="b"><span>${esc(b.n)}</span><i>${b.raw>2e6?"&infin;":bufTime(b.s)}</i></div>`).join("")+(list.length>14?`<div class="small">+${list.length-14} more</div>`:""):`<div class="small">none</div>`;
-  el.innerHTML=`<h3>Commander buffs (${list.length})</h3>`+body;
+  el.innerHTML=list.length?`<h3>Commander buffs (${list.length})</h3>`+body:`<h3>Commander buffs: none</h3>`;
 }
 // beams, warning lines, linked fields and strike segments (format 15 key z: [x0,y0,x1,y1,width,kind,type,slot], kind 1 beam, 2 warning, 3 link, 4 strike)
 function drawLines(g,sc,dpr,f0,f1,u){

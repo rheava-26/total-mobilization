@@ -104,7 +104,7 @@ namespace Levy.Common.Recording
 	///         already in c; c rows gain the same kind as field 8. A levy's friendly shots go into m only in the summon A/B harness (FightRecorder.SummonTrace, up to 300 rows), so the viewer's "summon trace" can draw "its shots" for both sides. Files of format 13 and older have no m
 	///         and no kind (the viewer draws their c rows as plain shots).
 	///         Format 15 adds what the viewer needs to click a projectile and to draw lines (every field appended or optional; readers of format 14 skip the new key and fields):
-	///         j, c and m rows gain penetrate (the hits it has left, -1 endless) and timeLeft (ticks before it expires) as the last two fields; c and m rows also gain damage (c field 9, m field 10). j already carried damage.
+	///         j, c and m rows gain penetrate (the hits it has left, -1 endless) and expires (the recording tick the projectile runs out: its time left is expires minus the sample tick; constant over its life, so it costs nothing in the row coding) as the last two fields; c and m rows also gain damage (c field 9, m field 10). j already carried damage.
 	///         Frame key z (SchemaZ, plain rows, at most RecLines.MaxRows a sample): the line or link a hostile projectile IS, which its box cannot say: deathrays and primitive laserbeams (Calamity, Wrath of the Gods, vanilla pattern), Nameless Deity's screen slices and light slashes,
 	///         the Avatar's blood torrent, arm strikes and thorns, and the linked electric field between Ares's tesla orbs (kind 3). See RecLines.
 	///         p flag 16384: the Avatar of Emptiness's dimension is up (AvatarFight.Void; no tile holds anything up). Event bstate (s, npc): the main boss's CurrentState changed (a ModNPC with a public CurrentState property: Nameless Deity, the Avatar).
@@ -198,9 +198,9 @@ namespace Levy.Common.Recording
 		public const string SchemaA = "type,id,x,y,vx,vy,life,lifeMax,tkind,tlevy,w,h";
 		public const string SchemaS = "type,id,x,y,w,h,realLife,flags  (a row of 3 = id,x,y: same type, size, realLife and flags as that id's last full row)";
 		public const string SFlags = "1 deals contact damage,2 does not take damage,4 body segment (realLife = the head that owns its life)";
-		public const string SchemaJ = "type,x,y,vx,vy,damage,w,h,slot,penetrate,timeLeft  (penetrate: hits left, -1 endless; timeLeft: ticks before it expires; both absent before format 15)";
-		public const string SchemaC = "type,x,y,vx,vy,w,h,slot,kind,damage,penetrate,timeLeft  (kind: 1 minion, 2 sentry, 4 shot; absent before format 14; damage, penetrate and timeLeft absent before format 15)";
-		public const string SchemaM = "type,x,y,vx,vy,w,h,slot,owner,kind,damage,penetrate,timeLeft  (the levies' minions and sentries: owner = the levy's id, kind 1 minion, 2 sentry, 4 shot; format 14; damage, penetrate and timeLeft from format 15)";
+		public const string SchemaJ = "type,x,y,vx,vy,damage,w,h,slot,penetrate,expires  (penetrate: hits left, -1 endless; expires: the recording tick it runs out; both absent before format 15)";
+		public const string SchemaC = "type,x,y,vx,vy,w,h,slot,kind,damage,penetrate,expires  (kind: 1 minion, 2 sentry, 4 shot; absent before format 14; damage, penetrate and expires absent before format 15)";
+		public const string SchemaM = "type,x,y,vx,vy,w,h,slot,owner,kind,damage,penetrate,timeLeft  (the levies' minions and sentries: owner = the levy's id, kind 1 minion, 2 sentry, 4 shot; format 14; damage, penetrate and expires from format 15)";
 		public const string SchemaZ = "x0,y0,x1,y1,width,kind,type,slot  (format 15, whole pixels: the line or link a hostile projectile is; kind 1 beam, 2 warning line, 3 link between two projectiles, 4 strike segment; slot = the projectile's row in j)";
 		public const string SchemaL = "id,x,y,vx,vy,flags,life,state,held,wingTime,lifeMax,w,h";
 		public const string ImpNames = "0 normal,1 miniboss,2 boss";

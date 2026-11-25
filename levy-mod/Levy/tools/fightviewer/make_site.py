@@ -5,7 +5,7 @@ usage: make_site.py <outdir> <set-name>=<dir> [<set-name>=<dir> ...] [--hz 15] [
 
   make_site.py /tmp/replay-site lab1=replays/notable lab2=replays/notable2 worm=replays/worm5 options=replays/options lab3=replays/lab3
 
-For every set directory it reads the recordings (*.levyrec, *.jsonl or *.jsonl.gz, FightRecorder format 1-14; a format 13 recording's NAME_part2.levyrec ... are joined to NAME.levyrec), the optional index.txt
+For every set directory it reads the recordings (*.levyrec, *.jsonl or *.jsonl.gz, FightRecorder format 1-15; a format 13 recording's NAME_part2.levyrec ... are joined to NAME.levyrec), the optional index.txt
 ("why it's notable" notes) and each recording's header meta, and writes
 
   make_site.py <outdir> <sets...> --auto <dir> [--auto <dir2> ...] [--per-cell 2] [--max-auto 110] [--batches 55] [--cache scan.json]
@@ -116,7 +116,7 @@ def stamp(man):
     return n
 # recording format -> (oldest, newest) Levy version known to write it; used only when a recording carries no version
 FORMAT_VERS = {1: ("2.0.0", "2.0.12"), 2: ("2.0.0", "2.0.12"), 3: ("2.0.13", "2.0.19"), 4: ("2.0.13", "2.0.19"), 5: ("2.0.20", "2.0.20"),
-               6: ("2.0.21", "2.0.25"), 7: ("2.0.26", "2.0.40"), 8: ("2.0.41", "2.0.63"), 9: ("2.0.64", "2.0.99"), 10: ("3.0.0", "3.0.9"), 11: ("3.0.10", "3.9.99"), 12: ("3.0.10", "3.9.99"), 13: ("3.1.9", "3.9.99")}
+               6: ("2.0.21", "2.0.25"), 7: ("2.0.26", "2.0.40"), 8: ("2.0.41", "2.0.63"), 9: ("2.0.64", "2.0.99"), 10: ("3.0.0", "3.0.9"), 11: ("3.0.10", "3.9.99"), 12: ("3.0.10", "3.9.99"), 13: ("3.1.9", "3.9.99"), 14: ("3.1.12", "3.9.99"), 15: ("3.1.13", "3.9.99")}
 EVENT_MAX_FACTOR = 60    # an event recording (format 12, 5 Hz, up to an hour) may be thinned to one sample every 12 s to fit a data file
 EVENT_HZ = 1             # the default rate of an event's data file (the page interpolates between samples)
 
@@ -428,12 +428,12 @@ def shrink_frame(f):
     if f.get("s"):
         o["s"] = [[int(round(v)) for v in r] for r in f["s"]]
     if f.get("j"):
-        # page row [type,x,y,vx,vy,damage,w,h,slot,penetrate,timeLeft]: format 13 adds the slot (the page follows one projectile by it), format 15 penetrate and timeLeft
+        # page row [type,x,y,vx,vy,damage,w,h,slot,penetrate,expires]: format 13 adds the slot (the page follows one projectile by it), format 15 penetrate and expires (the tick it runs out)
         o["j"] = [row(j[:11], ints=(0, 1, 2, 5, 6, 7, 8, 9, 10), ones=(3, 4)) for j in f["j"]]
     if f.get("c") and MAX_C_ROWS > 0:
         # the commander's own projectiles: [type,x,y,vx,vy,w,h], positions and sizes as integers, velocity to a tenth; the nearest-listed MAX_C_ROWS stay
         # page row [type,x,y,vx,vy,w,h,kind,slot]: format 14 appends the kind (1 minion, 2 sentry, 4 shot) to the recording row; older files have none (0 = unknown, drawn as a shot). The slot (field 7 of the recording row, format 13) follows one minion from sample to sample
-        # format 15 appends damage, penetrate, timeLeft (c fields 9-11 of the recording row)
+        # format 15 appends damage, penetrate, expires (c fields 9-11 of the recording row)
         o["c"] = [row(c[:7] + [c[8] if len(c) > 8 else 0, c[7] if len(c) > 7 else -1] + list(c[9:12]), ints=(0, 1, 2, 5, 6, 7, 8, 9, 10, 11), ones=(3, 4)) for c in f["c"][:MAX_C_ROWS]]
     if f.get("m") and MAX_M_ROWS > 0:
         # format 14 key m: the levies' own minions, sentries and (summon trace) shots [type,x,y,vx,vy,w,h,slot,owner,kind]; the slot lets the page follow one minion from sample to sample

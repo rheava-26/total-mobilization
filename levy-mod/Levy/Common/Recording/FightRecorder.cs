@@ -150,6 +150,8 @@ namespace Levy.Common.Recording
 			if (pr.TryGetGlobalProjectile(out global::Levy.Common.Globals.SoldierProjectileTag tag) && (tag.IsSoldierShot || tag.CommanderIndex >= 0 || tag.DroneShot || tag.SourceNpcIndex >= 0)) return false;
 			return !global::Levy.Common.Mark.MarkSystem.IsArmyProjectile(pr);
 		}
+		/// <summary>Format 15 "expires": the recording tick a projectile runs out (its timeLeft counts down once per update, extra updates included). A projectile's expiry stays the same sample after sample, so the row coder writes nothing for it; a counting-down timeLeft would cost a number on every row of every sample.</summary>
+		internal static double Expires(Projectile pr, int el) => el + pr.timeLeft / (double)(1 + Math.Max(0, pr.extraUpdates));
 		/// <summary>Format 14 kind of a projectile row (c field 8, m field 9): 1 minion, 2 sentry, 4 anything else (a shot).</summary>
 		internal static int ProjKind(Projectile pr) => pr.minion ? 1 : pr.sentry ? 2 : 4;
 		/// <summary>Format 7 hitbox rows: whoAmI -> hash of the definition (type, width, height, realLife, flags) last written in full; a row for an unchanged NPC is just [id,x,y].</summary>
@@ -1055,7 +1057,7 @@ namespace Levy.Common.Recording
 				if (Math.Abs(pr.Center.X - p.Center.X) > ProjRangePx || Math.Abs(pr.Center.Y - p.Center.Y) > ProjRangePx) continue;
 				if (!_projs.ContainsKey(pr.type)) _projs[pr.type] = Lang.GetProjectileName(pr.type).Value;
 				if (pc++ >= MaxProj) break;
-				f.J.Add(new double[] { pr.type, pr.Center.X, pr.Center.Y, pr.velocity.X, pr.velocity.Y, pr.damage, pr.width, pr.height, i, pr.penetrate, pr.timeLeft });
+				f.J.Add(new double[] { pr.type, pr.Center.X, pr.Center.Y, pr.velocity.X, pr.velocity.Y, pr.damage, pr.width, pr.height, i, pr.penetrate, Expires(pr, el) });
 			}
 
 			// format 11: the commander's own projectiles (his weapons, his minions and sentries); the army's shots, owned by the same slot, are left out
@@ -1066,7 +1068,7 @@ namespace Levy.Common.Recording
 				if (!IsCommanderShot(pr, p)) continue;
 				if (Math.Abs(pr.Center.X - p.Center.X) > ProjRangePx || Math.Abs(pr.Center.Y - p.Center.Y) > ProjRangePx) continue;
 				if (!_projs.ContainsKey(pr.type)) _projs[pr.type] = Lang.GetProjectileName(pr.type).Value;
-				f.C.Add(new double[] { pr.type, pr.Center.X, pr.Center.Y, pr.velocity.X, pr.velocity.Y, pr.width, pr.height, i, ProjKind(pr), pr.damage, pr.penetrate, pr.timeLeft });
+				f.C.Add(new double[] { pr.type, pr.Center.X, pr.Center.Y, pr.velocity.X, pr.velocity.Y, pr.width, pr.height, i, ProjKind(pr), pr.damage, pr.penetrate, Expires(pr, el) });
 				cc++;
 			}
 
@@ -1083,7 +1085,7 @@ namespace Levy.Common.Recording
 				if (!(Main.npc[mtag.SoldierIndex].ModNPC is SoldierNPC owner) || !Main.npc[mtag.SoldierIndex].active) continue;
 				if (Math.Abs(pr.Center.X - p.Center.X) > ProjRangePx || Math.Abs(pr.Center.Y - p.Center.Y) > ProjRangePx) continue;
 				if (!_projs.ContainsKey(pr.type)) _projs[pr.type] = Lang.GetProjectileName(pr.type).Value;
-				f.M.Add(new double[] { pr.type, pr.Center.X, pr.Center.Y, pr.velocity.X, pr.velocity.Y, pr.width, pr.height, i, LevyId(owner, mtag.SoldierIndex), ProjKind(pr), pr.damage, pr.penetrate, pr.timeLeft });
+				f.M.Add(new double[] { pr.type, pr.Center.X, pr.Center.Y, pr.velocity.X, pr.velocity.Y, pr.width, pr.height, i, LevyId(owner, mtag.SoldierIndex), ProjKind(pr), pr.damage, pr.penetrate, Expires(pr, el) });
 				mcount++;
 			}
 

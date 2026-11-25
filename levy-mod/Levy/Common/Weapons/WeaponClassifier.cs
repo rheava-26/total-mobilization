@@ -148,7 +148,7 @@ namespace Levy.Common.Weapons
 			// EXCEPT a hybrid that is a plain melee swing (Heretic Breaker: damage, ally heal on hit, no shot): as a "caster" it had nothing to fire, so its soldier stood off at heal range and never swung. It is a sword like any other
 			// (the swing's on-hit heal sweep is what heals), the heal AI keeps its long reach (HealerCompat.ReachPx).
 			if (item.type >= ItemID.Count && AiDrivenHealerSafe(item) && !IsSwungHybrid(item)) { extended = false; return WeaponFamily.Magic; }
-			if (item.damage <= 0 && !IsEmptinessSprayer(item) && !(item.type >= ItemID.Count && ExtraCombatClass != null && ExtraClassSafe(item))) return WeaponFamily.Unsupported; // a companion-declared class may be a zero-damage support weapon
+			if (item.damage <= 0 && !IsEmptinessSprayer(item) && !(item.type >= ItemID.Count && ExtraClassSafe(item))) return WeaponFamily.Unsupported; // a companion-declared class may be a zero-damage support weapon
 			// Soldiers do not mine: any pickaxe / drill is refused. An axe or hammer is accepted only when it is a plain melee swing that launches nothing (Chlorophyte Greataxe / Warhammer);
 			// channeled saws and drills (Chlorophyte Chainsaw: useStyle Shoot, shoot > 0, owner-anchored) fail the Swing / shoot == 0 gate and stay benched.
 			if (item.pick > 0) return WeaponFamily.Unsupported;
@@ -367,7 +367,7 @@ namespace Levy.Common.Weapons
 					p.RangeTiles = Math.Clamp((int)Math.Round(p.ThrustReachPx / LevyConstants.TilePx), LevyConstants.ThrustRangeMinTiles, LevyConstants.ThrustRangeMaxTiles);
 					break;
 				case WeaponFamily.HeldWeapon:
-					p.HeldMelee = src.CountsAsClass(DamageClass.Melee) && !src.CountsAsClass(DamageClass.Ranged) && !src.CountsAsClass(DamageClass.Magic);
+					p.HeldMelee = src.CountsAsClass(DamageClass.Melee) && !src.CountsAsClass(DamageClass.Ranged) && !src.CountsAsClass(DamageClass.Magic) || ModShotKinds.HeldBladeOfExtraClass(src);
 					p.RangeTiles = p.HeldMelee ? (ArkSwings.IsArkItem(src) ? ArkSwings.BlowTiles(src) : BiomeBlades.IsBiomeItem(src) ? BiomeBlades.ItemReach(src) : LevyConstants.HeldMeleeReachTiles)
 						: src.useAmmo == AmmoID.Arrow ? LevyConstants.RangeBow : src.useAmmo == AmmoID.Bullet ? BumpedRange(LevyConstants.RangeGun) : BumpedRange(LevyConstants.RangeMagic);
 					if (ModShotKinds.HeldReachTiles(src) is int hr && hr > 0) p.RangeTiles = hr; // a held weapon that only reaches so far from its holder (ModShotKinds.HeldReachTable)
@@ -555,16 +555,22 @@ namespace Levy.Common.Weapons
 		/// to declare such a weapon issuable; a modded item it accepts is also allowed past the zero-damage rejection (support weapons such as a healing staff deal no damage).
 		/// Null = none (the default). A throwing delegate counts as false.</summary>
 		public static Func<Item, bool> ExtraCombatClass;
+		/// <summary>More companion opt-ins beside <see cref="ExtraCombatClass"/> (which one companion owns and clears): a content mod's own damage class declared issuable, e.g. Redemption's (RedemptionCompat). Any returning true counts.</summary>
+		public static readonly List<Func<Item, bool>> ExtraCombatClasses = new();
 
 		private static bool CountsAsAnyCombatClass(Item item) =>
 			item.CountsAsClass(DamageClass.Ranged) || item.CountsAsClass(DamageClass.Magic) || item.CountsAsClass(DamageClass.Melee)
 			|| item.CountsAsClass(DamageClass.Summon) || item.CountsAsClass(DamageClass.Throwing)
-			|| (ExtraCombatClass != null && ExtraClassSafe(item));
+			|| ExtraClassSafe(item);
+
+		/// <summary>True when a companion declared this item's own damage class issuable (ExtraCombatClass / ExtraCombatClasses).</summary>
+		internal static bool IsExtraCombat(Item item) => ExtraClassSafe(item);
 
 		private static bool ExtraClassSafe(Item item)
 		{
-			try { return ExtraCombatClass(item); }
-			catch (Exception) { return false; }
+			if (ExtraCombatClass != null) { try { if (ExtraCombatClass(item)) return true; } catch (Exception) { } }
+			for (int i = 0; i < ExtraCombatClasses.Count; i++) { try { if (ExtraCombatClasses[i](item)) return true; } catch (Exception) { } }
+			return false;
 		}
 
 		/// <summary>Compat hook: a heal-driven weapon (ally-heal / self-heal / hybrid) whose soldier runs it on a heal AI rather than aiming it at an enemy. It is classified as a

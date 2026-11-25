@@ -431,7 +431,10 @@ namespace Levy.Common.Testing
 				int[] slotSet = string.IsNullOrEmpty(ss) ? new[] { 1, 3, 6 } : ss.Split(',').Select(int.Parse).ToArray();
 				if (table)
 				{
-					var all = SumCatalogue(null); if (cal) all.AddRange(SumCatalogue(calMod));
+					// LEVY_SUMMONSWEEP_MODS=A,B: the table covers only these mods (vanilla and Calamity left out): the lab's way to table one mod's staves
+					string tmods = Environment.GetEnvironmentVariable("LEVY_SUMMONSWEEP_MODS"); var all = new List<(int type, string label)>();
+					if (!string.IsNullOrEmpty(tmods)) { foreach (string mn in tmods.Split(',', StringSplitOptions.RemoveEmptyEntries)) if (ModLoader.TryGetMod(mn, out Mod tm)) all.AddRange(SumCatalogue(tm)); }
+					else { all = SumCatalogue(null); if (cal) all.AddRange(SumCatalogue(calMod)); }
 					if (names != null) all = all.Where(a => names.Contains(a.label.Substring(a.label.IndexOf(':') + 1))).ToList();
 					SumParityTable(all, ticks, slotSet, false);
 				}

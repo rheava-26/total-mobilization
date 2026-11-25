@@ -7,3 +7,6 @@ ManpowerFull: "{0} is at full manpower."
 NoOneToPay: "{0} has no one on the payroll."
 NoRecruitmentOffice: "{0} has no Recruitment Office."
 OfficeNoBarracks: No Barracks or pylon network is in reach of this office.
+OfficeResting: This Office is ready again in {0}.
+OfficeHoverReady: Rush drive: {0} per recruit
+OfficeHoverResting: Ready in {0}

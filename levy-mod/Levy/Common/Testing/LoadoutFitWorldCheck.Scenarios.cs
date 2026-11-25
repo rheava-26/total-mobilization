@@ -160,7 +160,34 @@ namespace Levy.Common.Testing
 			Check("nothing duplicated or lost by the Re-arm and its passes " + (SameCensus(census, Census(s), out var d3) ? "" : d3), SameCensus(census, Census(s), out _));
 			try { ChaliceCensus(s); } catch (Exception e) { Check("the Chalice census threw " + e.GetType().Name + ": " + e.Message, false); }
 			ArmoryTE.ChaliceScoreOn = chaliceRuleWas;
+			try { SprayCensus(s); } catch (Exception e) { Check("the Emptiness Spray census threw " + e.GetType().Name + ": " + e.Message, false); }
 			WeaponRank.ForceProgress = -1f;
+		}
+
+		/// <summary>
+		/// COMBATFIX: the armory must not prefer the Emptiness Spray (damage 0, priced at 200 platinum) to a real weapon for a levy's primary slot. 45 levies, her stock plus 45 Sprays, a fresh Re-arm: how many levies carry the Spray as their
+		/// weapon with the rule off (BEFORE) and on (NOW).
+		/// </summary>
+		private static void SprayCensus(Scene s)
+		{
+			int spray = ModLoader.TryGetMod("NoxusBoss", out Mod nox) && nox.TryFind("EmptinessSprayer", out ModItem mi) ? mi.Type : 0;
+			if (spray <= 0) { Note("Wrath of the Gods is not loaded: the Emptiness Spray census is skipped"); return; }
+			var te = s.Armory; bool was = WeaponRank.SprayLastResort; var res = new Dictionary<bool, int>();
+			try
+			{
+				foreach (bool on in new[] { false, true })
+				{
+					WeaponRank.SprayLastResort = on;
+					Reset(s, 45);
+					foreach (var row in EveStock) { var p = row.Split('|'); int t = ByName(p[0]); if (t > 0) Stock(te, int.Parse(p[1]), t); }
+					Stock(te, 45, spray); StockAmmo(te); Balance(te, 8, 20, 2f, AllClasses);
+					Rearm(s);
+					res[on] = Active(s).Count(l => !IsAir(l.Gear.Weapon) && l.Gear.Weapon.type == spray);
+				}
+			}
+			finally { WeaponRank.SprayLastResort = was; }
+			Note($"Emptiness Spray census, 45 levies, her stock plus 45 Sprays: levies with the Spray as their weapon: BEFORE {res[false]}, NOW {res[true]}");
+			Check($"the armory does not hand the Emptiness Spray to a levy over a real weapon ({res[true]} of 45 with the rule, {res[false]} without)", res[true] == 0);
 		}
 
 		/// <summary>

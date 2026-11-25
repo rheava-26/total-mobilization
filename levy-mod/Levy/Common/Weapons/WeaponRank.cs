@@ -90,6 +90,8 @@ namespace Levy.Common.Weapons
 		}
 
 		/// <summary>The rank of a weapon under the current mode: higher is better, 0 for an item that is not a supported weapon (or one the current armory's rules exclude).</summary>
+		/// <summary>Lab A/B (LEVY_SPRAYRANK=0): the Emptiness Spray ranks by its price like any item.</summary>
+		internal static bool SprayLastResort = Environment.GetEnvironmentVariable("LEVY_SPRAYRANK") != "0";
 		public static float Of(Item it) => Core(it, false, out _);
 
 		/// <summary>Where a rank comes from, term by term (the item panel and the probes show it). <see cref="Final"/> equals <see cref="Of"/>.</summary>
@@ -163,6 +165,9 @@ namespace Levy.Common.Weapons
 				if (f != 1f) { r *= f; if (explain) { bd.Rules = f; bd.RuleNote = note; } }
 			}
 			if (SkipArmored && mode != WeaponRankMode.Damage && Negligible(it)) { r = 0.5f * r / (r + 1f); if (explain) bd.Negligible = true; } // below every real weapon (those rank 1 and up), still ordered among themselves
+			// Wrath of the Gods' Emptiness Spray deals no damage itself (its gas erases NPCs) but is priced at 200 platinum: in a price mode it would outrank every real weapon for a levy's primary slot. Below every real weapon, still ordered
+			// among them; a levy still gets it when the player Sets or Prefers it.
+			if (SprayLastResort && WeaponClassifier.IsEmptinessSprayer(it) && !(ov != null && (ov.Rank == RankOverrideMode.Set || ov.Rank == RankOverrideMode.Prefer))) { r = 0.5f * r / (r + 1f); if (explain) bd.Negligible = true; }
 			if (ov != null)
 			{
 				if (ov.Rank == RankOverrideMode.Set) r = Math.Max(0.01f, ov.Value);

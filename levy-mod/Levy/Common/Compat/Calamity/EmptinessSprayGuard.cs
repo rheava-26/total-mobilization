@@ -1,5 +1,6 @@
 using System;
 using System.Reflection;
+using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.ModLoader;
 using Levy.Common.Globals;
@@ -77,8 +78,47 @@ namespace Levy.Common.Compat.Calamity
 	{
 		public override bool AppliesToEntity(Projectile entity, bool lateInstantiation) => entity.ModProjectile != null && entity.ModProjectile.Name == "EmptinessSprayerGas" && entity.ModProjectile.Mod.Name == "NoxusBoss";
 
+		private static readonly System.Collections.Generic.List<int> _spared = new();
+		/// <summary>Lab telemetry: friendly NPCs a levy's puff spared this session.</summary>
+		public static long FriendlySpared;
+
+		/// <summary>The sprayer's protected set, found once.</summary>
+		private static bool[] _set;
+		private static bool[] Set()
+		{
+			if (_set != null) return _set;
+			try { if (ModLoader.TryGetMod("NoxusBoss", out Mod nox)) _set = nox.Code.GetType("NoxusBoss.Content.Items.MiscOPTools.EmptinessSprayer")?.GetProperty("NPCsToNotDelete", BindingFlags.Public | BindingFlags.Static)?.GetValue(null) as bool[]; }
+			catch (Exception) { }
+			return _set;
+		}
+
+		/// <summary>
+		/// A LEVY'S PUFF SPARES EVERYTHING FRIENDLY. The gas erases whatever it touches that is not in the protected set, by type; a levy fires it in battle, possibly beside a town. For the length of one update of a levy's puff, the type of every
+		/// friendly NPC in its hitbox (<c>friendly</c> or <c>townNPC</c>: town NPCs, critters, other mods' machines, drones, warband units, officers, summoned units) is added to the protected set, and taken out again after. Hostiles and bosses
+		/// are erased as for a player.
+		/// </summary>
+		private static void SpareFriendlies(Projectile projectile)
+		{
+			bool[] set = Set(); if (set == null) return;
+			Rectangle hb = projectile.Hitbox;
+			for (int i = 0; i < Main.maxNPCs; i++)
+			{
+				NPC n = Main.npc[i];
+				if (!n.active || !(n.friendly || n.townNPC) || n.type < 0 || n.type >= set.Length || set[n.type] || !n.Hitbox.Intersects(hb)) continue;
+				set[n.type] = true; _spared.Add(n.type); FriendlySpared++;
+			}
+		}
+
+		public override void PostAI(Projectile projectile)
+		{
+			if (_spared.Count == 0) return;
+			bool[] set = Set(); if (set != null) foreach (int t in _spared) if (t >= 0 && t < set.Length) set[t] = false;
+			_spared.Clear();
+		}
+
 		public override bool PreAI(Projectile projectile)
 		{
+			if (EmptinessSprayGuard.On && projectile.TryGetGlobalProjectile(out SoldierProjectileTag lt) && lt.IsSoldierShot) SpareFriendlies(projectile);
 			if (EmptinessSprayGuard.On && projectile.ai[0] == 1f && projectile.TryGetGlobalProjectile(out SoldierProjectileTag tag) && tag.IsSoldierShot) { projectile.ai[0] = 0f; EmptinessSprayGuard.ReflectCleared++; }
 			return true;
 		}

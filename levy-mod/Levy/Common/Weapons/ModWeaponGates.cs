@@ -100,8 +100,11 @@ namespace Levy.Common.Weapons
 				var sample = new Item(); sample.SetDefaults(item.type);
 				Item saved = p.inventory[0]; int savedSel = p.selectedItem;
 				p.inventory[0] = sample; p.selectedItem = 0;
-				try { HoldForProbe(sample, p); locked = !ItemLoader.CanUseItem(sample, p); }
-				finally { p.inventory[0] = saved; p.selectedItem = savedSel; }
+				// a placement check in the item's own CanUseItem (a tower or nest that asks "is the tile under the cursor free?") reads the STATIC cursor tile, which is the commander's: judged on her cursor the staff read as
+				// locked whenever she pointed at the ground. The probe asks about an open sky tile, as a player with a free spot to place it would be asked.
+				int savedTx = Player.tileTargetX, savedTy = Player.tileTargetY;
+				try { Player.tileTargetX = Math.Max(10, Main.maxTilesX / 2); Player.tileTargetY = 12; HoldForProbe(sample, p); locked = !ItemLoader.CanUseItem(sample, p); }
+				finally { p.inventory[0] = saved; p.selectedItem = savedSel; Player.tileTargetX = savedTx; Player.tileTargetY = savedTy; }
 			}
 			catch (Exception) { locked = false; }
 			_probed[item.type] = (now, locked);

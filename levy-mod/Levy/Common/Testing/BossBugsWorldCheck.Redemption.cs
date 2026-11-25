@@ -136,6 +136,7 @@ namespace Levy.Common.Testing
 		private static void RedHoldFire(Mod red)
 		{
 			foreach (string w in RedemptionCompat.Wired) Note("wired: " + w);
+			foreach (string w in RedemptionCompat.WiredClass) Note("wired: " + w);
 			Check("the hold-fire states of both choice bosses were found", RedemptionCompat.Wired.Count >= 2 && RedemptionCompat.Wired.All(w => w.Contains("holds in states")));
 			var cases = new (string name, string cls, string[] holdStates, string freeState)[]
 			{

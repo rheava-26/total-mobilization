@@ -58,6 +58,16 @@ namespace Levy.Content.Tiles
 			player.noThrow = 2;
 			player.cursorItemIconEnabled = true;
 			player.cursorItemIconID = ModContent.ItemType<RecruitmentOfficeItem>();
+			// ready: the price of the next rush drive; resting: the in-game time left
+			Tile t = Main.tile[i, j];
+			int left = i - t.TileFrameX / 18, top = j - t.TileFrameY / 18;
+			if (TileEntity.TryGet(left, top, out RecruitmentOfficeTE te))
+			{
+				double rest = te.RestTicks;
+				player.cursorItemIconText = rest > 0
+					? global::Levy.Common.Util.LevyUtil.T("Militia.OfficeHoverResting", global::Levy.Common.Systems.WorldClock.Format(rest))
+					: global::Levy.Common.Util.LevyUtil.T("Militia.OfficeHoverReady", global::Levy.Common.Util.LevyUtil.Coins(global::Levy.Common.Systems.SettlementSystem.RushPriceAfter(global::Levy.Common.Systems.SettlementSystem.Instance.RushDrivesToday)));
+			}
 		}
 	}
 }

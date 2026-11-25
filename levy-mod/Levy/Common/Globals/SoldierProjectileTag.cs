@@ -154,6 +154,43 @@ namespace Levy.Common.Globals
 			}
 		}
 
+		/// <summary>The projectile asked for vanilla's ownerHitCheck (set by its own AI) and the check is made from the holding levy instead.</summary>
+		private bool _ownerGate; private float _ownerGateDist; private int _addedBuff;
+		/// <summary>Lab counter: pairs the gate refused (self-check).</summary>
+		public static int OwnerGateRefusals;
+
+		/// <summary>Vanilla's ownerHitCheck test from the levy's body: the enemy is within ownerHitCheckDistance of the holder and a line from his body reaches it (Collision.CanHitLine, as Projectile.Damage tests from the owner).</summary>
+		private bool OwnerGateBlocks(Projectile p, NPC target)
+		{
+			if (SoldierIndex < 0 || SoldierIndex >= Main.maxNPCs) return false;
+			NPC body = Main.npc[SoldierIndex];
+			if (!body.active) return false;
+			bool blocked = (_ownerGateDist > 0f && Vector2.Distance(body.Center, target.Center) > _ownerGateDist) || !Collision.CanHitLine(body.position, body.width, body.height, target.position, target.width, target.height);
+			if (blocked) OwnerGateRefusals++;
+			return blocked;
+		}
+
+		/// <summary>Modded tower type -> the staff buff its own AI asks its owner for (registered when a levy plants one; see SoldierNPC.RegisterOwnerBuff).</summary>
+		internal static readonly System.Collections.Generic.Dictionary<int, int> OwnerBuffOfTower = new();
+
+		/// <summary>
+		/// A tower whose AI asks its OWNER for the staff buff (a sentry's CheckActive) finds it on the commander for the length of that one AI call and nowhere else: put on in PreAI, taken off in PostAI, so the commander never shows
+		/// the buff or runs its update (no icon, no minion-slot effect). A buff she really has is left alone.
+		/// </summary>
+		private void AddScopedOwnerBuff(Projectile p)
+		{
+			if (!OwnerBuffOfTower.TryGetValue(p.type, out int bt) || p.owner < 0 || p.owner >= Main.maxPlayers) return;
+			Player o = Main.player[p.owner];
+			if (o == null || !o.active || o.HasBuff(bt)) return;
+			o.AddBuff(bt, 2, true); _addedBuff = bt;
+		}
+
+		private void RemoveScopedOwnerBuff(Projectile p)
+		{
+			int bt = _addedBuff; _addedBuff = 0;
+			if (p.owner >= 0 && p.owner < Main.maxPlayers && Main.player[p.owner] != null) Main.player[p.owner].ClearBuff(bt);
+		}
+
 		/// <summary>An officer / summon shot never hits something a soldier would never choose (disguised mimics, bound NPCs, critters): it passes through to its real target.</summary>
 		public override bool? CanHitNPC(Projectile projectile, NPC target)
 		{
@@ -162,6 +199,7 @@ namespace Levy.Common.Globals
 			// refuse it before anything else spends time on the pair.
 			if (LevyProf.On && SoldierIndex >= 0) LevyProf.Pairs++;
 			if ((SoldierIndex >= 0 || CommanderIndex >= 0) && target.friendly) return false;
+			if (_ownerGate && OwnerGateBlocks(projectile, target)) return false;
 			if (CommanderIndex >= 0 && SoldierIndex < 0 && SoldierTargeting.IsNeverTarget(target)) return false;
 			// A soldier's own shot (LootCredit's rule, folded in so the pair pays for one hook and one tag lookup, not two): never hits what a soldier would never choose (disguised mimics, cultist set pieces, bound NPCs,
 			// Plantera's hooks, the Dungeon Guardian... never start a fight we did not choose; the one exception is a critter inside the commander's Focus Attack radius), and a soldier told to hold fire keeps its real
@@ -240,6 +278,12 @@ namespace Levy.Common.Globals
 		public override void PostAI(Projectile projectile)
 		{
 			if (SoldierIndex >= 0 && projectile.type == ProjectileID.TerraBlade2Shot) projectile.ownerHitCheck = false;
+			// A modded blade or holdout held by a levy (the held chain, owner slot 255) is damaged as the commander's projectile, and vanilla's ownerHitCheck judges "a clear line from the OWNER to the enemy, within
+			// ownerHitCheckDistance" from the commander's feet, wherever she stands. The gate is kept, judged from the LEVY's body instead (OwnerGateBlocks, run in CanHitNPC): vanilla's own test is switched off for the
+			// projectile and the same test is made from the holder, so a levy can no more hit through a wall than a player standing there.
+			else if (SoldierIndex >= 0 && projectile.ownerHitCheck && projectile.ModProjectile != null && Weapons.HeldWeapons.IsChainOwner(projectile.owner)) { _ownerGate = true; _ownerGateDist = projectile.ownerHitCheckDistance; projectile.ownerHitCheck = false; }
+			else if (_ownerGate && projectile.ownerHitCheck) projectile.ownerHitCheck = false;
+			if (_addedBuff > 0) { RemoveScopedOwnerBuff(projectile); }
 			if (SoldierIndex >= 0 && IsSporeTrap(projectile.type)) AgeSporeTrapFromSoldier(projectile);
 			// A mimic (etc.) reflecting a soldier's shot aims the bounce-back at Main.player[owner] — the commander, since soldier shots are
 			// owned by the commander. Re-aim it at the soldier that fired it instead, so the reflection comes back at the unit, not at you. Once.
@@ -266,6 +310,8 @@ namespace Levy.Common.Globals
 		public override bool PreAI(Projectile projectile)
 		{
 			if (_sentryParked) { projectile.sentry = true; _sentryParked = false; } // backstop: never run a sentry's AI parked
+			if (_addedBuff > 0) RemoveScopedOwnerBuff(projectile); // a previous AI call whose PostAI never ran
+			if (SoldierIndex >= 0 && projectile.sentry && OwnerBuffOfTower.Count > 0) AddScopedOwnerBuff(projectile);
 			// A soldier sentry whose soldier is gone (dismissed, replaced slot, killed outside the death hook) has no one to keep it up.
 			if (SoldierIndex >= 0 && projectile.sentry && Main.netMode != NetmodeID.MultiplayerClient
 				&& !(SoldierIndex < Main.maxNPCs && Main.npc[SoldierIndex].active && Main.npc[SoldierIndex].ModNPC is SoldierNPC))

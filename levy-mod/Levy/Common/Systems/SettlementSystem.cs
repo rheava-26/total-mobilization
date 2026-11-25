@@ -59,6 +59,9 @@ namespace Levy.Common.Systems
 		// ---- world flags set by event books (persisted here) ----
 		public bool BookConscription, BookDrill, BookPlunder, BookFortification, BookDiscipline;
 
+		/// <summary>Rush recruiting drives run (by any Recruitment Office) since the last dawn. Each one doubles the price of the next; dawn sets it back to 0. Saved with the world, sent with the world data.</summary>
+		public int RushDrivesToday;
+
 		// =====================================================================================================
 		// Lifecycle
 		// =====================================================================================================
@@ -79,6 +82,7 @@ namespace Levy.Common.Systems
 		public override void ClearWorld()
 		{
 			BookConscription = BookDrill = BookPlunder = BookFortification = BookDiscipline = false;
+			RushDrivesToday = 0;
 			ResetRuntime();
 			_pendingKits.Clear();
 		}
@@ -107,6 +111,7 @@ namespace Levy.Common.Systems
 		{
 			tag["bookConscription"] = BookConscription; tag["bookDrill"] = BookDrill; tag["bookPlunder"] = BookPlunder;
 			tag["bookFortification"] = BookFortification; tag["bookDiscipline"] = BookDiscipline;
+			tag["rushToday"] = RushDrivesToday;
 
 			// Mustered militia wear kits drawn from the armory and their records are never saved. PreSaveAndQuit only covers a single-player
 			// Save&Quit, so persist every live militia kit here too (crash, dedicated exit, Host&Play shutdown, autosave). Read-only: tile
@@ -145,6 +150,7 @@ namespace Levy.Common.Systems
 		{
 			BookConscription = tag.GetBool("bookConscription"); BookDrill = tag.GetBool("bookDrill"); BookPlunder = tag.GetBool("bookPlunder");
 			BookFortification = tag.GetBool("bookFortification"); BookDiscipline = tag.GetBool("bookDiscipline");
+			RushDrivesToday = tag.ContainsKey("rushToday") ? Math.Max(0, tag.GetInt("rushToday")) : 0;
 			_pendingKits.Clear();
 			foreach (var t in tag.GetList<TagCompound>("militiaKits"))
 				_pendingKits.Add((new Point16(t.GetInt("hx"), t.GetInt("hy")), SoldierGear.Load(t.GetCompound("gear"))));
@@ -167,12 +173,14 @@ namespace Levy.Common.Systems
 		public override void NetSend(BinaryWriter writer)
 		{
 			writer.Write(BookConscription); writer.Write(BookDrill); writer.Write(BookPlunder); writer.Write(BookFortification); writer.Write(BookDiscipline);
+			writer.Write(RushDrivesToday);
 		}
 
 		public override void NetReceive(BinaryReader reader)
 		{
 			BookConscription = reader.ReadBoolean(); BookDrill = reader.ReadBoolean(); BookPlunder = reader.ReadBoolean();
 			BookFortification = reader.ReadBoolean(); BookDiscipline = reader.ReadBoolean();
+			RushDrivesToday = reader.ReadInt32();
 		}
 
 		/// <summary>Sets an event-book flag; false if it was already set or the key is unknown (books are once per world).</summary>
@@ -719,6 +727,7 @@ namespace Levy.Common.Systems
 		public virtual void OnDawn(int dayNumber)
 		{
 			if (!LevyUtil.IsServerOrSingle) return;
+			if (RushDrivesToday != 0) { RushDrivesToday = 0; SendRushCount(); } // the rush drive's price starts over each dawn
 			RefreshPool();
 			CollectBarracksIds();
 			bool poolDone = false;
@@ -1001,12 +1010,41 @@ namespace Levy.Common.Systems
 		/// <summary>The daily recruiting drive: refills the missing manpower (the shared pool's, for a Barracks on the pylon network) at <see cref="EconomySystem.RecruitingDrivePerPoint"/> from this treasury, once a day.</summary>
 		public virtual bool RecruitingDrive(BarracksTE barracks, Player by) => RunDrive(barracks, by, EconomySystem.RecruitingDrivePerPoint, daily: true);
 
-		/// <summary>The rush drive for a Barracks, any time and any number of times a day, while a Recruitment Office serves it (tests and callers that already hold the Barracks).</summary>
+		/// <summary>The rush drive's price per point right now: 4 x the wage, doubled for every rush drive run since the last dawn.</summary>
+		public virtual long RushPriceNow => RushPriceAfter(RushDrivesToday);
+
+		/// <summary>The rush drive's price per point after <paramref name="drives"/> rush drives since dawn.</summary>
+		public static long RushPriceAfter(int drives) => EconomySystem.RushRecruitingDrivePerPoint << Math.Clamp(drives, 0, LevyConstants.RushDriveMaxDoublings);
+
+		/// <summary>Tells every client the count of rush drives since dawn (it rides the world data).</summary>
+		private void SendRushCount() { if (LevyUtil.IsServer) NetMessage.SendData(MessageID.WorldData); }
+
+		/// <summary>Every Recruitment Office that serves this Barracks: one inside its settlement box, or for a pooled Barracks one in the box of any pooled Barracks or near any pylon.</summary>
+		public virtual List<RecruitmentOfficeTE> OfficesOf(BarracksTE barracks)
+		{
+			var list = new List<RecruitmentOfficeTE>();
+			if (barracks == null) return list;
+			List<BarracksTE> pool = barracks.OnPool ? PoolMembers() : null;
+			foreach (var te in TileEntity.ByID.Values)
+			{
+				if (te is not RecruitmentOfficeTE o) continue;
+				bool serves = InBox(o.Position, barracks);
+				if (!serves && pool != null) { foreach (var m in pool) if (InBox(o.Position, m)) { serves = true; break; } if (!serves && OnPylonNet(o.Center)) serves = true; }
+				if (serves) list.Add(o);
+			}
+			return list;
+		}
+
+		/// <summary>A rush drive for a Barracks through the first of its Offices that is ready (tests and callers that hold the Barracks, not an Office).</summary>
 		public virtual bool RushRecruitingDrive(BarracksTE barracks, Player by)
 		{
 			if (!LevyUtil.IsServerOrSingle || barracks == null) return false;
-			if (!HasRecruitmentOffice(barracks)) { ChatTo(by, LevyUtil.T("Militia.NoRecruitmentOffice", TownName(barracks))); return false; }
-			return RunDrive(barracks, by, EconomySystem.RushRecruitingDrivePerPoint, daily: false);
+			var offices = OfficesOf(barracks);
+			if (offices.Count == 0) { ChatTo(by, LevyUtil.T("Militia.NoRecruitmentOffice", TownName(barracks))); return false; }
+			RecruitmentOfficeTE ready = null, soonest = null;
+			foreach (var o in offices) { if (o.RestTicks <= 0) { ready = o; break; } if (soonest == null || o.RestTicks < soonest.RestTicks) soonest = o; }
+			if (ready == null) { ChatTo(by, LevyUtil.T("Militia.OfficeResting", WorldClock.Format(soonest.RestTicks))); return false; }
+			return RunRush(barracks, ready, by);
 		}
 
 		/// <summary>
@@ -1031,10 +1069,25 @@ namespace Levy.Common.Systems
 			if (!LevyUtil.IsServerOrSingle || office == null) return false;
 			var b = BarracksServedBy(office);
 			if (b == null) { ChatTo(by, LevyUtil.T("Militia.OfficeNoBarracks")); return false; }
-			return RunDrive(b, by, EconomySystem.RushRecruitingDrivePerPoint, daily: false);
+			return RunRush(b, office, by);
 		}
 
-		private bool RunDrive(BarracksTE barracks, Player by, long price, bool daily)
+		/// <summary>
+		/// One rush drive through one Office: the Office must be rested, the price is <see cref="RushPriceNow"/>. When it buys anything the Office rests one in-game day and the next drive anywhere costs twice as much until dawn.
+		/// A drive that buys nothing (pool full, no money) changes neither.
+		/// </summary>
+		private bool RunRush(BarracksTE barracks, RecruitmentOfficeTE office, Player by)
+		{
+			if (office.RestTicks > 0) { ChatTo(by, LevyUtil.T("Militia.OfficeResting", WorldClock.Format(office.RestTicks))); return false; }
+			long price = RushPriceNow;
+			if (!RunDrive(barracks, by, price, daily: false, nextPrice: RushPriceAfter(RushDrivesToday + 1))) return false;
+			RushDrivesToday++;
+			office.StartRest();
+			SyncTE(office); SendRushCount();
+			return true;
+		}
+
+		private bool RunDrive(BarracksTE barracks, Player by, long price, bool daily, long nextPrice = 0)
 		{
 			if (!LevyUtil.IsServerOrSingle || barracks == null) return false;
 			int day = RosterSystem.Instance.DayNumber;
@@ -1052,7 +1105,7 @@ namespace Levy.Common.Systems
 				barracks.RecruitingDriveDay = day;
 				if (barracks.OnPool) foreach (var m in PoolMembers()) { m.RecruitingDriveDay = day; m.MarkDirty(); } // one pool, one drive a day
 			}
-			LevyUtil.Chat(daily ? LevyUtil.T("Chat.RecruitingDrive", town, LevyUtil.Coins(cost)) : LevyUtil.T("Chat.RushRecruitingDrive", town, bought, LevyUtil.Coins(cost)));
+			LevyUtil.Chat(daily ? LevyUtil.T("Chat.RecruitingDrive", town, LevyUtil.Coins(cost)) : LevyUtil.T("Chat.RushRecruitingDrive", town, bought, LevyUtil.Coins(cost), LevyUtil.Coins(nextPrice)));
 			SyncTE(barracks);
 			return true;
 		}
@@ -1061,20 +1114,7 @@ namespace Levy.Common.Systems
 		/// True when a Recruitment Office serves this Barracks: one stands inside its settlement box (<see cref="LevyConstants.SettlementRadiusX"/> x <see cref="LevyConstants.SettlementRadiusY"/> tiles), or, for a Barracks on the
 		/// shared pool, inside the box of any pooled Barracks or within <see cref="LevyConstants.PylonShareRadius"/> tiles of any pylon.
 		/// </summary>
-		public virtual bool HasRecruitmentOffice(BarracksTE barracks)
-		{
-			if (barracks == null) return false;
-			List<BarracksTE> pool = barracks.OnPool ? PoolMembers() : null;
-			foreach (var te in TileEntity.ByID.Values)
-			{
-				if (te is not RecruitmentOfficeTE o) continue;
-				if (InBox(o.Position, barracks)) return true;
-				if (pool == null) continue;
-				foreach (var m in pool) if (InBox(o.Position, m)) return true;
-				if (OnPylonNet(o.Center)) return true;
-			}
-			return false;
-		}
+		public virtual bool HasRecruitmentOffice(BarracksTE barracks) => OfficesOf(barracks).Count > 0;
 
 		private static bool InBox(Point16 p, BarracksTE b) => Math.Abs(p.X - b.Position.X) <= LevyConstants.SettlementRadiusX && Math.Abs(p.Y - b.Position.Y) <= LevyConstants.SettlementRadiusY;
 

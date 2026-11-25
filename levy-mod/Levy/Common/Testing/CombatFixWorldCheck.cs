@@ -430,6 +430,37 @@ namespace Levy.Common.Testing
 					Check($"a levy's puff that was reflected has the delete-the-player flag cleared ({mine.ai[0]}, cleared {EmptinessSprayGuard.ReflectCleared - c0}); the commander's own puff keeps it ({hers.ai[0]})", mine.ai[0] == 0f && hers.ai[0] == 1f);
 				}
 			}
+			// a levy's puff spares everything friendly (town NPCs, critters, other mods' machines), and still erases a hostile slime; the commander's own puff spares only what a player's spares
+			{
+				Cleanup(); Arena(); KeepCommander();
+				var l = Levy(8, new Vector2(Cx * 16f, FloorY * 16f), SoldierOrder.Hold);
+				Vector2 spot = l.NPC.Center + new Vector2(120f, 0f);
+				int gi = NPC.NewNPC(new EntitySource_WorldEvent("CombatFix"), (int)spot.X, (int)spot.Y, NPCID.Guide); NPC guide = gi >= 0 && gi < Main.maxNPCs ? Main.npc[gi] : null;
+				int bi = NPC.NewNPC(new EntitySource_WorldEvent("CombatFix"), (int)spot.X, (int)spot.Y, NPCID.Bunny); NPC bunny = bi >= 0 && bi < Main.maxNPCs ? Main.npc[bi] : null;
+				NPC machine = null; string machineName = "none";
+				foreach (string mn in new[] { "Mechanization", "Warbands" })
+					if (machine == null && ModLoader.TryGetMod(mn, out Mod mm))
+						foreach (ModNPC mnpc in mm.GetContent<ModNPC>())
+						{
+							if (mnpc is SoldierNPC) continue;
+							int ti = NPC.NewNPC(new EntitySource_WorldEvent("CombatFix"), (int)spot.X, (int)spot.Y, mnpc.Type);
+							if (ti >= 0 && ti < Main.maxNPCs && Main.npc[ti].active && (Main.npc[ti].friendly || Main.npc[ti].townNPC)) { machine = Main.npc[ti]; machineName = mn + "/" + mnpc.Name; break; }
+							if (ti >= 0 && ti < Main.maxNPCs) Main.npc[ti].active = false;
+						}
+				NPC slime = PinNpc(NPCID.BlueSlime, spot);
+				foreach (NPC f in new[] { guide, bunny, machine }) if (f != null) { f.Center = spot; f.noGravity = true; f.velocity = Vector2.Zero; }
+				for (int k = 0; k < 1; k++)
+				{
+					int pi = Projectile.NewProjectile(new EntitySource_WorldEvent("CombatFix"), spot, Vector2.Zero, gas.Type, 0, 0f, 0);
+					if (pi >= 0 && pi < Main.maxProjectiles && Main.projectile[pi].TryGetGlobalProjectile(out global::Levy.Common.Globals.SoldierProjectileTag tg)) tg.SoldierIndex = k == 0 ? l.NPC.whoAmI : -1;
+				}
+				long sp0 = EmptinessSprayGuardProjectile.FriendlySpared;
+				// one puff, a levy's (tagged): step once and read what stands
+				Step(1, k => { foreach (NPC f in new[] { guide, bunny, machine }) if (f != null) { f.Center = spot; f.velocity = Vector2.Zero; } });
+				bool townOk = guide == null || guide.active, critterOk = bunny == null || bunny.active, machineOk = machine == null || machine.active;
+				Note($"spray, friendly fire: a town NPC {(guide == null ? "(not spawned)" : townOk ? "stands" : "ERASED")}, a critter {(bunny == null ? "(not spawned)" : critterOk ? "stands" : "ERASED")}, a machine [{machineName}] {(machine == null ? "(none loaded)" : machineOk ? "stands" : "ERASED")}, the hostile slime {(slime.active ? "stands" : "erased")}; friendly NPCs spared {EmptinessSprayGuardProjectile.FriendlySpared - sp0}");
+				Check("a levy's puff erases the hostile slime and leaves the town NPC, the critter and the other mod's machine standing", !slime.active && townOk && critterOk && machineOk);
+			}
 			// a levy using the spray as a weapon, like a player
 			if (nox.TryFind("EmptinessSprayer", out ModItem sprayer))
 			{

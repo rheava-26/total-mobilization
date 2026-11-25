@@ -182,7 +182,7 @@ namespace Levy.Common.Testing
 			WotgScenes.TestState = "Teleport"; Step(10); WotgScenes.TestState = "Awaken_LegEmergence"; Step(400);
 			SCheck($"a moment speaks once a fight ({LinesOf("SCENE_AVATAR_EMERGE", o0)} lines the second time)", LinesOf("SCENE_AVATAR_EMERGE", o0) == 0);
 
-			// the worried line now and then; the levies' own chatter stays held
+			// the worried line now and then; the levies' own chatter stays held (at the full rate: the Avatar fight's quieter default is checked just below)
 			WotgScenes.TestState = "Teleport";
 			int c0 = WotgScenes.Log.Count, fl0 = WotgScenes.FightLines, fd0 = DialogueSystem.FloatingDelivered, amb0 = SoldierNPC.ChatterLines, hh0 = NoxusFights.HushDropped;
 			Step(60 * 120);

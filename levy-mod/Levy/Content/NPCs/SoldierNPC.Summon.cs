@@ -453,6 +453,17 @@ namespace Levy.Content.NPCs
 			}
 		}
 
+		/// <summary>
+		/// A modded tower whose own AI asks its owner for the staff's summon buff (a sentry's <c>CheckActive</c>) is owned by the commander, who cast nothing and wears none: it ended itself on its first tick (Redemption's Log Staff, Nest Wand,
+		/// Honeycomb Staff and Tesla Generator did 0 damage). The tower's type is registered here; <see cref="SoldierProjectileTag"/> then gives the owner the buff for the length of the tower's own AI call only, so it never shows on the commander.
+		/// </summary>
+		private void KeepSentryBuff()
+		{
+			Item weapon = SentryWeapon();
+			if (weapon == null || weapon.buffType <= 0 || weapon.shoot < ProjectileID.Count || Hostile || !Common.Weapons.OwnerLockProbe.ReadsOwnerBuff(weapon.shoot)) return;
+			SoldierProjectileTag.OwnerBuffOfTower[weapon.shoot] = weapon.buffType;
+		}
+
 		private static float Sq(float v) => v * v;
 
 		/// <summary>
@@ -482,6 +493,7 @@ namespace Levy.Content.NPCs
 				_sentryCd = LevyConstants.SentryRetryTicks;
 				return false;
 			}
+			KeepSentryBuff(); // a tower that asks its owner for the staff buff finds it on its first tick
 			DudTrace.Note(weapon, replacing != null ? "sentry-replant" : "sentry-plant");
 			SoldierMinions.SentryTally++;
 			replacing?.Kill();

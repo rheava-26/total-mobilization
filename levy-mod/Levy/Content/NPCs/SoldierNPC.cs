@@ -69,6 +69,7 @@ namespace Levy.Content.NPCs
 		public void GrantAllTypeImmunity(int ticks) { ImmuneTime = Math.Max(ImmuneTime, ticks); AllImmune = Math.Max(AllImmune, ticks); }
 		public int TicksSinceDamaged = 100000;
 		public int PotionSickness;
+		private bool _potionNetSeen;
 		public int LastAttackerIndex = -1, LastAttackerType = -1;
 		public string LastAttackerName = "";
 		private bool _deathHandled;
@@ -692,7 +693,11 @@ namespace Levy.Content.NPCs
 			Record.HairColor = reader.ReadRGB(); Record.SkinColor = reader.ReadRGB(); Record.EyeColor = reader.ReadRGB(); Record.ShirtColor = reader.ReadRGB(); Record.UnderShirtColor = reader.ReadRGB(); Record.PantsColor = reader.ReadRGB(); Record.ShoeColor = reader.ReadRGB();
 			Record.CommanderName = reader.ReadString(); Record.HomeBarracksId = reader.ReadInt32();
 			Record.Gear.ReadVisual(reader);
+			int prevSickness = PotionSickness;
 			PotionSickness = reader.ReadByte() * 30;
+			// a drink: the sickness jumps up by a potion's worth (the mirror only counts down between syncs). The server cannot play the sound, so each client plays it where the levy stands, as a player's drink is heard.
+			if (_potionNetSeen && Main.netMode == NetmodeID.MultiplayerClient && PotionSickness - prevSickness > LevyConstants.PotionDrinkSoundJumpTicks) Terraria.Audio.SoundEngine.PlaySound(SoundID.Item3, NPC.Center);
+			_potionNetSeen = true; // the first message of a new body only says where its sickness stands
 			Aggro = reader.ReadInt16();
 			Record.Mutinous = reader.ReadBoolean();
 			bool wasOfficer = OfficerMode;

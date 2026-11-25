@@ -134,49 +134,68 @@ namespace Levy.Common.Testing
 				A.Manpower = 70;
 				Check("daily drive: the other barracks of the network cannot run a second one the same day", !sys.RecruitingDrive(B, player) && B.Manpower == 70);
 
-				// 10. the Recruitment Office and the rush drive
-				Check("rush price is 4 x the wage, twice the daily price", rush == 4 * wage && rush == 2 * daily, () => $"rush {rush}, wage {wage}, daily {daily}");
+				// 10. the Recruitment Office: each has its own rest of one in-game day; every rush drive since dawn doubles the price
+				int rushWas = sys.RushDrivesToday; double clockWas = WorldClock.Now; sys.RushDrivesToday = 0;
+				Check("rush price is 4 x the wage, twice the daily price", rush == 4 * wage && rush == 2 * daily && sys.RushPriceNow == rush, () => $"rush {rush}, wage {wage}, daily {daily}");
 				Check("no Office: the settlement is not served", !sys.HasRecruitmentOffice(A) && !sys.HasRecruitmentOffice(B) && !sys.HasRecruitmentOffice(D));
 				before = A.Treasury; bool noOffice = sys.RushRecruitingDrive(A, player);
-				Check("no Office: a rush drive is refused and costs nothing", !noOffice && A.Manpower == 70 && A.Treasury == before);
+				Check("no Office: a rush drive is refused and costs nothing", !noOffice && A.Manpower == 70 && A.Treasury == before && sys.RushDrivesToday == 0);
 				var office = TestTileEntities.Add<RecruitmentOfficeTE>(910020, new Point16(cx + 10, y)); made.Add(office); // in the pylon town, far from both barracks
 				Check("an Office anywhere on the pylon network serves the pooled barracks (both)", sys.HasRecruitmentOffice(A) && sys.HasRecruitmentOffice(B));
 				Check("that Office does not serve the lone barracks", !sys.HasRecruitmentOffice(D));
+				Check("a new Office is ready", office.RestTicks == 0);
 				A.Treasury = 5 * rush + 1; B.Treasury = 0; before = A.Treasury;
 				ok = sys.RushRecruitingDrive(A, player);
-				Check("rush drive: with 5 points of money it buys 5 points at 4 x the wage", ok && A.Manpower == 75 && before - A.Treasury == 5 * rush, () => $"ok {ok}, pool {A.Manpower}, paid {before - A.Treasury} of {5 * rush}");
+				Check("first rush drive of the day: with 5 points of money it buys 5 points at 4 x the wage", ok && A.Manpower == 75 && before - A.Treasury == 5 * rush, () => $"ok {ok}, pool {A.Manpower}, paid {before - A.Treasury} of {5 * rush}");
+				Check("the Office now rests one in-game day and the day's count is 1", Math.Abs(office.RestTicks - 86400) < 0.5 && sys.RushDrivesToday == 1 && sys.RushPriceNow == 2 * rush, () => $"rest {office.RestTicks}, count {sys.RushDrivesToday}");
 				Check("rush drive: leaves the daily drive's day alone (the daily drive ran today and still reads so)", A.RecruitingDriveDay == day && B.RecruitingDriveDay == day, () => $"A {A.RecruitingDriveDay}, B {B.RecruitingDriveDay}, today {day}");
 				A.Treasury = 50_000_000; A.Manpower = 60; before = A.Treasury;
-				ok = sys.RushRecruitingDrive(A, player);
-				bool again = sys.RushRecruitingDrive(B, player); // already full
-				Check("rush drive: runs on a day the daily drive was used, fills to the cap (60 -> 81)", ok && A.Manpower == 81 && before - A.Treasury == 21 * rush, () => $"ok {ok}, pool {A.Manpower}, paid {before - A.Treasury}");
-				Check("rush drive: at the cap there is nothing to buy", !again);
-				A.Manpower = 40; A.Treasury = 50_000_000; bool r1 = sys.RushRecruitingDrive(A, player); bool full1 = A.Manpower == 81; A.Manpower = 40; bool r2 = sys.RushRecruitingDrive(A, player);
-				Check("rush drive: no daily limit (two in a row, same day)", r1 && full1 && r2 && A.Manpower == 81, () => $"r1 {r1} r2 {r2} pool {A.Manpower}");
-				A.Manpower = 40; B.Treasury = 0; bool broke = sys.RushRecruitingDrive(B, player);
-				Check("rush drive: paid from the treasury of the barracks asked (an empty one buys nothing)", !broke && A.Manpower == 40);
-				B.Treasury = 50_000_000; A.Manpower = 40; bool r3 = sys.RushRecruitingDrive(B, player);
-				Check("rush drive: the other barracks can run it too and it fills the same pool", r3 && A.Manpower == 81 && B.Manpower == 81);
+				Check("a resting Office runs nothing, spends nothing and does not change the price", !sys.RushRecruitingDrive(A, player) && !sys.RushDriveAt(office, player) && A.Manpower == 60 && A.Treasury == before && sys.RushDrivesToday == 1);
+				WorldClock.Now += 3600 * 23;
+				Check("23 in-game hours later it still rests (1 left)", Math.Abs(office.RestTicks - 3600) < 0.5 && !sys.RushRecruitingDrive(A, player));
+				WorldClock.Now += 3600;
+				Check("after one in-game day the Office is ready", office.RestTicks == 0);
+				ok = sys.RushRecruitingDrive(A, player); // fills 60 -> 81 at the doubled price
+				Check("the second rush drive of the day costs twice as much (21 points at 2 x 4 x wage)", ok && A.Manpower == 81 && before - A.Treasury == 21 * 2 * rush && sys.RushDrivesToday == 2, () => $"ok {ok}, pool {A.Manpower}, paid {before - A.Treasury} of {21 * 2 * rush}");
+				var officeB = TestTileEntities.Add<RecruitmentOfficeTE>(910023, new Point16(cx + 14, y)); made.Add(officeB);
+				A.Manpower = 40; before = A.Treasury;
+				ok = sys.RushRecruitingDrive(A, player); // the first Office rests, the second is ready at once
+				Check("a second Office runs at once (its own rest) at the next price: 41 points at 4 x 4 x wage", ok && A.Manpower == 81 && before - A.Treasury == 41 * 4 * rush && sys.RushDrivesToday == 3 && officeB.RestTicks > 0, () => $"ok {ok}, pool {A.Manpower}, paid {before - A.Treasury} of {41 * 4 * rush}, count {sys.RushDrivesToday}");
+				A.Manpower = 40;
+				Check("both Offices resting: the next drive is refused", !sys.RushRecruitingDrive(A, player) && A.Manpower == 40 && sys.RushDrivesToday == 3);
+				var officeC = TestTileEntities.Add<RecruitmentOfficeTE>(910024, new Point16(cx + 18, y)); made.Add(officeC);
+				A.Manpower = 81; B.Treasury = 50_000_000; before = B.Treasury;
+				Check("at the cap there is nothing to buy: no money spent, no rest, no count", !sys.RushDriveAt(officeC, player) && B.Treasury == before && officeC.RestTicks == 0 && sys.RushDrivesToday == 3);
+				A.Manpower = 50; B.Treasury = 8 * rush - 1; // a point costs 8 x rush now
+				Check("too little money buys nothing: no rest, no count", !sys.RushDriveAt(officeC, player) && A.Manpower == 50 && officeC.RestTicks == 0 && sys.RushDrivesToday == 3);
+				B.Treasury = 50_000_000; before = B.Treasury;
+				ok = sys.RushDriveAt(officeC, player); // right-click on the third Office: 31 points at 8 x rush
+				Check("right-click on a third Office: paid from the served barracks at the price after three drives (31 points at 8 x 4 x wage)", ok && A.Manpower == 81 && before - B.Treasury == 31 * 8 * rush && sys.RushDrivesToday == 4, () => $"ok {ok}, pool {A.Manpower}, paid {before - B.Treasury} of {31 * 8 * rush}");
+				sys.OnDawn(day + 1);
+				Check("dawn: the price is back to 4 x the wage; the Offices keep resting", sys.RushDrivesToday == 0 && sys.RushPriceNow == rush && officeB.RestTicks > 0 && officeC.RestTicks > 0);
+				B.Treasury = 50_000_000; A.Manpower = 10; before = B.Treasury;
+				WorldClock.Now += 86400; // a day on: all three are ready again
+				ok = sys.RushDriveAt(office, player);
+				Check("after dawn a drive costs the base price again (71 points at 4 x wage)", ok && before - B.Treasury == 71 * rush && A.Manpower == 81 && sys.RushDrivesToday == 1, () => $"ok {ok}, paid {before - B.Treasury} of {71 * rush}");
+				TestTileEntities.Remove(officeB); made.Remove(officeB); TestTileEntities.Remove(officeC); made.Remove(officeC);
+				sys.RushDrivesToday = 0; WorldClock.Now += 86400;
 				A.Manpower = 10; A.Treasury = rush - 1; bool poor = sys.RushRecruitingDrive(A, player);
 				Check("rush drive: a treasury short of one point's price buys nothing", !poor && A.Manpower == 10);
 				var office2 = TestTileEntities.Add<RecruitmentOfficeTE>(910021, new Point16(dx + 8, y)); made.Add(office2); // inside the lone barracks's box
 				Check("an Office in the lone barracks's box serves that barracks", sys.HasRecruitmentOffice(D));
 				D.Manpower = 3; D.Treasury = 50_000_000; before = D.Treasury; ok = sys.RushRecruitingDrive(D, player);
-				Check("lone barracks: rush refills its own pool (3 -> 18) at 4 x the wage", ok && D.Manpower == 18 && before - D.Treasury == 15 * rush && A.Manpower == 10, () => $"ok {ok}, pool {D.Manpower}, paid {before - D.Treasury}, network pool {A.Manpower}");
+				Check("lone barracks: rush refills its own pool (3 -> 18) at the day's price (4 x the wage)", ok && D.Manpower == 18 && before - D.Treasury == 15 * rush && A.Manpower == 10, () => $"ok {ok}, pool {D.Manpower}, paid {before - D.Treasury}, network pool {A.Manpower}");
+				Check("the price is one count for the whole world: the lone barracks's drive made the next one cost twice", sys.RushDrivesToday == 1 && sys.RushPriceNow == 2 * rush);
 				// right-click on an Office: it picks its Barracks itself and runs the drive
 				Check("an Office in the pylon town serves the nearest pooled barracks (the east one)", ReferenceEquals(sys.BarracksServedBy(office), B), () => sys.BarracksServedBy(office)?.TownName ?? "null");
 				Check("an Office in the lone barracks's box serves the lone barracks", ReferenceEquals(sys.BarracksServedBy(office2), D));
 				var lost = TestTileEntities.Add<RecruitmentOfficeTE>(910022, new Point16(3000, y)); made.Add(lost);
-				Check("an Office with no Barracks and no pylon in reach serves nothing, and right-click says so without spending", sys.BarracksServedBy(lost) == null && !sys.RushDriveAt(lost, null));
+				Check("an Office with no Barracks and no pylon in reach serves nothing, and right-click says so without spending", sys.BarracksServedBy(lost) == null && !sys.RushDriveAt(lost, null) && lost.RestTicks == 0);
 				TestTileEntities.Remove(lost); made.Remove(lost);
-				A.Manpower = 50; B.Treasury = 50_000_000; before = B.Treasury; ok = sys.RushDriveAt(office, player);
-				Check("right-click: rush drive from the served barracks's treasury, 50 -> 81 at 4 x the wage", ok && A.Manpower == 81 && before - B.Treasury == 31 * rush, () => $"ok {ok}, pool {A.Manpower}, paid {before - B.Treasury}");
-				Check("right-click at the cap: nothing to buy, nothing spent", !sys.RushDriveAt(office, player) && B.Treasury == before - 31 * rush);
-				A.Manpower = 50; B.Treasury = rush - 1; Check("right-click with too little money buys nothing", !sys.RushDriveAt(office, player) && A.Manpower == 50);
-				B.Treasury = 50_000_000;
 				TestTileEntities.Remove(office); made.Remove(office);
 				Check("Office removed from the network: the pooled barracks are no longer served", !sys.HasRecruitmentOffice(A) && !sys.HasRecruitmentOffice(B) && sys.HasRecruitmentOffice(D));
 				TestTileEntities.Remove(office2); made.Remove(office2);
+				B.Treasury = 50_000_000; sys.RushDrivesToday = rushWas; WorldClock.Now = clockWas;
 
 				// 11. the Spectator's bet and the roster read the shared pool
 				A.Manpower = 0; D.Manpower = 0;
@@ -225,14 +244,18 @@ namespace Levy.Common.Testing
 				Recipe rec = null; foreach (var r in Main.recipe) if (r != null && r.createItem != null && r.createItem.type == officeItem) { rec = r; break; }
 				Check("Recruitment Office recipe: an Enchanted Sundial and materials, at a Work Bench", rec != null && rec.HasIngredient(ItemID.Sundial) && rec.HasTile(TileID.WorkBenches), () => rec == null ? "no recipe" : "missing sundial or bench");
 				string[] keys = { "Items.RecruitmentOfficeItem.DisplayName", "Items.RecruitmentOfficeItem.Tooltip", "Tiles.RecruitmentOfficeTile.MapEntry", "UI.ManpowerNet", "UI.ManpowerNetShort", "UI2.RecruitingDriveHint", "UI2.RecruitingDriveHintNet",
-					"Chat.RushRecruitingDrive", "Militia.NoRecruitmentOffice", "Militia.OfficeNoBarracks", "Guide.Pages.Recruiting.Title", "Guide.Pages.Recruiting.Body", "Configs.LevyConfig.ManpowerPerTownNpc.Label", "Configs.LevyConfig.ManpowerPerTownNpc.Tooltip", "Configs.LevyConfig.ManpowerCap.Label", "Configs.LevyConfig.ManpowerCap.Tooltip" };
+					"Chat.RushRecruitingDrive", "Militia.NoRecruitmentOffice", "Militia.OfficeNoBarracks", "Militia.OfficeResting", "Militia.OfficeHoverReady", "Militia.OfficeHoverResting", "Guide.Pages.Recruiting.Title", "Guide.Pages.Recruiting.Body", "Configs.LevyConfig.ManpowerPerTownNpc.Label", "Configs.LevyConfig.ManpowerPerTownNpc.Tooltip", "Configs.LevyConfig.ManpowerCap.Label", "Configs.LevyConfig.ManpowerCap.Tooltip" };
 				var missing = new List<string>();
 				foreach (var k in keys) { string full = "Mods.Levy." + k; string v = Terraria.Localization.Language.Exists(full) ? Terraria.Localization.Language.GetTextValue(full) : null; if (string.IsNullOrWhiteSpace(v) || v == full || v.StartsWith("Mods.Levy.")) missing.Add(k); }
 				Check("every string the pool and the Office show resolves", missing.Count == 0, () => string.Join(", ", missing));
 				string net = global::Levy.Common.Util.LevyUtil.T("UI.ManpowerNet", 214, 300, 31);
 				Check("the panel text reads 'Manpower 214 / 300 · 31 townsfolk across the pylon network'", net == "Manpower 214 / 300 · 31 townsfolk across the pylon network", () => net);
 				string tip = global::Levy.Common.Util.LevyUtil.T("Items.RecruitmentOfficeItem.Tooltip");
-				Check("the tooltip says what a rush drive is and what it costs", tip.Contains("rush recruiting drive") && tip.Contains("Right click") && tip.Contains("twice as much"), () => tip);
+				Check("the tooltip says what a rush drive is, its rest and what it costs", tip.Contains("rush recruiting drive") && tip.Contains("Right click") && tip.Contains("one in-game day") && tip.Contains("4 times the daily wage") && tip.Contains("doubled"), () => tip);
+				string rushChat = global::Levy.Common.Util.LevyUtil.T("Chat.RushRecruitingDrive", "Town", 12, "1 gold", "2 gold");
+				Check("the rush chat line says the price of the next drive", rushChat.Contains("12 recruits") && rushChat.Contains("next rush drive costs 2 gold"), () => rushChat);
+				string resting = global::Levy.Common.Util.LevyUtil.T("Militia.OfficeResting", "13h 20m"), hoverR = global::Levy.Common.Util.LevyUtil.T("Militia.OfficeHoverReady", "1 gold"), hoverT = global::Levy.Common.Util.LevyUtil.T("Militia.OfficeHoverResting", "13h 20m");
+				Check("the hover and the right-click text read as time left or price", resting.Contains("13h 20m") && hoverR.Contains("1 gold") && hoverT.Contains("13h 20m"), () => resting + " / " + hoverR + " / " + hoverT);
 			}
 			catch (Exception e) { Check("threw " + e.GetType().Name + ": " + e.Message + " @ " + (e.StackTrace ?? "").Split('\n')[0].Trim(), false); }
 			finally

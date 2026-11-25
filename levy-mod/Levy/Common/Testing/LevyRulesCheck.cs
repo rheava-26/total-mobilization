@@ -399,6 +399,7 @@ namespace Levy.Common.Testing
 				s.PotionSickness = 0;
 				Vector2 stand = s.NPC.position;
 				int low = Math.Max(1, s.NPC.lifeMax / 10), drinks = 0, last = armory.IssuePotions[0].stack; int firstGap = -1, firstTick = -1, secondTick = -1;
+				int shown0 = SoldierNPC.PotionHealShown;
 				_perTick = () => { s.NPC.life = Math.Min(s.NPC.life, low); s.Record.CurrentHp = s.NPC.life; s.NPC.position.X = stand.X; s.NPC.velocity.X = 0f; };
 				const int Window = 7000;
 				for (int t = 0; t < Window; t++)
@@ -413,6 +414,7 @@ namespace Levy.Common.Testing
 				int expectDrinks = 1 + (Window - 1 - firstTick) / Math.Max(1, expectDelay);
 				string name = stone ? "with a Philosopher's Stone" : "no gear";
 				Note($"potion cadence [{name}]: {drinks} potions drunk in {Window} ticks ({Window / 60.0:0} s), first at tick {firstTick}, gap to the second {firstGap} ticks (the Player's delay {expectDelay}; the old cadence was 1800)");
+				Check($"potion cadence [{name}]: every drink showed the green heal number a player gets ({SoldierNPC.PotionHealShown - shown0} of {drinks}, the last for {SoldierNPC.PotionHealLast}, the potion gives {Make(ItemID.HealingPotion).healLife})", drinks >= 1 && SoldierNPC.PotionHealShown - shown0 == drinks && SoldierNPC.PotionHealLast >= Make(ItemID.HealingPotion).healLife);
 				Check($"potion cadence [{name}]: the levy drinks no faster than the potion sickness lets a Player ({drinks} drunk, {expectDrinks} possible)", drinks >= 1 && drinks <= expectDrinks + 0 && firstGap >= expectDelay - 2 && (firstGap <= expectDelay + 60));
 			}
 			finally { _perTick = null; TestTileEntities.Remove(armory); Remove(s); }

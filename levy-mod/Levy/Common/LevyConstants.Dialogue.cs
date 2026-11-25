@@ -86,6 +86,8 @@ namespace Levy.Common
 		public const float RiftFogDriftMinTiles = 2f, RiftFogDriftMaxTiles = 5f;
 		/// <summary>Chat bar jitter: the offset changes every this many ticks.</summary>
 		public const int ChatShakeStepTicks = 4;
+		/// <summary>How far a single letter of a shaking chat line may move each way, in pixels (the strongest shake adds one).</summary>
+		public const int ChatShakeLetterPx = 1;
 		/// <summary>The burst right after the sun is covered: levies near each commander, one after another; then this long of worried talk in place of the rift chat.</summary>
 		public const int RiftPanicSpeakers = 4, RiftPanicStepTicks = 45, RiftPanicTicks = 60 * 90;
 		/// <summary>

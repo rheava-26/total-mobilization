@@ -23,6 +23,10 @@ namespace Levy.Common
 		public const int BarracksWidth = 3, BarracksHeight = 3;
 		public const int ArmoryWidth = 2, ArmoryHeight = 3;
 		public const int RecruitmentOfficeWidth = 3, RecruitmentOfficeHeight = 2;
+		/// <summary>A Recruitment Office rests this many in-game ticks after a rush drive: one in-game day (54000 of day and 32400 of night).</summary>
+		public const int RecruitmentOfficeRestTicks = 54000 + 32400;
+		/// <summary>The most doublings of the rush drive's price counted (price x 2^n since dawn); a longer chain is far past any treasury and would only overflow.</summary>
+		public const int RushDriveMaxDoublings = 30;
 		public const int PatrolBannerWidth = 1, PatrolBannerHeight = 3;
 		/// <summary>Spread (pixels) of items spilled when an armory is broken.</summary>
 		public const int ArmorySpillWidth = 32, ArmorySpillHeight = 48;

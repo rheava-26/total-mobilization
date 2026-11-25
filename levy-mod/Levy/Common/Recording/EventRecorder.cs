@@ -217,7 +217,7 @@ namespace Levy.Common.Recording
 			if (_imp.TryGetValue(n.type, out int v)) { if (n.lifeMax > _typeLife[n.type]) _typeLife[n.type] = n.lifeMax; return v; }
 			v = BaseImportance(n);
 			_imp[n.type] = v; _typeLife[n.type] = n.lifeMax;
-			if (!_npcs.ContainsKey(n.type)) _npcs[n.type] = n.FullName;
+			if (!_npcs.ContainsKey(n.type)) _npcs[n.type] = FightRecorder.NpcName(n);
 			if (v == 0 && FallbackMini(n.lifeMax, NormalMedian(_imp, _typeLife))) v = _imp[n.type] = 1;
 			WriteNt(n.type, v);
 			return v;
@@ -543,7 +543,7 @@ namespace Levy.Common.Recording
 				if (imp >= 1)
 				{
 					if (imp == 1) _miniKills++; else _bossKills++;
-					Ev("ekill", ("npc", n.type.ToString()), ("name", FightRecFormat.Esc(n.FullName)), ("id", n.whoAmI.ToString()), ("imp", imp.ToString()), ("x", ((int)n.Center.X).ToString()), ("y", ((int)n.Center.Y).ToString()), ("max", n.lifeMax.ToString()));
+					Ev("ekill", ("npc", n.type.ToString()), ("name", FightRecFormat.Esc(FightRecorder.NpcName(n))), ("id", n.whoAmI.ToString()), ("imp", imp.ToString()), ("x", ((int)n.Center.X).ToString()), ("y", ((int)n.Center.Y).ToString()), ("max", n.lifeMax.ToString()));
 				}
 			}
 			catch { }
@@ -838,7 +838,7 @@ namespace Levy.Common.Recording
 					if (k > 0) C(sb);
 					int fl = (n.damage > 0 ? 1 : 0) | (n.dontTakeDamage ? 2 : 0) | 4;
 					long def = ((((long)n.type * 4099 + n.width) * 4099 + n.height) * 4099 + (n.realLife + 1)) * 8 + fl;
-					if (!_npcs.ContainsKey(n.type)) _npcs[n.type] = n.FullName;
+					if (!_npcs.ContainsKey(n.type)) _npcs[n.type] = FightRecorder.NpcName(n);
 					if (_hbDef.TryGetValue(i, out long old) && old == def) { sb.Append('['); I(sb, i); C(sb); I(sb, (int)n.Center.X); C(sb); I(sb, (int)n.Center.Y); sb.Append(']'); }
 					else { _hbDef[i] = def; sb.Append('['); I(sb, n.type); C(sb); I(sb, i); C(sb); I(sb, (int)n.Center.X); C(sb); I(sb, (int)n.Center.Y); C(sb); I(sb, n.width); C(sb); I(sb, n.height); C(sb); I(sb, n.realLife); C(sb); I(sb, fl); sb.Append(']'); }
 				}

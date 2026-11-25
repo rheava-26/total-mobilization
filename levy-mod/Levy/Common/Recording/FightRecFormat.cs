@@ -103,6 +103,11 @@ namespace Levy.Common.Recording
 	///         frame key m: the LEVIES' own minions and sentries (type, x, y, vx, vy, w, h, slot, owner, kind: SchemaM; at most 100 a sample, row coded like c with the slot as the key). owner = the levy's id (the l row's id), kind 1 minion, 2 sentry, 4 a shot. The commander's own minions were
 	///         already in c; c rows gain the same kind as field 8. A levy's friendly shots go into m only in the summon A/B harness (FightRecorder.SummonTrace, up to 300 rows), so the viewer's "summon trace" can draw "its shots" for both sides. Files of format 13 and older have no m
 	///         and no kind (the viewer draws their c rows as plain shots).
+	///         Format 15 adds what the viewer needs to click a projectile and to draw lines (every field appended or optional; readers of format 14 skip the new key and fields):
+	///         j, c and m rows gain penetrate (the hits it has left, -1 endless) and timeLeft (ticks before it expires) as the last two fields; c and m rows also gain damage (c field 9, m field 10). j already carried damage.
+	///         Frame key z (SchemaZ, plain rows, at most RecLines.MaxRows a sample): the line or link a hostile projectile IS, which its box cannot say: deathrays and primitive laserbeams (Calamity, Wrath of the Gods, vanilla pattern), Nameless Deity's screen slices and light slashes,
+	///         the Avatar's blood torrent, arm strikes and thorns, and the linked electric field between Ares's tesla orbs (kind 3). See RecLines.
+	///         Names: an NPC whose display name is random glitch text (Nameless Deity) is recorded by its class name instead (FightRecorder.NpcName).
 	///   names type id to name tables (items, npcs, projectiles, buffs, soldiers), written at the end
 	///   end   stop reason and counts
 	/// All positions are world pixels (centers). Plain data; nothing here touches the game, so it can self-check at boot.
@@ -126,6 +131,8 @@ namespace Levy.Common.Recording
 		public List<double[]> C = new();
 		/// <summary>Format 14: the levies' minions and sentries (and, in a summon trace, their friendly shots) [type,x,y,vx,vy,w,h,slot,owner (the levy's id),kind]; kind 1 minion, 2 sentry, 4 shot.</summary>
 		public List<double[]> M = new();
+		/// <summary>Format 15: lines and links of hostile projectiles [x0,y0,x1,y1,width,kind,type,slot] (see <see cref="RecLines"/>).</summary>
+		public List<double[]> Z = new();
 	}
 
 	/// <summary>Format 13 part files: NAME.levyrec, NAME_part2.levyrec, NAME_part3.levyrec ... Plain file names, no game types (the command-line report tool uses them too).</summary>
@@ -165,7 +172,7 @@ namespace Levy.Common.Recording
 
 	internal static class FightRecFormat
 	{
-		public const int Version = 14;
+		public const int Version = 15;
 		/// <summary>Levies this close (tiles) to the commander or a fight boss are "in the arena": bph.army, and the report's army counts read from the frames.</summary>
 		public const int ArenaRangeTiles = 120;
 		/// <summary>FightRecorder.LostWindowTicks: a boss that leaves this soon after the commander's fall left because of it.</summary>
@@ -190,9 +197,10 @@ namespace Levy.Common.Recording
 		public const string SchemaA = "type,id,x,y,vx,vy,life,lifeMax,tkind,tlevy,w,h";
 		public const string SchemaS = "type,id,x,y,w,h,realLife,flags  (a row of 3 = id,x,y: same type, size, realLife and flags as that id's last full row)";
 		public const string SFlags = "1 deals contact damage,2 does not take damage,4 body segment (realLife = the head that owns its life)";
-		public const string SchemaJ = "type,x,y,vx,vy,damage,w,h,slot";
-		public const string SchemaC = "type,x,y,vx,vy,w,h,slot,kind  (kind: 1 minion, 2 sentry, 4 shot; absent before format 14)";
-		public const string SchemaM = "type,x,y,vx,vy,w,h,slot,owner,kind  (the levies' minions and sentries: owner = the levy's id, kind 1 minion, 2 sentry, 4 shot; format 14)";
+		public const string SchemaJ = "type,x,y,vx,vy,damage,w,h,slot,penetrate,timeLeft  (penetrate: hits left, -1 endless; timeLeft: ticks before it expires; both absent before format 15)";
+		public const string SchemaC = "type,x,y,vx,vy,w,h,slot,kind,damage,penetrate,timeLeft  (kind: 1 minion, 2 sentry, 4 shot; absent before format 14; damage, penetrate and timeLeft absent before format 15)";
+		public const string SchemaM = "type,x,y,vx,vy,w,h,slot,owner,kind,damage,penetrate,timeLeft  (the levies' minions and sentries: owner = the levy's id, kind 1 minion, 2 sentry, 4 shot; format 14; damage, penetrate and timeLeft from format 15)";
+		public const string SchemaZ = "x0,y0,x1,y1,width,kind,type,slot  (format 15, whole pixels: the line or link a hostile projectile is; kind 1 beam, 2 warning line, 3 link between two projectiles, 4 strike segment; slot = the projectile's row in j)";
 		public const string SchemaL = "id,x,y,vx,vy,flags,life,state,held,wingTime,lifeMax,w,h";
 		public const string ImpNames = "0 normal,1 miniboss,2 boss";
 		public const string SchemaLFlags = "1 grounded,2 flying,4 aerial,8 hooking,16 blocked";
@@ -245,8 +253,8 @@ namespace Levy.Common.Recording
 		{
 			var sb = new StringBuilder(256);
 			sb.Append("{\"k\":\"f\",\"t\":").Append(f.T).Append(",\"p\":"); Arr(sb, f.P);
-			if (codec == null) { Rows(sb, "b", f.B); Rows(sb, "j", f.J); Rows(sb, "l", f.L); Rows(sb, "a", f.A); Rows(sb, "s", f.S); Rows(sb, "c", f.C); Rows(sb, "m", f.M); }
-			else { codec.Rows(sb, 0, f.B); codec.Rows(sb, 3, f.J); codec.Rows(sb, 2, f.L); codec.Rows(sb, 1, f.A); Rows(sb, "s", f.S); codec.Rows(sb, 4, f.C); codec.Rows(sb, 5, f.M); }
+			if (codec == null) { Rows(sb, "b", f.B); Rows(sb, "j", f.J); Rows(sb, "l", f.L); Rows(sb, "a", f.A); Rows(sb, "s", f.S); Rows(sb, "c", f.C); Rows(sb, "m", f.M); Rows(sb, "z", f.Z); }
+			else { codec.Rows(sb, 0, f.B); codec.Rows(sb, 3, f.J); codec.Rows(sb, 2, f.L); codec.Rows(sb, 1, f.A); Rows(sb, "s", f.S); codec.Rows(sb, 4, f.C); codec.Rows(sb, 5, f.M); Rows(sb, "z", f.Z); }
 			return sb.Append('}').ToString();
 		}
 

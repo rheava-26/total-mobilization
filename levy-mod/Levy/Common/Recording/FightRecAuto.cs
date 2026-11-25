@@ -136,7 +136,7 @@ namespace Levy.Common.Recording
 			FightRecorder.AutoKind = mode == FightRecMode.BossFights ? 1 : 2;
 			FightRecorder.FightLabel = boss == null ? FightLabel() : null;
 			if (boss == null) meta["label"] = FightRecorder.FightLabel;
-			string path = FightRecorder.Start(cmd, boss?.FullName, out string err, meta);
+			string path = FightRecorder.Start(cmd, (boss == null ? null : FightRecorder.NpcName(boss)), out string err, meta);
 			FightRecorder.AutoKind = 0;
 			if (path == null)
 			{
@@ -230,12 +230,12 @@ namespace Levy.Common.Recording
 			_tags.Clear();
 			_seq++;
 			meta["trial"] = _seq.ToString();
-			meta["bossName"] = boss.FullName;
-			string stem = harness + "_" + boss.FullName;
+			meta["bossName"] = FightRecorder.NpcName(boss);
+			string stem = harness + "_" + FightRecorder.NpcName(boss);
 			foreach (string k in new[] { "arena", "seed", "mode", "target", "gear" })
 				if (meta.TryGetValue(k, out string v) && !string.IsNullOrEmpty(v)) stem += "_" + (k == "seed" ? "s" : k == "mode" ? "m" : "") + v;
 			stem += "_" + _seq.ToString("00");
-			string path = FightRecorder.Start(cmd, boss.FullName, out string err, meta, stem);
+			string path = FightRecorder.Start(cmd, FightRecorder.NpcName(boss), out string err, meta, stem);
 			if (path == null) { Levy.Instance?.Logger.Warn("[FightRec] headless start failed: " + err); _cooldownUntil = (int)Main.GameUpdateCount + 300; }
 			else Levy.Instance?.Logger.Info("[FightRec] headless recording started: " + path);
 		}

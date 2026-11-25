@@ -475,6 +475,8 @@ namespace Levy.Common.Weapons
 		internal static readonly bool CastAtCursor = Environment.GetEnvironmentVariable("LEVY_SUMMONCAST") != "0";
 		/// <summary>Lab counters: casts made at the cursor point / that fell back to the feet.</summary>
 		internal static int CursorCasts, CursorCastFallbacks;
+		/// <summary>Lab A/B (env LEVY_SUMMONCAST_NOSPECIAL=1): the staves with their own entry (CastAtTargetNames) use the general cursor cast too.</summary>
+		private static readonly bool CastNoSpecial = Environment.GetEnvironmentVariable("LEVY_SUMMONCAST_NOSPECIAL") == "1";
 		private static readonly bool CastLog = Environment.GetEnvironmentVariable("LEVY_SUMMONCAST_LOG") == "1";
 		/// <summary>
 		/// Where a player's cursor would be for a summon cast: a point inside the soldier's target (not its exact centre), within the reach a player could click; with no target a few tiles ahead of him. Vanilla's SpawnMinionOnCursor
@@ -689,7 +691,7 @@ namespace Levy.Common.Weapons
 		/// not the default (LEVY_SUMMON_CASTAT=target casts every modded staff there, for the A/B). The Infected Remote is a different case, see <see cref="CastFarNames"/>.
 		/// </summary>
 		private static readonly HashSet<string> CastAtTargetNames = new() { "EnchantedConch" };
-		internal static bool CastsAtTarget(Item weapon) => weapon?.ModItem != null && weapon.ModItem.Mod.Name == "CalamityMod" && CastAtTargetNames.Contains(weapon.ModItem.Name);
+		internal static bool CastsAtTarget(Item weapon) => !CastNoSpecial && weapon?.ModItem != null && weapon.ModItem.Mod.Name == "CalamityMod" && CastAtTargetNames.Contains(weapon.ModItem.Name);
 		/// <summary>
 		/// Staves whose minion idles for as long as it is inside a bubble around its owner and leaves that bubble only by its own momentum: the Infected Remote's Plague Princess returns from her AI while she is within 10 tiles of her owner,
 		/// before she looks for a target (PlaguePrincess.DoBehavior_HoverNearOwner), and she is born with no speed. A player's cursor is rarely that close and he keeps moving, so she is born outside the bubble and arrives with speed; a levy casts at his own feet and stands still, and

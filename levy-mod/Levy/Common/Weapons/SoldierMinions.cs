@@ -651,10 +651,14 @@ namespace Levy.Common.Weapons
 			float cap = s.Dummy != null ? Math.Max(1, s.Dummy.maxMinions) : 1f, total = 0f;
 			int me = s.NPC.whoAmI;
 			for (int i = 0; i < Main.maxProjectiles; i++) { Projectile p = Main.projectile[i]; if (p.active && p.minion && !p.sentry && p.minionSlots > ChildSlotMin && OwnedBy(p, me)) total += p.minionSlots; }
+			int slottedMade = 0; foreach (Projectile q in made) if (q.active && q.minion && !q.sentry && q.minionSlots > ChildSlotMin) slottedMade++;
 			for (int k = made.Count - 1; k >= 0 && total > cap + LevyConstants.MinionSlotEpsilon; k--)
 			{
 				Projectile p = made[k];
 				if (!p.active || !p.minion || p.sentry || p.minionSlots <= ChildSlotMin) continue;
+				// the one minion a cast made that is bigger than his slots keeps what fits (the Void Eater Marionette is 2 slots when it can and 1 when that is all there is): a player's minion sizes itself to the owner, a dummy's does not
+				float room = cap - (total - p.minionSlots);
+				if (slottedMade == 1 && room >= 1f - LevyConstants.MinionSlotEpsilon && ContentSamples.ProjectilesByType.TryGetValue(p.type, out Projectile smp) && smp.minionSlots <= ChildSlotMin) { total -= p.minionSlots - room; p.minionSlots = room; continue; }
 				total -= p.minionSlots;
 				Dismiss(p);
 				TrimTally++;

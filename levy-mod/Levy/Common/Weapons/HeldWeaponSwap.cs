@@ -671,7 +671,7 @@ namespace Levy.Common.Weapons
 				if (c.aiStyle == ProjAIStyleID.HeldProjectile || c.aiStyle == ProjAIStyleID.ThickLaser) JoinChain(body, c, item);
 				else if (ArkSwings.AdoptChild(body, holder, c, item)) { }
 				else if (BiomeBlades.AdoptChild(body, holder, c, item)) { }
-				else if (ModShotKinds.ChainExtras(item) && c.ModProjectile != null && ((holder.TryGetGlobalProjectile(out HeldWeaponProjectile pg) && pg.BoundChild) || OwnerLockProbe.BoundToHolder(c) || PointsAt(c, holder)))
+				else if ((ModShotKinds.ChainExtras(item) || ModShotKinds.AutoHolds(item)) && c.ModProjectile != null && ((holder.TryGetGlobalProjectile(out HeldWeaponProjectile pg) && pg.BoundChild) || OwnerLockProbe.BoundToHolder(c) || PointsAt(c, holder)))
 				{
 					// bound to its holder (reads the button / finds its parent by UUID) or made by a bound child (Starmageddon's stars, made by the star centre): stays in the chain, same owner, dummy and button as the holdout
 					JoinChain(body, c, item);

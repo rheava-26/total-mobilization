@@ -112,6 +112,8 @@ namespace Levy.Common.Weapons
 			// Voidragon: after its 50-round magazine the holdout fires the Abyssal Fire beam, which ends itself when its owner cannot use the holdout (CantUseHoldout: the button is up). Handed to the commander it read her button and died
 			// on its first tick (no beam in 900 ticks; the beam is 90% of a player's Voidragon damage, gunparity 2026-11-23).
 			"Voidragon" };
+		/// <summary>True for a held weapon of an AutoHoldMods mod: its children that read the holder's button or point at the holder stay in the held chain (a charged bolt that waits for its owner to let go).</summary>
+		internal static bool AutoHolds(Item item) => item?.ModItem != null && Array.IndexOf(AutoHoldMods, item.ModItem.Mod.Name) >= 0 && Of(item) == ModShotKind.Holdout;
 		internal static bool ChainExtras(Item item) => item?.ModItem != null && item.ModItem.Mod.Name == "CalamityMod" && ChainExtraNames.Contains(item.ModItem.Name);
 
 		/// <summary>A held modded weapon that deals its damage only when the button is LET GO after a charge: hold for <see cref="HoldTicks"/>, release, and end the holdout <see cref="LingerTicks"/> later so the next one is cast.</summary>

@@ -232,6 +232,12 @@ namespace Levy.Common.Testing
 						string mn = m.GetType().Name;
 						foreach (var f in m.GetType().GetFields(BindingFlags.Public | BindingFlags.Instance))
 						{
+							// a mod's per-element / per-kind tables (float[] / int[] fields: elemental damage and resistance) are diffed cell by cell
+							if (f.FieldType == typeof(float[]) || f.FieldType == typeof(int[]))
+							{
+								try { if (f.GetValue(m) is Array arr && arr.Length <= 64) for (int ai = 0; ai < arr.Length; ai++) d["M." + mn + "." + f.Name + "[" + ai + "]"] = Convert.ToDouble(arr.GetValue(ai)); } catch (Exception) { }
+								continue;
+							}
 							if (!(f.FieldType == typeof(bool) || f.FieldType == typeof(int) || f.FieldType == typeof(float) || f.FieldType == typeof(double))) continue;
 							try { object v = f.GetValue(m); d["M." + mn + "." + f.Name] = v is bool b ? (b ? 1 : 0) : Convert.ToDouble(v); } catch (Exception) { }
 						}

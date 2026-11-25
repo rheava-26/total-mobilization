@@ -161,8 +161,7 @@ namespace Levy.Common.Weapons
 		internal static (int hold, int linger)? BladeStall(Item item)
 		{
 			if (item?.ModItem == null || Array.IndexOf(AutoHoldMods, item.ModItem.Mod.Name) < 0 || !item.channel || item.shoot <= 0) return null;
-			if (!(item.CountsAsClass(DamageClass.Melee) && !item.CountsAsClass(DamageClass.Ranged) && !item.CountsAsClass(DamageClass.Magic))) return null;
-			if (AutoHoldType(item, WeaponClassifier.ProjectileSample(item.shoot)) <= 0) return null;
+			if (Of(item) != ModShotKind.Holdout) return null;
 			return (BladeStallTicks, Math.Clamp(item.useTime * 3, 30, 90));
 		}
 		private const int BladeStallTicks = 30;
@@ -331,7 +330,15 @@ namespace Levy.Common.Weapons
 		private static readonly string[] AutoHoldMods = ParseAutoHold();
 		private static string[] ParseAutoHold() { string e = Environment.GetEnvironmentVariable("LEVY_AUTOHOLD"); return e == "0" ? Array.Empty<string>() : string.IsNullOrEmpty(e) ? new[] { "Redemption" } : e.Split(',', StringSplitOptions.RemoveEmptyEntries); }
 		/// <summary>Items of an AutoHoldMods mod the plain shot serves better than the held route (measured per item, mechanism noted at its row).</summary>
-		private static readonly HashSet<string> AutoHoldPlain = new() { };
+		private static readonly HashSet<string> AutoHoldPlain = new()
+		{
+			// army sweep, one levy against one pinned enemy for 600 ticks, plain vs held, damage against the player's best (held button / short tap / long tap): the plain shot already does what the player's does; held it did nothing or much less
+			"EaglecrestSling", // 3901 plain, 0 held
+			"Rockslide",       // 10937 plain (player 871), 112 held
+			"SlayerFist",      // 4176 plain (player 4412), 0 held
+			"InfectedEye",     // 41266 plain (player 49845), 27986 held
+			"Petridish",       // 23618 plain (player 35297), 20204 held
+		};
 
 		private static bool AutoHold(Item item, Projectile sample)
 		{
@@ -349,6 +356,7 @@ namespace Levy.Common.Weapons
 		{
 			if (item?.ModItem == null || Array.IndexOf(AutoHoldMods, item.ModItem.Mod.Name) < 0) return 0;
 			if (sample?.ModProjectile != null && ChainHas(sample.ModProjectile.GetType(), "TrueMeleeProjectile")) return item.shoot;
+			if (!item.channel) return 0; // a hook that merely names a held-type helper (a coil's pulse) is not a holdout; a held weapon's use is a channel
 			foreach (Type t in OwnerLockProbe.NamedProjectileTypes(item))
 				if (ChainHas(t, "TrueMeleeProjectile")) { int pt = TypeOf(t); if (pt > 0) return pt; }
 			return 0;

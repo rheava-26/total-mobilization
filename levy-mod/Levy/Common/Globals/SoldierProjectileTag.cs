@@ -233,6 +233,9 @@ namespace Levy.Common.Globals
 		public override void PostAI(Projectile projectile)
 		{
 			if (SoldierIndex >= 0 && projectile.type == ProjectileID.TerraBlade2Shot) projectile.ownerHitCheck = false;
+			// A modded blade or holdout held by a levy (the held chain, owner slot 255) is damaged as the commander's projectile, and a hit gated on a clear line from its OWNER to the enemy (ownerHitCheck, set by a mod's swing base class)
+			// is judged from the commander's feet, wherever she stands: the levy's swing connects with nothing. His own line to the enemy is what his aim already checked.
+			else if (SoldierIndex >= 0 && projectile.ownerHitCheck && projectile.ModProjectile != null && Weapons.HeldWeapons.IsChainOwner(projectile.owner)) projectile.ownerHitCheck = false;
 			if (SoldierIndex >= 0 && IsSporeTrap(projectile.type)) AgeSporeTrapFromSoldier(projectile);
 			// A mimic (etc.) reflecting a soldier's shot aims the bounce-back at Main.player[owner] — the commander, since soldier shots are
 			// owned by the commander. Re-aim it at the soldier that fired it instead, so the reflection comes back at the unit, not at you. Once.

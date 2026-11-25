@@ -501,7 +501,7 @@ namespace Levy.Common.Weapons
 				for (int i = 0; i < Main.maxProjectiles; i++) before[i] = Main.projectile[i].active;
 				if (!DbgNaN) orig(p); else { try { orig(p); } catch (ArithmeticException ex) { ModContent.GetInstance<Levy>()?.Logger.Info($"[DeadHooks] NaN in {p.ModProjectile?.Name} ai: cursor={cursor} dir={dir} dummyCenter={d.Center} mounted={d.MountedCenter} soldier={body.NPC.Center} calAim={(calPlayer != null ? AltPolicies.GetCalAimPublic(calPlayer).Item1.ToString() : "-")} ex={ex.StackTrace?.Split((char)10)[1]?.Trim()}"); } }
 				if (release && p.active && !g.CycleRelease) { g.HeldTicks = 0; p.Kill(); }
-				if (ChargeDbg && _holdDbgLines < 300 && (_dbgHold == null || p.ModProjectile?.Name == _dbgHold)) { _holdDbgLines++; ModContent.GetInstance<Levy>()?.Logger.Info($"[HoldoutWorld] OBSERVED   dbg hold {p.ModProjectile?.Name} t={Main.GameUpdateCount % 100000} held={g.HeldTicks} button={button} rel={release} cyc={g.CycleRelease} made={g.Made} ai=({p.ai[0]:0.#},{p.ai[1]:0.#},{p.ai[2]:0.#}) lai=({p.localAI[0]:0.#},{p.localAI[1]:0.#}) tl={p.timeLeft} active={p.active} right={AltPolicies.GetMouseRight(d)} animMax={d.itemAnimationMax}"); } // the release: the charged shot is made while the soldier is still the owner (dummy swapped in, cursor on the target)
+				if (ChargeDbg && _holdDbgLines < 300 && (_dbgHold == null || p.ModProjectile?.Name == _dbgHold)) { _holdDbgLines++; ModContent.GetInstance<Levy>()?.Logger.Info($"[HoldoutWorld] OBSERVED   dbg hold {p.ModProjectile?.Name} t={Main.GameUpdateCount % 100000} held={g.HeldTicks} button={button} rel={release} cyc={g.CycleRelease} made={g.Made} ai=({p.ai[0]:0.#},{p.ai[1]:0.#},{p.ai[2]:0.#}) lai=({p.localAI[0]:0.#},{p.localAI[1]:0.#}) tl={p.timeLeft} active={p.active} right={AltPolicies.GetMouseRight(d)} animMax={d.itemAnimationMax} fr={p.frame} fl={p.friendly} dmg={p.damage} c=({p.Center.X:0},{p.Center.Y:0}) body=({body.NPC.Center.X:0},{body.NPC.Center.Y:0}) vel=({p.velocity.X:0.#},{p.velocity.Y:0.#}) sc={p.scale:0.##}"); } // the release: the charged shot is made while the soldier is still the owner (dummy swapped in, cursor on the target)
 			}
 			finally
 			{
@@ -667,7 +667,7 @@ namespace Levy.Common.Weapons
 				Projectile c = Main.projectile[i];
 				if (!c.active || before[i] || i == holder.whoAmI) continue;
 				if (DudTrace.On) DudTrace.NoteType(c.type, "adopted@" + c.owner + (c.friendly ? "+f" : "-f") + "+dmg" + (c.damage > 0 ? "1" : "0"));
-				if (holder.TryGetGlobalProjectile(out HeldWeaponProjectile mg)) mg.Made++;
+				if (holder.TryGetGlobalProjectile(out HeldWeaponProjectile mg) && (c.friendly || c.damage > 0 || ModShotKinds.BladeStall(item) == null)) mg.Made++; // a charging blade glows with harmless ring visuals that are not a blow made (ModShotKinds.BladeStall)
 				if (c.aiStyle == ProjAIStyleID.HeldProjectile || c.aiStyle == ProjAIStyleID.ThickLaser) JoinChain(body, c, item);
 				else if (ArkSwings.AdoptChild(body, holder, c, item)) { }
 				else if (BiomeBlades.AdoptChild(body, holder, c, item)) { }

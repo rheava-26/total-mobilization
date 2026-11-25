@@ -10,7 +10,7 @@ using static Levy.Common.LevyConstants.Movement;
 namespace Levy.Content.NPCs
 {
 	/// <summary>
-	/// FIGHT ZONE. While the commander is in a boss fight (a main boss alive within FightZoneBossTiles of them) a levy with no explicit order (Follow, no Hold) stays inside FightZoneTiles of the commander: a goal outside the
+	/// FIGHT ZONE. While the commander is in a boss fight (a main boss alive within FightZoneBossTiles of them) a levy with no explicit order (Follow, no Hold) or on Regroup &amp; Engage in the fight stays inside FightZoneTiles of the commander: a goal outside the
 	/// zone (a flee, a standoff retreat, a chase of an add, a row climb) is pulled onto its edge, and a body that has drifted out is walked back in. The dodge, the row spread and the worm kite still run inside it. Without this a boss that
 	/// chases a retreating squad drags the whole fight away from the player. Harness switch LEVY_ZONE=0 turns it off.
 	/// </summary>
@@ -29,7 +29,7 @@ namespace Levy.Content.NPCs
 			if (now - _zoneCheckTick >= 30)
 			{
 				_zoneCheckTick = now; _zoneActive = false;
-				if (ZoneMode >= 1 && IsRegular && Record != null && Record.Order == SoldierOrder.Follow && !HoldPosition && State != SoldierState.Desert && State != SoldierState.Dead)
+				if (ZoneMode >= 1 && IsRegular && Record != null && (Record.Order == SoldierOrder.Follow || RegroupLeashed) && !HoldPosition && State != SoldierState.Desert && State != SoldierState.Dead)
 				{
 					Player cmd = Commander;
 					if (cmd != null && (!cmd.dead || EnemyTargeting.LostFightHolds(NPC.Center))) // a lost fight keeps the zone around the spot where he fell

@@ -74,7 +74,7 @@ namespace Levy.Common.Targeting
 						if (attacking == bestAttacking && distSq >= bestDistSq) continue;
 					}
 				}
-				if (needLos && !Collision.CanHitLine(from, 1, 1, npc.Center, 1, 1)) continue; // LOS only for candidates that would win (it is the expensive check)
+				if (needLos && !Weapons.Aiming.Seen(from, npc)) continue; // LOS only for candidates that would win (it is the expensive check)
 				best = i; bestDistSq = distSq; bestAttacking = attacking; bestTier = tier; bestArmoured = armoured;
 			}
 			return best;

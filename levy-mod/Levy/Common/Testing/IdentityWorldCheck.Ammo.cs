@@ -452,7 +452,13 @@ namespace Levy.Common.Testing
 		internal static readonly HashSet<int> IdStatic = new();
 		/// <summary>Shots fired, every type but a gun's own holdout (the gun parity rate): what <see cref="Shots"/> counts, summed, less the holdouts.</summary>
 		internal static int Roots;
-		internal static void Reset() { Births.Clear(); Hits.Clear(); Shots.Clear(); Roots = 0; }
+		internal static void Reset() { Births.Clear(); Hits.Clear(); Shots.Clear(); Roots = 0; _lastHit.Clear(); Gaps.Clear(); HitProjs.Clear(); PerProj.Clear(); }
+		/// <summary>Lab (LEVY_AMMO_GAPS=Name): per projectile of that name, the ticks between its hits on a target (histogram), how many such projectiles hit, and their local-immunity setup.</summary>
+		internal static readonly string GapName = Environment.GetEnvironmentVariable("LEVY_AMMO_GAPS");
+		private static readonly Dictionary<long, uint> _lastHit = new(); internal static readonly SortedDictionary<int, int> Gaps = new(); internal static readonly HashSet<int> HitProjs = new();
+		private static string _gapSetup = "";
+		internal static readonly Dictionary<long, (uint first, uint last, int n)> PerProj = new();
+		internal static string GapReport() => GapName == null ? "" : $"hit gaps (ticks:count) [{string.Join(" ", Gaps.Select(kv => kv.Key + ":" + kv.Value))}]; projectiles that hit {HitProjs.Count} [{string.Join("; ", PerProj.Values.Select(v => $"{v.n} hits over ticks {v.first % 100000}-{v.last % 100000}"))}]; {_gapSetup}";
 		public override void OnSpawn(Projectile projectile, IEntitySource source)
 		{
 			if (!On) return;
@@ -485,6 +491,13 @@ namespace Levy.Common.Testing
 			if (!On) return;
 			if (ArmyOnly && !(projectile.TryGetGlobalProjectile(out SoldierProjectileTag t) && t.SoldierIndex >= 0)) return; // a levy run counts the levies' hits only
 			Hits.TryGetValue(projectile.type, out var h); Hits[projectile.type] = (h.n + 1, h.dmg + damageDone);
+			if (GapName != null && projectile.ModProjectile?.Name == GapName)
+			{
+				long key = ((long)projectile.whoAmI << 20) ^ target.whoAmI; uint now = Main.GameUpdateCount; HitProjs.Add(projectile.whoAmI);
+				if (_lastHit.TryGetValue(key, out uint last)) { int g = (int)Math.Min(now - last, 30u); Gaps[g] = Gaps.TryGetValue(g, out int c) ? c + 1 : 1; }
+				_lastHit[key] = now; long pk = (long)projectile.whoAmI * 1000003L + projectile.identity; PerProj.TryGetValue(pk, out var pv); PerProj[pk] = (pv.n == 0 ? now : pv.first, now, pv.n + 1);
+				_gapSetup = $"local {projectile.usesLocalNPCImmunity}/{projectile.localNPCHitCooldown}, idstatic {projectile.usesIDStaticNPCImmunity}/{projectile.idStaticNPCHitCooldown}, extraUpdates {projectile.extraUpdates}, owner {projectile.owner}";
+			}
 		}
 	}
 }

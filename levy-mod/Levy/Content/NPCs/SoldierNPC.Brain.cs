@@ -246,6 +246,7 @@ namespace Levy.Content.NPCs
 			HangWatch.Brain(NPC.whoAmI, 3);
 			Sit_Guard(now, fleeIdx, nearestHostileTiles); // a seated levy stands for a fight, a threat, a talk or an order (SoldierNPC.Sit.cs)
 			Leisure_Guard(now, fleeIdx, nearestHostileTiles); // and a free-roaming levy drops its pastime for the same (SoldierNPC.Leisure.cs)
+			if (RegroupSnapBack(now)) { _lastSeenState = State; return; } // Regroup & Engage: in a boss fight, a levy that is not on the boss hops back beside the commander (SoldierNPC.Regroup.cs)
 
 			switch (State)
 			{
@@ -1027,7 +1028,7 @@ namespace Levy.Content.NPCs
 			Vector2 from = NPC.Center;
 			if (NPC.velocity.Y != 0f && AerialGroundY != float.MinValue) from = new Vector2(NPC.Center.X, AerialGroundY - BodyHeight * 0.5f);
 			if (Aiming.TilesToHitbox(from, seg) > rangeTiles * LevyConstants.ShootableRangeFrac) return false;
-			return ShotIgnoresTiles() || Aiming.HasLineOfSight(from + (WeaponUse.Muzzle(this) - NPC.Center), seg.Center);
+			return ShotIgnoresTiles() || LineClear(from + (WeaponUse.Muzzle(this) - NPC.Center), seg.Center);
 		}
 
 		/// <summary>A grounded body with a solid tile within RoofProbeTiles above its head: it is in a room or under an overhang, and a climb would only spend the flight on the ceiling. (A handful of tile reads per think, only for a soldier that is about to commit to a climb.)</summary>
@@ -1239,7 +1240,7 @@ namespace Levy.Content.NPCs
 		}
 
 		/// <summary>A shot from the muzzle would reach the segment (projectiles that ignore tiles always can).</summary>
-		private bool HasFiringLine(NPC seg) => ShotIgnoresTiles() || Aiming.HasLineOfSight(WeaponUse.Muzzle(this), seg.Center);
+		private bool HasFiringLine(NPC seg) => ShotIgnoresTiles() || LineClear(WeaponUse.Muzzle(this), seg.Center);
 
 		/// <summary>
 		/// Somewhere to stand that is inside reach, outside the standoff, has a firing line to the target and can be walked to.
@@ -1461,7 +1462,7 @@ namespace Levy.Content.NPCs
 			float d = Vector2.Distance(body, tc) / LevyConstants.TilePx;
 			if (d > range * rangeFrac || d < standoff + standoffMargin) return false;
 			if (_mimicNearValid && Vector2.Distance(bottom, _mimicNearPos) < LevyConstants.MimicKeepAwayTiles * LevyConstants.TilePx) return false; // never pick a spot beside a sleeping mimic
-			return !checkLos || ignoresTiles || Aiming.HasLineOfSight(body, tc);
+			return !checkLos || ignoresTiles || LineClear(body, tc);
 		}
 
 		/// <summary>Keeps the best <paramref name="cap"/> candidates sorted by score (descending); duplicates are dropped.</summary>
@@ -2614,6 +2615,7 @@ namespace Levy.Content.NPCs
 		/// </summary>
 		private Vector2 FreeReinBase()
 		{
+			if (RegroupLeashed && RegroupBase(out Vector2 rb)) return rb; // Regroup & Engage in a boss fight: the base is the commander, wherever they are (SoldierNPC.Regroup.cs)
 			if (_searchAnchorSet) return _searchAnchor;
 			Vector2 a = NPC.Center;
 			var home = Home;

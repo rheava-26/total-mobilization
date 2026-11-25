@@ -401,7 +401,15 @@ namespace Levy.Content.TileEntities
 
 		/// <summary>Accessories whose cost only pays off for a player standing still or playing a specific way, which a levy never does. Matched by internal name so it works without a hard reference.</summary>
 		private static readonly System.Collections.Generic.HashSet<string> LevyHostileAccessories = new() { "TheCamper" };
-		private static bool LevyHostileAccessory(Item it) => it?.ModItem != null && LevyHostileAccessories.Contains(it.ModItem.Name);
+		private static bool LevyHostileAccessory(Item it) => it?.ModItem != null && (LevyHostileAccessories.Contains(it.ModItem.Name) || ChaliceDownside(it));
+
+		/// <summary>
+		/// CALAMITY'S CHALICE OF THE BLOOD GOD is not free defense. It cuts every hit above 5 to 5 and takes the rest from the wearer's life over the next seconds, so a hit's damage is never avoided, only late; a levy that bleeds out (SoldiersBleedOut, on by default)
+		/// carries that debt through a boss's burst, and what the Chalice adds on top (4 life regeneration, a few debuff immunities) is small beside its rarity, which is what lifted it above every other accessory. While levies bleed out its hits it is
+		/// the last accessory the armory hands out (the Camper's rule: below every fitting or generic accessory), still dealt when nothing else fits a slot or when the commander marks it preferred. <c>LEVY_CHALICE_SCORE=0</c> switches the rule off (A/B).
+		/// </summary>
+		internal static bool ChaliceDownside(Item it) => ChaliceScoreOn && it?.ModItem != null && it.ModItem.Name == "ChaliceOfTheBloodGod" && it.ModItem.Mod?.Name == "CalamityMod" && global::Levy.Content.NPCs.SoldierNPC.Bleedout_On;
+		internal static bool ChaliceScoreOn = System.Environment.GetEnvironmentVariable("LEVY_CHALICE_SCORE") != "0";
 
 		/// <summary>Strength of an accessory: what it does (defense, regen / damage-reduction read, class fit, upgrade chain), with rarity only a small tie-break. Older note: rarity tier first, then defense, value (which carries the prefix's worth), a flat bonus for any prefix, and how much damage it adds to the soldier's class.</summary>
 		private static float AccessoryScore(Item it, DamageClass cls) =>

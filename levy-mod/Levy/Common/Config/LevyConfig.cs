@@ -92,7 +92,7 @@ namespace Levy.Common.Config
 		/// <summary>Levies use the armor set abilities a key or a double-tap starts (God Slayer dash, Solar Flare dash, Forbidden storm, Vortex stealth, Calamity set keys). Policy: Common/Soldiers/SetAbilities.tsv.</summary>
 		[DefaultValue(true)] public bool SoldiersUseSetAbilities;
 		/// <summary>A levy in Calamity's Chalice of the Blood God bleeds out the part of a hit the Chalice deferred, as a player does (SoldierNPC.Bleedout.cs).</summary>
-		[DefaultValue(false)] public bool SoldiersBleedOut;
+		[DefaultValue(true)] public bool SoldiersBleedOut = true;
 		[DefaultValue(true)] public bool SoldiersTakeFallDamage;
 		[DefaultValue(true)] public bool SoldiersTakeTileHazards;
 		[DefaultValue(false)] public bool SoldiersCanDrown;

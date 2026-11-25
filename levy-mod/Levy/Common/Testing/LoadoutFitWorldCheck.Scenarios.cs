@@ -61,6 +61,8 @@ namespace Levy.Common.Testing
 		private static void Calamity(Scene s)
 		{
 			var te = s.Armory;
+			// the class-coherence passes below are about class, not about the Chalice: its last-resort rule (ArmoryTE.ChaliceDownside) would swap it out of her recorded kits one slot a pass, which is its own check (ChaliceCensus)
+			bool chaliceRuleWas = ArmoryTE.ChaliceScoreOn; ArmoryTE.ChaliceScoreOn = false;
 			WeaponRank.ForceProgress = 22.5f; // after Yharon, before Supreme Calamitas (she fights the Exo Mechs)
 			var kits = Kits();
 			var missing = new HashSet<string>();
@@ -156,7 +158,69 @@ namespace Levy.Common.Testing
 			Check("two more upgrade passes change nothing after the Re-arm (no thrash)", Snapshot(s) == snap);
 			Check($"no class accessory sits on another class while a levy of its class could wear it after the Re-arm ({MisplacedClassAccessories(s, out var ex2)}:{ex2})", MisplacedClassAccessories(s, out _) == 0);
 			Check("nothing duplicated or lost by the Re-arm and its passes " + (SameCensus(census, Census(s), out var d3) ? "" : d3), SameCensus(census, Census(s), out _));
+			try { ChaliceCensus(s); } catch (Exception e) { Check("the Chalice census threw " + e.GetType().Name + ": " + e.Message, false); }
+			ArmoryTE.ChaliceScoreOn = chaliceRuleWas;
+			try { SprayCensus(s); } catch (Exception e) { Check("the Emptiness Spray census threw " + e.GetType().Name + ": " + e.Message, false); }
 			WeaponRank.ForceProgress = -1f;
+		}
+
+		/// <summary>
+		/// COMBATFIX: the armory must not prefer the Emptiness Spray (damage 0, priced at 200 platinum) to a real weapon for a levy's primary slot. 45 levies, her stock plus 45 Sprays, a fresh Re-arm: how many levies carry the Spray as their
+		/// weapon with the rule off (BEFORE) and on (NOW).
+		/// </summary>
+		private static void SprayCensus(Scene s)
+		{
+			int spray = ModLoader.TryGetMod("NoxusBoss", out Mod nox) && nox.TryFind("EmptinessSprayer", out ModItem mi) ? mi.Type : 0;
+			if (spray <= 0) { Note("Wrath of the Gods is not loaded: the Emptiness Spray census is skipped"); return; }
+			var te = s.Armory; bool was = WeaponRank.SprayLastResort; var res = new Dictionary<bool, int>();
+			try
+			{
+				foreach (bool on in new[] { false, true })
+				{
+					WeaponRank.SprayLastResort = on;
+					Reset(s, 45);
+					foreach (var row in EveStock) { var p = row.Split('|'); int t = ByName(p[0]); if (t > 0) Stock(te, int.Parse(p[1]), t); }
+					Stock(te, 45, spray); StockAmmo(te); Balance(te, 8, 20, 2f, AllClasses);
+					Rearm(s);
+					res[on] = Active(s).Count(l => !IsAir(l.Gear.Weapon) && l.Gear.Weapon.type == spray);
+				}
+			}
+			finally { WeaponRank.SprayLastResort = was; }
+			Note($"Emptiness Spray census, 45 levies, her stock plus 45 Sprays: levies with the Spray as their weapon: BEFORE {res[false]}, NOW {res[true]}");
+			Check($"the armory does not hand the Emptiness Spray to a levy over a real weapon ({res[true]} of 45 with the rule, {res[false]} without)", res[true] == 0);
+		}
+
+		/// <summary>
+		/// COMBATFIX: how often the armory hands out Calamity's Chalice of the Blood God on a typical endgame armory (her post-Yharon stock and rules, 45 levies, a fresh Re-arm and two upgrade passes), with the Chalice rule off
+		/// (BEFORE: it scores by rarity like any top accessory) and on (NOW: levies bleed out its hits, so it is dealt last). The stock holds 1, 6 and 45 Chalices, so a rule that only matters when the supply is short shows too.
+		/// </summary>
+		private static void ChaliceCensus(Scene s)
+		{
+			int chalice = ByName("Chalice of the Blood God");
+			if (chalice <= 0) { Note("the Chalice of the Blood God is not loaded: census skipped"); return; }
+			var te = s.Armory;
+			bool saveRule = ArmoryTE.ChaliceScoreOn; bool saveForce = global::Levy.Content.NPCs.SoldierNPC.BleedoutForce;
+			var rows = new List<string>(); var issued = new Dictionary<(bool, int), int>();
+			try
+			{
+				global::Levy.Content.NPCs.SoldierNPC.BleedoutForce = true; // the setting's default is on; the check does not depend on the config file
+				foreach (int copies in new[] { 1, 6, 45 })
+				foreach (bool rule in new[] { false, true })
+				{
+					ArmoryTE.ChaliceScoreOn = rule;
+					Reset(s, 45);
+					foreach (var row in EveStock) { var p = row.Split('|'); int t = ByName(p[0]); if (t <= 0) continue; Stock(te, t == chalice ? copies : int.Parse(p[1]), t); }
+					StockAmmo(te); Balance(te, 8, 20, 2f, AllClasses);
+					Rearm(s); Upgrades(s, 2);
+					int worn = 0; foreach (var l in Active(s)) foreach (var a in l.Gear.Accessories) if (!IsAir(a) && a.type == chalice) worn++;
+					issued[(rule, copies)] = worn;
+					rows.Add($"stock {copies}: {(rule ? "NOW" : "BEFORE")} {worn} worn");
+				}
+			}
+			finally { ArmoryTE.ChaliceScoreOn = saveRule; global::Levy.Content.NPCs.SoldierNPC.BleedoutForce = saveForce; }
+			Note("Chalice census, 45 levies, her stock and rules: " + string.Join("; ", rows));
+			Check($"the Chalice rule: with a short supply (1) it is issued {issued[(false, 1)]} times before and {issued[(true, 1)]} now; with 6 {issued[(false, 6)]} before and {issued[(true, 6)]} now; with 45 {issued[(false, 45)]} before and {issued[(true, 45)]} now (never more than before)", issued[(true, 1)] <= issued[(false, 1)] && issued[(true, 6)] <= issued[(false, 6)] && issued[(true, 45)] <= issued[(false, 45)]);
+			Check($"the Chalice rule: it is dealt less often than before on at least one supply ({issued[(false, 6)]} to {issued[(true, 6)]}, {issued[(false, 45)]} to {issued[(true, 45)]})", issued[(true, 6)] < issued[(false, 6)] || issued[(true, 45)] < issued[(false, 45)] || issued[(true, 1)] < issued[(false, 1)]);
 		}
 
 		// ------------------------------------------------------------------ vanilla: the same shape, post Moon Lord

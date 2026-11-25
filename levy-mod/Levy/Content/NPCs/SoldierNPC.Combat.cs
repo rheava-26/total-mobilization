@@ -234,7 +234,7 @@ namespace Levy.Content.NPCs
 				float tiles = Aiming.TilesToHitbox(NPC.Center, seg);
 				if (tiles > FireRangeTiles(target)) return; // a touch past the listed range, and much further against a boss
 				Vector2 muzzle = WeaponUse.Muzzle(this);
-				if (!ShotIgnoresTiles() && !Aiming.HasLineOfSight(muzzle, seg.Center)) return;
+				if (!ShotIgnoresTiles() && !LineClear(muzzle, seg.Center)) return;
 				// Deploy-and-persist weapons (Rainbow Gun, Magnet Sphere, rain-cloud rods) fire once and hold while their own field still reaches the target.
 				if (AttackCooldown <= 0 && ItemShots.HoldsFire(this, Weapon.ItemType, target)) return;
 				// Routed shots are wilder: the shaken multiplier (already in the weapon layer while the meter is up) is topped up to RoutedAimMult.
@@ -258,7 +258,7 @@ namespace Levy.Content.NPCs
 				// Swing from out to the beam's reach so the projectile flies; up close the swing hitbox lands as always (no line of sight needed there).
 				if (meleeTiles <= closeTrigger) { WeaponUse.TryAttack(this, target); return; }
 				if (meleeTiles > Weapon.RangeTiles) return;
-				if (!ShotIgnoresTiles() && !Aiming.HasLineOfSight(WeaponUse.Muzzle(this), seg.Center)) return;
+				if (!ShotIgnoresTiles() && !LineClear(WeaponUse.Muzzle(this), seg.Center)) return;
 				WeaponUse.TryAttack(this, target);
 				return;
 			}

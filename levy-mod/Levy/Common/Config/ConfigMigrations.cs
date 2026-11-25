@@ -64,6 +64,8 @@ namespace Levy.Common.Config
 				var c = LevyConfig.Get; if (c == null) return;
 				// Manpower per townsperson: the default 9 became 15 (LevyConstants.ManpowerPerNpc)
 				MoveOnce("LevyConfig.ManpowerPerTownNpc:9>15", () => c.ManpowerPerTownNpc == LevyConstants.ManpowerPerNpcOldDefault, () => c.ManpowerPerTownNpc = LevyConstants.ManpowerPerNpc, () => SaveConfig(c));
+				// Chalice of the Blood God bleed-out: the default went from off to on (combatfix)
+				MoveOnce("LevyConfig.SoldiersBleedOut:false>true", () => !c.SoldiersBleedOut, () => c.SoldiersBleedOut = true, () => SaveConfig(c));
 			}
 			catch (Exception e) { Levy.Instance?.Logger.Warn("Levy: config migrations failed: " + e.Message); }
 		}

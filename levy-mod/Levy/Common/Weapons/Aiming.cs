@@ -111,6 +111,55 @@ namespace Levy.Common.Weapons
 		/// </summary>
 		public static NPC NearestSegment(NPC npc, Vector2 from, bool preferOpen = false)
 		{
+			NPC seg = NearestSegmentCore(npc, from, preferOpen);
+			// a target whose centre is inside rock (a boss that flies through tiles and is pressed into a wall) is aimed at where it shows: a stand-in at the nearest open point of its hitbox that a shot can reach
+			if (ExposeOn && seg != null && seg.whoAmI >= 0 && CentreWalled(seg) && TryExposedPoint(from, seg, out Vector2 pt)) { Exposed++; return ExposedStandIn(seg, pt); }
+			return seg;
+		}
+
+		/// <summary>Harness switch (LEVY_EXPOSE=0): a target inside rock is left as it was (no line, no shot, no move).</summary>
+		public static bool ExposeOn = Environment.GetEnvironmentVariable("LEVY_EXPOSE") != "0";
+		/// <summary>Harness telemetry: aims turned from a target's walled-in centre to an open point of its hitbox.</summary>
+		public static long Exposed;
+
+		/// <summary>The target's centre lies inside solid tiles.</summary>
+		public static bool CentreWalled(NPC n) => Collision.SolidCollision(n.Center - new Vector2(2f), 4, 4);
+
+		/// <summary>
+		/// The open point of <paramref name="n"/>'s hitbox nearest its centre that a shot from <paramref name="from"/> can reach (not inside a solid tile, a clear line to it): the hitbox is sampled on a grid a tile apart (at most 9 by 9).
+		/// </summary>
+		public static bool TryExposedPoint(Vector2 from, NPC n, out Vector2 pt)
+		{
+			pt = n.Center;
+			Rectangle r = n.Hitbox;
+			int cols = Math.Clamp(r.Width / 16 + 1, 3, 9), rows = Math.Clamp(r.Height / 16 + 1, 3, 9);
+			float best = float.MaxValue; bool found = false;
+			for (int iy = 0; iy < rows; iy++)
+				for (int ix = 0; ix < cols; ix++)
+				{
+					Vector2 p = new Vector2(r.X + (ix + 0.5f) * r.Width / cols, r.Y + (iy + 0.5f) * r.Height / rows);
+					float d = Vector2.DistanceSquared(p, n.Center);
+					if (d >= best || Collision.SolidCollision(p - new Vector2(2f), 4, 4) || !Collision.CanHitLine(from, 1, 1, p, 1, 1)) continue;
+					best = d; pt = p; found = true;
+				}
+			return found;
+		}
+
+		/// <summary>True when a shot from <paramref name="from"/> can reach the target: a clear line to its centre, or (the centre being inside rock) to an open point of its hitbox.</summary>
+		public static bool Seen(Vector2 from, NPC n) => ExposeOn && CentreWalled(n) ? TryExposedPoint(from, n, out _) : Collision.CanHitLine(from, 1, 1, n.Center, 1, 1);
+
+		private static NPC _exposed;
+		private static NPC ExposedStandIn(NPC real, Vector2 pt)
+		{
+			_exposed ??= new NPC();
+			_exposed.active = true; _exposed.width = 12; _exposed.height = 12; _exposed.velocity = real.velocity; _exposed.realLife = -1; _exposed.boss = false; _exposed.life = Math.Max(1, real.life); _exposed.lifeMax = Math.Max(1, real.lifeMax);
+			_exposed.Center = pt;
+			_exposed.whoAmI = -2 - (int)(unchecked((uint)real.whoAmI * 73856093u ^ 0x5bd1e995u) & 0x3FFFFFFF);
+			return _exposed;
+		}
+
+		private static NPC NearestSegmentCore(NPC npc, Vector2 from, bool preferOpen = false)
+		{
 			if (npc == null) return null;
 			if (Prefer != null) { NPC pick = Prefer(npc, from); if (pick != null) return pick; }
 			if (npc.realLife < 0 && !npc.boss) return npc; // single-part ordinary enemy: no segment scan needed

@@ -73,6 +73,13 @@ namespace Levy.Common.Globals
 		/// <summary>Set once a reflected soldier shot has been re-aimed at its firing soldier (so the bounce-back hits the unit, not the commander).</summary>
 		private bool _reflectRedirected;
 
+		/// <summary>A shot of a levy that strikes a tile: the levy counts it when it lands near its target (SoldierNPC.ShotWaste.cs). Never changes whether the shot dies.</summary>
+		public override bool OnTileCollide(Projectile projectile, Vector2 oldVelocity)
+		{
+			if (SoldierIndex >= 0 && SoldierIndex < Main.maxNPCs && Main.npc[SoldierIndex].active && Main.npc[SoldierIndex].ModNPC is SoldierNPC s) s.NoteShotHitTile(projectile);
+			return true;
+		}
+
 		public override void OnSpawn(Projectile projectile, IEntitySource source)
 		{
 			// experiment (harness-gated, OwnerPuppet bit 16): a projectile spawned inside a soldier shot's puppeted Update / Damage / Kill with no parent tag still belongs to that soldier

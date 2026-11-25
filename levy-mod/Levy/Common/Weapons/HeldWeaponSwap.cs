@@ -899,8 +899,22 @@ namespace Levy.Common.Weapons
 		public override bool? CanHitNPC(Projectile projectile, NPC target) => Chain && Whip && !RealWhips.CanHit(projectile, target) ? false : null;
 
 		/// <summary>The soldier's dummy must not keep pointing at a dead holder (the dummy's held-projectile layer would draw whatever reuses that slot).</summary>
+		/// <summary>Lab A/B: LEVY_VOIDBEAM=0 lets the Voidragon's Abyssal Fire outlive its holdout as it did before.</summary>
+		internal static readonly bool VoidBeamEnds = Environment.GetEnvironmentVariable("LEVY_VOIDBEAM") != "0";
+		/// <summary>Harness telemetry: Abyssal Fire beams ended with their holdout.</summary>
+		internal static int VoidBeamsEnded;
+
 		public override void OnKill(Projectile projectile, int timeLeft)
 		{
+			// VOIDRAGON. Its Abyssal Fire beam names its holdout by projectile index (ai[0]) and only checks that the owner can still use a holdout (button held); it never checks that the holdout is alive. A player's beam therefore lives exactly as long
+			// as the holdout's beam timer (500 ticks, at most 250 hits at its 2-tick local cooldown): the holdout ends, and with it the player's held use. A levy's button stays down through the recast, so the beam outlived its holdout (1,078 ticks, 540 hits in
+			// one lab beam) and the next cycle's beam hit beside it (318 hits a beam against a player's 181, gunparity). The beam ends with its holdout, as it does for a player.
+			if (Chain && VoidBeamEnds && projectile.ModProjectile != null && projectile.ModProjectile.Name == "VoidragonHoldout" && projectile.ModProjectile.Mod.Name == "CalamityMod")
+				for (int i = 0; i < Main.maxProjectiles; i++)
+				{
+					Projectile b = Main.projectile[i];
+					if (b.active && b.ModProjectile != null && b.ModProjectile.Name == "AbyssalFire" && (int)b.ai[0] == projectile.whoAmI) { b.Kill(); VoidBeamsEnded++; }
+				}
 			if (!Chain || !projectile.TryGetGlobalProjectile(out SoldierProjectileTag tag)) return;
 			int idx = tag.SoldierIndex;
 			if (idx < 0 || idx >= Main.maxNPCs) return;

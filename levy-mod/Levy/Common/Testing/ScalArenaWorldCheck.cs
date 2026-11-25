@@ -24,7 +24,7 @@ namespace Levy.Common.Testing
 	/// the commander being there), the spread of heights (standard deviation of the levies' Y, and how many bands of the box's height are used), the share of time airborne by gear class, and the damage taken.
 	/// The checks assert that the box does not pin the army: wall time, height spread and flight stay near the open-sky run. Throwaway soldiers only; nothing is saved.
 	/// </summary>
-	public sealed class ScalArenaWorldCheck : ModSystem
+	public sealed partial class ScalArenaWorldCheck : ModSystem
 	{
 		private static bool _armed, _done, _running; private static int _pass, _fail;
 		private static Mod _mod; private static Vector2 _cmdAt, _cmdPrev; private static int _savedMy;
@@ -36,7 +36,7 @@ namespace Levy.Common.Testing
 		public override void OnWorldLoad()
 		{
 			if (!Main.dedServ) return;
-			bool only = Environment.GetEnvironmentVariable("LEVY_SCALARENA_ONLY") == "1";
+			bool only = Environment.GetEnvironmentVariable("LEVY_SCALARENA_ONLY") == "1" || Environment.GetEnvironmentVariable("LEVY_COMBATFIX_ONLY") == "1";
 			bool ship = Environment.GetEnvironmentVariable("LEVY_SELFCHECK_WORLD") == "1" && Environment.GetEnvironmentVariable("LEVY_SCALARENA") != "0";
 			if (!only && !ship) return;
 			_mod = Mod; _armed = true; _done = false; _pass = _fail = 0;
@@ -57,7 +57,7 @@ namespace Levy.Common.Testing
 			if (!ModLoader.TryGetMod("CalamityMod", out _)) { _mod.Logger.Info("[ScalArena] OBSERVED Calamity is not loaded: skipped"); _mod.Logger.Info("[ScalArena] self-check pass=0 fail=0"); return; }
 			_running = true;
 			bool sp = global::Levy.Common.Util.LevyUtil.SpEmulation; int gm = Main.GameMode; bool hm = Main.hardMode; bool day = Main.dayTime; double time = Main.time;
-			try { global::Levy.Common.Util.LevyUtil.SpEmulation = true; Main.player[0] = Main.player[0] ?? new Player(); Run(); }
+			try { global::Levy.Common.Util.LevyUtil.SpEmulation = true; Main.player[0] = Main.player[0] ?? new Player(); if (Environment.GetEnvironmentVariable("LEVY_COMBATFIX_ONLY") != "1") Run(); { string cfp = Environment.GetEnvironmentVariable("LEVY_COMBATFIX_PARTS"); if (Environment.GetEnvironmentVariable("LEVY_COMBATFIX") != "0" && (string.IsNullOrEmpty(cfp) || cfp.Split(',').Contains("scal"))) CombatFixScal(); } }
 			catch (Exception e) { Check("driver threw " + e.GetType().Name + ": " + e.Message + " @ " + string.Join(" | ", (e.StackTrace ?? "").Split('\n').Take(4).Select(l => l.Trim())), false); }
 			finally { _running = false; global::Levy.Common.Util.LevyUtil.SpEmulation = sp; Main.netMode = NetmodeID.Server; Cleanup(); Main.GameMode = gm; Main.hardMode = hm; Main.dayTime = day; Main.time = time; }
 			_mod.Logger.Info($"[ScalArena] self-check pass={_pass} fail={_fail}");

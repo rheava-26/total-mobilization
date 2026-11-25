@@ -82,6 +82,7 @@ namespace Levy.Content.NPCs
 		{
 			NPC npc = NPC; WhyM = Why.MNone; _dbgV0 = npc.velocity.X; _dbgKind = 0; // DbgStage is formatted only when read (it was a string built every tick for every levy; perf pass)
 			if (!_stepInit) { npc.stepSpeed = StepSpeed; _stepInit = true; }
+			SettleOnBoxFloor(); // a body the Calamity arena box's bottom wall held up last tick stands on it (SoldierNPC.ArenaBox.cs)
 			TickReturnHomeProgress();
 			// on a slope the body keeps a small downward velocity as it walks: with solid ground within a few pixels under the feet and no real fall under way it is standing, not airborne (jumping, dodging and strafing all need that)
 			bool onSlope = MobilityMode >= 1 && npc.velocity.Y > 0f && npc.velocity.Y < 2.2f && !npc.wet && Collision.SolidCollision(new Vector2(npc.position.X, npc.Bottom.Y), npc.width, 4);

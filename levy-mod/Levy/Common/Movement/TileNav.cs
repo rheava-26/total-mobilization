@@ -32,10 +32,20 @@ namespace Levy.Common.Movement
 		{
 			if (!InBounds(x, y)) return false;
 			Tile t = Main.tile[x, y];
+			if (VFloorN != 0 && IsBoxFloor(x, y)) return true;
 			if (!t.HasUnactuatedTile || IsClosedDoor(t)) return false;
 			ushort type = t.TileType;
 			return Main.tileSolid[type] || Main.tileSolidTop[type];
 		}
+
+		/// <summary>
+		/// The bottom walls of the Calamity arena boxes that are up, as floor rows: a body rests on a wall (Common/Compat/Calamity/ArenaBoxSystem.cs) where the tiles under it may be empty air, so a planner that read tiles alone saw a cliff
+		/// and froze on it. Refreshed once a tick by ArenaBoxSystem; empty (one int compare per query) with no box up.
+		/// </summary>
+		internal static int VFloorN; private static readonly int[] VFloorRow = new int[4], VFloorX0 = new int[4], VFloorX1 = new int[4];
+		internal static void SetBoxFloors(int n) { VFloorN = n; }
+		internal static void SetBoxFloor(int i, int row, int x0, int x1) { VFloorRow[i] = row; VFloorX0[i] = x0; VFloorX1[i] = x1; }
+		private static bool IsBoxFloor(int x, int y) { for (int i = 0; i < VFloorN; i++) if (y == VFloorRow[i] && x >= VFloorX0[i] && x <= VFloorX1[i]) return true; return false; }
 
 		/// <summary>A platform-like tile (solid top only): the body can drop through it.</summary>
 		public static bool IsPlatform(int x, int y)

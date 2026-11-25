@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Terraria;
 using Levy.Common;
+using Levy.Common.Compat.Calamity;
 using Levy.Common.Movement;
 using Levy.Common.Weapons;
 using static Levy.Common.LevyConstants.Movement;
@@ -60,6 +61,16 @@ namespace Levy.Content.NPCs
 		}
 
 		private bool TickThreatDodge(bool grounded, bool air)
+		{
+			if (!ArenaBoxes.Active || !ArenaBoxes.TryBounds(NPC, out Vector2 boxTl, out Vector2 boxBr)) return TickThreatDodgeBody(grounded, air);
+			// held by a Calamity arena box: every manoeuvre's path stops at its walls (ThreatField.ClipOn)
+			ThreatField.ClipOn = true;
+			ThreatField.ClipLo = boxTl + new Vector2(NPC.width, NPC.height) * 0.5f; ThreatField.ClipHi = boxBr - new Vector2(NPC.width, NPC.height) * 0.5f;
+			try { return TickThreatDodgeBody(grounded, air); }
+			finally { ThreatField.ClipOn = false; }
+		}
+
+		private bool TickThreatDodgeBody(bool grounded, bool air)
 		{
 			NPC npc = NPC;
 			if (_air2Ready != 0 && Main.GameUpdateCount >= _air2Ready)

@@ -131,7 +131,7 @@ namespace Levy.Common.Weapons
 
 		internal static void Reset()
 		{
-			BadTypes.Clear(); ShortLives.Clear(); LearnedBuff.Clear(); Parked.Clear(); ParkedAll.Clear(); ParkedDragons.Clear(); CastSlots.Clear(); Stackers.Clear(); NoRealShoot.Clear(); EmptyCasts.Clear(); Helpers.Clear();
+			BadTypes.Clear(); ShortLives.Clear(); LearnedBuff.Clear(); Parked.Clear(); ParkedAll.Clear(); ParkedDragons.Clear(); CastSlots.Clear(); LateSlotted.Clear(); Stackers.Clear(); NoRealShoot.Clear(); EmptyCasts.Clear(); Helpers.Clear();
 			GroupMinionsNow.Clear(); GroupMinionOwners.Clear(); DragonSegmentsNow.Clear(); DragonSegmentOwners.Clear();
 			PendingBody = null; _faked = false; EnsureAliasRestored(); ClearFrame();
 		}
@@ -291,6 +291,12 @@ namespace Levy.Common.Weapons
 			Item staff = MiscProjSwap.BodyOf(p)?.SummonWeaponFor(p.type);
 			if (staff == null || staff.shoot <= 0) return; // the soldier gave the staff back (rearm), left, or fell: a death with no staff in hand is not evidence about the staff
 			if (SoldierNPC.TransientStaff(staff)) return; // a self-ending cast (a bomber that dives, a fist that strikes) dies within moments by design: it says nothing about whether it can live under a dummy owner
+			SoldierNPC holder = MiscProjSwap.BodyOf(p);
+			if (holder?.Dummy != null && Math.Max(p.minionSlots, SoldierNPC.SlotsPerMinion(staff)) > Math.Max(1, holder.Dummy.maxMinions) + LevyConstants.MinionSlotEpsilon)
+			{
+				if (TooBig.Add((staff.type, Math.Max(1, holder.Dummy.maxMinions)))) ModContent.GetInstance<Levy>()?.Logger.Info("Levy: " + staff.Name + "'s minion takes " + Math.Max(p.minionSlots, SoldierNPC.SlotsPerMinion(staff)) + " slots, more than a holder with " + holder.Dummy.maxMinions + " has: it ended itself, and is not cast at that many.");
+				return; // a minion that takes more slots than its holder has ends itself in its first update, as it does for a player with those slots (Ares' Exoskeleton's cannons at 1 slot): that says nothing about the staff, and a holder with more slots must still get the real minion
+			}
 			int root = staff.shoot;
 			if (age >= LevyConstants.ModdedMinionShortLifeTicks) { ShortLives[root] = 0; return; }
 			int n = ShortLives.GetValueOrDefault(root) + 1;
@@ -485,6 +491,8 @@ namespace Levy.Common.Weapons
 		// =====================================================================================================
 		/// <summary>Slots one real cast of a staff takes (item type to the summed slots of the minions its own Shoot made), learned from the first cast. Staves whose pieces report no slots yet keep the sample's cost.</summary>
 		internal static readonly Dictionary<int, float> CastSlots = new();
+		/// <summary>Staves (item types) whose cast minion is born with no slots and takes them in its own first update (Glacial Embrace's spikes set 1 each tick, the Void Eater Marionette adds the slots it asks for): a minion staff, not a self-ending cast, though its shot reports none.</summary>
+		internal static readonly HashSet<int> LateSlotted = new();
 		/// <summary>Staves (item types) whose own Shoot threw or made nothing twice: they keep the direct cast of their shot.</summary>
 		private static readonly HashSet<int> NoRealShoot = new();
 		private static readonly Dictionary<int, int> EmptyCasts = new();
@@ -537,6 +545,7 @@ namespace Levy.Common.Weapons
 			finally
 			{
 				Main.myPlayer = saved; _faked = false; PendingBody = null;
+				s.TruthUntil = Main.GameUpdateCount + 2;
 				RestoreBuffs(d);
 				foreach (Projectile p in moved) if (p.active && p.owner == ParkedOwner) p.owner = Slot;
 			}
@@ -1126,6 +1135,9 @@ namespace Levy.Common.Weapons
 			bool swapped = false, parked = false, parkedDragons = false, buffsSaved = false, ammoGiven = false, aimed = false, parkedAll = false, savedChannel = d.channel;
 			// a minion of a RECAST staff (AltPolicies.RecastWanted) decides between growing and firing from its owner's free slots: it sees the slots the soldier's upkeep keeps (not the driver's cap) and only his own flock
 			bool recastMinion = p.minion && body.RecastShoot > 0 && InFamily(body.RecastShoot, p.type);
+			// a modded minion in its first update (a cast's own birth tick), and in the two ticks after a cast of its soldier's staff (the staff's Shoot may have asked it to grow: the Void Eater Marionette), is told what a player's would be: his real maxMinions and only his own flock. One that sizes itself from the free slots it finds (the Void Eater Marionette adds as many
+			// as it asks for and the owner has free) then gets what a player's gets, not the 1000 the driven update otherwise reports
+			bool firstTick = authority && p.minion && !p.sentry && p.type >= ProjectileID.Count && !recastMinion && p.TryGetGlobalProjectile(out SoldierProjectileTag firstTag) && firstTag.Cast && (firstTag.Age == 0 || Main.GameUpdateCount <= body.TruthUntil);
 			Vector2 savedScreen = default, calDelta = default; int savedMx = 0, savedMy = 0; float calRot = 0f; object cal = null;
 			Projectile outerFrameProj = _frameProj; SoldierNPC outerFrameBody = _frameBody; int outerFrameSlot = _frameOwnerSlot; bool outerArmed = _strikeArmed, outerReal = _realContext;
 			try
@@ -1134,14 +1146,14 @@ namespace Levy.Common.Weapons
 				EnemyTargeting.Swap(body); // dummy -> Main.player[255], at the soldier
 				swapped = true;
 				if (ownerSlot != Slot) AliasDummy(ownerSlot, d); // a dragon segment reads Main.player[its own owner slot]: the same dummy stands there too
-				d.maxMinions = recastMinion ? Math.Max(1, (int)Math.Round(body.MinionSlotBudget)) : LevyConstants.MinionDriverMaxMinions;
+				d.maxMinions = recastMinion ? Math.Max(1, (int)Math.Round(body.MinionSlotBudget)) : firstTick ? Math.Max(1, savedMax) : LevyConstants.MinionDriverMaxMinions;
 				if (body.RecastShoot > 0) d.channel = Main.GameUpdateCount < body.RecastHoldUntil; // the levy's button, held while a RECAST staff's channelled use lasts (the Saros ray lives while its owner channels)
 				if (p.type >= ProjectileID.Count && p.TryGetGlobalProjectile(out SoldierProjectileTag at)) at.Age++;
 				if (p.type >= ProjectileID.Count) { SaveBuffs(d); buffsSaved = true; if (!(p.TryGetGlobalProjectile(out SoldierProjectileTag ht) && ht.GearHelper)) ApplyModdedBuff(body, p); if (p.minion) { GiveMinionAmmo(d); ammoGiven = true; } } // a modded minion's AI re-adds its own buff to its owner every tick: the dummy's real buffs are put back in the finally (a gear helper is kept by the gear's own buff, not a staff's)
 				if (authority && savedMyPlayer != ownerSlot) { _trueMyPlayer = savedMyPlayer; _faked = true; Main.myPlayer = ownerSlot; }
 				if (GroupIndexed.Contains(p.type)) { parked = true; ParkOtherFlocks(p, body.NPC.whoAmI); } // flag first: a throw halfway still restores what was moved
 				if (IsDragonType(p.type)) { parkedDragons = true; ParkOtherDragons(p, body.NPC.whoAmI); }
-				if (recastMinion) { parkedAll = true; ParkOtherSoldiers(p, body.NPC.whoAmI); }
+				if (recastMinion || firstTick) { parkedAll = true; ParkOtherSoldiers(p, body.NPC.whoAmI); }
 				// a gear helper whose AI reads its owner's cursor (Luxor's Gift turns to Calamity's per-player mouseWorld) sees the levy's aim, as a soldier shot does (OwnerPuppet): the dummy's own cursor is never set, and a cursor
 				// on the owner's centre gives a zero direction, which made the helper's position NaN
 				// the same for any modded minion or minion shot whose own code reads its owner's cursor (the Saros ray turns to Calamity's per-player cursor): on a single-player machine the plain cursor is the COMMANDER's mouse.
@@ -1155,7 +1167,16 @@ namespace Levy.Common.Weapons
 					if (cal != null) { (calDelta, calRot) = AltPolicies.GetCalAimPublic(cal); AltPolicies.SetCalAimPublic(cal, aim - d.MountedCenter); }
 				}
 				_frameProj = p; _frameBody = body; _frameOwnerSlot = ownerSlot; _strikeArmed = false; _realContext = false; // the context RunStrike lifts around a strike, and puts back
+				float slotsBefore = p.minionSlots;
 				orig(p, i);
+				// a modded minion that was just born, or that sized itself in this update from the 1000 slots its AI is told its owner has (the Void Eater Marionette adds the slots it asks for, Glacial Embrace's spikes take one each), is checked
+				// against his real slots next tick, not at the next 20-tick upkeep: a player's own count of free slots stops it there
+				if (authority && p.active && p.minion && !p.sentry && p.type >= ProjectileID.Count && p.minionSlots > ChildSlotMin && slotsBefore <= ChildSlotMin && IsCast(p))
+				{
+					Item sized = body.SummonWeaponFor(p.type);
+					if (sized != null && IsMainPiece(sized, p) && LateSlotted.Add(sized.type)) ModContent.GetInstance<Levy>()?.Logger.Info("Levy: " + sized.Name + "'s minion takes its slots in its own update: a minion staff, not a self-ending cast.");
+				}
+				if (authority && p.active && p.minion && !p.sentry && p.type >= ProjectileID.Count && (Math.Abs(p.minionSlots - slotsBefore) > 0.001f || (p.TryGetGlobalProjectile(out SoldierProjectileTag ft) && ft.Age <= 1))) body.FlockDirty = true;
 			}
 			catch (Exception e)
 			{

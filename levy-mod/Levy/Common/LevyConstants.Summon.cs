@@ -59,6 +59,12 @@ namespace Levy.Common
 		public const int MinionHelperPasses = 6;
 		/// <summary>Horizontal scatter (px) of a fresh real minion around its soldier.</summary>
 		public const float MinionSpawnScatterPx = 36f;
+		/// <summary>
+		/// A summon cast is made where a player's cursor would be: on the soldier's target, within the reach a player could click (a screen about 120 x 68 tiles with the player in the middle, kept to a little under half of it:
+		/// <see cref="MinionCastReachX"/> / <see cref="MinionCastReachY"/> tiles either side / up and down), else <see cref="MinionCastIdleTiles"/> tiles ahead of him. The point is taken inside the target's body, never on its exact centre
+		/// (a minion born dead centre of the enemy it flies at divides by a zero distance), at least <see cref="MinionCastMinOffsetPx"/> from the centre.
+		/// </summary>
+		public const float MinionCastReachX = 50f, MinionCastReachY = 26f, MinionCastIdleTiles = 8f, MinionCastMinOffsetPx = 14f;
 		/// <summary>Size (px) of the box tested for wall overlap at a fresh real minion's scattered spawn point; a blocked point falls back to the soldier's centre.</summary>
 		public static readonly Microsoft.Xna.Framework.Vector2 MinionSpawnProbe = new(16f, 16f);
 		/// <summary>The dummy's maxMinions while a real minion runs its Update, so vanilla's own cap check (which would kill the overflow) never fires: the soldier's upkeep owns the count.</summary>

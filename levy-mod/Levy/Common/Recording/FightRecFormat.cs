@@ -326,6 +326,7 @@ namespace Levy.Common.Recording
 					r[3] += rnd.Next(-3, 4) * 0.13; r[4] += rnd.NextDouble() < 0.3 ? 0.3 : 0; r[1] += r[3] * 2 * (k % 3 == 0 ? 3 : 1) + (k % 5 == 0 ? rnd.Next(-40, 40) : 0); r[2] += r[4] * 2;
 					if (k == 3 && t == 40) r[5] = double.NaN; else if (k == 3) r[5] = 30;
 					f.J.Add((double[])r.Clone());
+					if (k % 4 == 0) f.M.Add(new double[] { 5, r[1], r[2], r[3], r[4], 16, 16, k, 65 + k % 3, 1 + k % 4 }); // format 14: the levies' minions (owner = the levy, kind), row coded like the rest
 					if (k == 11 && t % 6 == 0) f.J.Add((double[])r.Clone()); // the same key twice in one sample
 				}
 				f.B.Add(new double[] { 125, 4, 1e7 + t * 3.3, -t, 1.25, -0.05, 2.5e6 - t, 3e6, 1.5, 2e9, -3, 0.15, 255, 0, 1, -1, 40, 40, 4 });
@@ -338,6 +339,14 @@ namespace Levy.Common.Recording
 					{
 						double want = RowCodec.Q(f.J[i][c], c == 3 || c == 4) / (c == 3 || c == 4 ? 10.0 : 1.0);
 						if (Math.Abs(back[i][c] - want) > 1e-9) return "t=" + t + " row " + i + " field " + c + ": " + back[i][c] + " for " + want;
+					}
+				var mm = dec.Rows(d.RootElement, 5);
+				if (mm.Count != f.M.Count) return "t=" + t + ": " + mm.Count + " minion rows of " + f.M.Count;
+				for (int i = 0; i < mm.Count; i++)
+					for (int c = 0; c < 10; c++)
+					{
+						double want = RowCodec.Q(f.M[i][c], c == 3 || c == 4) / (c == 3 || c == 4 ? 10.0 : 1.0);
+						if (Math.Abs(mm[i][c] - want) > 1e-9) return "t=" + t + " minion row " + i + " field " + c + ": " + mm[i][c] + " for " + want;
 					}
 				var bb = dec.Rows(d.RootElement, 0);
 				if (bb.Count != 1 || Math.Abs(bb[0][2] - RowCodec.Q(f.B[0][2], false)) > 1e-9 || Math.Abs(bb[0][9] - 2e9) > 1e-6 || bb[0][18] != 4 || Math.Abs(bb[0][11] - 0.2) > 1e-9) return "t=" + t + ": boss row";

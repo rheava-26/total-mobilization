@@ -513,12 +513,20 @@ namespace Levy.Common.Weapons
 		/// </summary>
 		/// <summary>Lab A/B (env LEVY_SUMMON_CASTAT=target): every modded cast is made at the soldier's target (when it is not inside a wall), as the summon sweep's parity commander casts at hers.</summary>
 		private static readonly bool CastAtTargetLab = Environment.GetEnvironmentVariable("LEVY_SUMMON_CASTAT") == "target";
+		/// <summary>
+		/// Modded staves cast where a player's cursor is, at the enemy, when their minion does worse for being made beside its owner: the Enchanted Conch's Hermit Crab sprawled 22 tiles from its owner and 15 from the enemy and did 0.27 to
+		/// 0.54 of the player's damage (summon A/B 2026-11-25, three boots); cast at the target it does 0.67 every time. Most staves lose by it (Ethereal Subjugator, Caustic Staff, Black Hawk Remote 0.9 down to 0.2), so it is a short list,
+		/// not the default (LEVY_SUMMON_CASTAT=target casts every modded staff there, for the A/B). NOT fixed by it: the Infected Remote, whose Plague Princess leaves its AI at once while it is within 10 tiles of its owner
+		/// (PlaguePrincess.DoBehavior_HoverNearOwner returns before it looks for a target), so a minion that settles beside a standing levy never fights (0 hits in 2 of 3 boots whichever way it is cast).
+		/// </summary>
+		private static readonly HashSet<string> CastAtTargetNames = new() { "EnchantedConch" };
+		internal static bool CastsAtTarget(Item weapon) => weapon?.ModItem != null && weapon.ModItem.Mod.Name == "CalamityMod" && CastAtTargetNames.Contains(weapon.ModItem.Name);
 		private static List<Projectile> RunShoot(SoldierNPC s, Item weapon, int damage, out bool threw)
 		{
 			// a self-ending cast (a bomber, a fist, a field: see SoldierNPC.TransientStaff) is aimed where a player aims it, at the enemy he fights; a minion that stays is cast beside the soldier. Casting every modded staff at the
 			// target was measured too (LEVY_SUMMON_CASTAT=target, summon sweep 2026-11-22) and was mixed: Vigilance 0.25 -> 0.78 and the Pole Warper 0.62 -> 0.93 of the commander's damage, but the Ethereal Subjugator, the Gastric
 			// Belcher, the Resurrection Butterfly and Entropy's Vigil lost half or more, so it is not the default.
-			bool atTarget = SoldierNPC.TransientStaff(weapon) || (CastAtTargetLab && s.TargetIndex >= 0 && s.TargetIndex < Main.maxNPCs && Main.npc[s.TargetIndex].active);
+			bool atTarget = SoldierNPC.TransientStaff(weapon) || (CastsAtTarget(weapon) && s.TargetIndex >= 0 && s.TargetIndex < Main.maxNPCs && Main.npc[s.TargetIndex].active) || (CastAtTargetLab && s.TargetIndex >= 0 && s.TargetIndex < Main.maxNPCs && Main.npc[s.TargetIndex].active);
 			Player d = s.Dummy; threw = false;
 			RefreshCounts(s); // a Shoot that asks the owner how many of its minion are out (to grow it, or to make a fresh one) must be told the truth, not last tick's count
 			var moved = new List<Projectile>();

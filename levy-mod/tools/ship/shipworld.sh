@@ -6,7 +6,8 @@
 # servers (and any lab server) never share a log or a file. With LEVY_SELFCHECK_WORLD=1 the world checks run themselves once a world
 # loads: Mechanization's MechWorldCheck (which calls Levy's SummonWorldCheck at its end) and LEVY_MECHWORLD_EXIT=1 stops the server.
 # Overrides: VAN_MODS / CAL_MODS (comma lists), SHIPWORLD_SETTLE (seconds, default 25), SHIPWORLD_TIMEOUT,
-#   SHIPWORLD_HALVES (default "van cal": which halves to run), SHIPWORLD_SERIAL=1 (run them one after another: one tML process at a time on a loaded box).
+#   SHIPWORLD_HALVES (default "van cal": which halves to run), SHIPWORLD_SERIAL=1 (run them one after another: one tML process at a time on a loaded box),
+#   SHIPWORLD_SUMMONAB=0 skips the summon A/B (a player and a levy with the same staves, and three levies with one: about 15 to 40 seconds a half; =all runs the whole catalogue and takes minutes).
 set -u
 . "$(dirname "${BASH_SOURCE[0]}")/env.sh"
 TMO=${SHIPWORLD_TIMEOUT:-480}; SETTLE=${SHIPWORLD_SETTLE:-25}
@@ -49,7 +50,7 @@ case " $HALVES " in *" wot "*) WR=$(prep wot "$TML10" "$WOTG_HOME/save/Mods");; 
 
 run_half() { # $1 = run dir, $2 = port, $3 = mod list
   "$SHIP_DIR/tmlboot.sh" -i "$1/tml" -s "$1/save" -m "$3" -w "$1/ShipWorld.wld" -p "$2" \
-      -e "LEVY_SELFCHECK_WORLD=1 LEVY_MECHWORLD_EXIT=1" -x '\[MechWorld\] self-check pass=' -q "$SETTLE" -t "$TMO" > "$1/half.out" 2>&1
+      -e "LEVY_SELFCHECK_WORLD=1 LEVY_MECHWORLD_EXIT=1 LEVY_SUMMONAB=${SHIPWORLD_SUMMONAB:-1}" -x '\[MechWorld\] self-check pass=' -q "$SETTLE" -t "$TMO" > "$1/half.out" 2>&1
   echo $? > "$1/half.rc"
 }
 echo "== booting ShipWorld: halves [$HALVES] ($PORT_WVAN vanilla, $PORT_WCAL Calamity), $([ "${SHIPWORLD_SERIAL:-0}" = 1 ] && echo one after another || echo in parallel) =="
@@ -95,6 +96,10 @@ report() { # $1 = label, $2 = run dir
   echo "SummonSweep (summon staves in a summoner levy's hands, the commander 64 tiles away: summons at the levy, damage, nothing on the commander, minions that grow with repeated casts, the Saros Possession's ray at full slots; Calamity parts skip without Calamity): PASS=$(grep -c -F '[SummonSweep] PASS ' "$L") FAIL=$(grep -c -F '[SummonSweep] FAIL ' "$L")"
   grep -F "[SummonSweep] self-check pass=" "$L" | sed 's/^/  /'
   grep -F '[SummonSweep] FAIL' "$L" | head -10 | cut -c1-300 | sed 's/^/  /'
+  echo "SummonAB (the same summon staff in a stand-in player's hands and in a levy's, against one pinned enemy, then three levies with one staff: the player really hurts the enemy, the levy's minions fight with at least half her damage, three levies do three times one levy's; Calamity parts skip without Calamity): PASS=$(grep -c -F '[SummonAB] PASS ' "$L") FAIL=$(grep -c -F '[SummonAB] FAIL ' "$L")"
+  grep -F "[SummonAB] self-check pass=" "$L" | sed 's/^/  /'
+  grep -F '[SummonAB] TALLY' "$L" | sed -E 's/^\[[^]]*\] \[[^]]*\] //' | cut -c1-300 | sed 's/^/  /'
+  grep -F '[SummonAB] FAIL' "$L" | head -10 | cut -c1-300 | sed 's/^/  /'
   echo "ShopLag: PASS=$(grep -c -F '[ShopLag] PASS ' "$L") FAIL=$(grep -c -F '[ShopLag] FAIL ' "$L")"
   grep -F "[ShopLag] self-check pass=" "$L" | sed 's/^/  /'
   grep -F '[ShopLag] FAIL' "$L" | head -10 | cut -c1-260 | sed 's/^/  /'
@@ -231,7 +236,7 @@ report() { # $1 = label, $2 = run dir
   echo "FightReport (boot self-check of the analyzer): $(grep -F '[FightReport] self-check pass=' "$L" | sed -E 's/^\[[^]]*\] \[[^]]*\] //' | head -1)"
   [ -z "$(grep -F '[MechWorld] self-check pass=' "$L")" ] && echo "  !! no MechWorld summary line (check did not finish; see $2/tml/boot.out)"
   echo "other failures (any FAIL / fail=[1-9] / !!! line not listed above), known summon-staff pick failure excluded:"
-  fail_lines "$L" | grep -v -F -e '[MechWorld] FAIL ' -e '[IdentityWorld] FAIL ' -e '[OfficerWorld] FAIL ' -e '[WhipReal] FAIL ' -e '[ShopLag] FAIL ' -e '[PylonClick] FAIL ' -e '[TileSweep] FAIL ' -e '[HitParity] FAIL ' -e '[BossBugs] FAIL ' -e '[SwapRace] FAIL ' -e '[LevyRules] FAIL ' -e '[PerfBoss] FAIL ' -e '[StealthWorld] FAIL ' -e '[LineWatch] FAIL ' -e '[PerfAnalyzer] FAIL ' -e '[ChatterWorld] FAIL ' -e '[SaveHold] FAIL ' -e '[EventRec] FAIL ' -e '[HookLive] FAIL ' -e '[MobWorld] FAIL ' -e '[Bodyguard] FAIL ' -e '[ProgAssist] FAIL ' -e '[AutoSell] FAIL ' -e '[ArmoryRulesWorld] FAIL ' -e '[SidearmWorld] FAIL ' -e '[FacingWorld] FAIL ' -e '[MachineDorm] FAIL ' -e '[LostFight] FAIL ' -e '[MusterBoss] FAIL ' -e '[SettlementWorld] FAIL ' -e '[ExoFix] FAIL ' -e '[PetWorld] FAIL ' -e '[ArmorClassWorld] FAIL ' -e '[LoadoutFit] FAIL ' -e '[HoldoutWorld] FAIL ' -e '[OnlyRule] FAIL ' -e '[AllyTags] FAIL ' -e '[ActiveArmy] FAIL ' -e '[SetAbility] FAIL ' -e '[SummonSweep] FAIL ' -e '[AmmoWorld] FAIL ' -e '[PerfPass] FAIL ' -e '[BossScene] FAIL ' -e '[AoeDmg] FAIL ' -e '[ScalArena] FAIL ' -e '[AvatarBehave] FAIL ' | head -20
+  fail_lines "$L" | grep -v -F -e '[MechWorld] FAIL ' -e '[IdentityWorld] FAIL ' -e '[OfficerWorld] FAIL ' -e '[WhipReal] FAIL ' -e '[ShopLag] FAIL ' -e '[PylonClick] FAIL ' -e '[TileSweep] FAIL ' -e '[HitParity] FAIL ' -e '[BossBugs] FAIL ' -e '[SwapRace] FAIL ' -e '[LevyRules] FAIL ' -e '[PerfBoss] FAIL ' -e '[StealthWorld] FAIL ' -e '[LineWatch] FAIL ' -e '[PerfAnalyzer] FAIL ' -e '[ChatterWorld] FAIL ' -e '[SaveHold] FAIL ' -e '[EventRec] FAIL ' -e '[HookLive] FAIL ' -e '[MobWorld] FAIL ' -e '[Bodyguard] FAIL ' -e '[ProgAssist] FAIL ' -e '[AutoSell] FAIL ' -e '[ArmoryRulesWorld] FAIL ' -e '[SidearmWorld] FAIL ' -e '[FacingWorld] FAIL ' -e '[MachineDorm] FAIL ' -e '[LostFight] FAIL ' -e '[MusterBoss] FAIL ' -e '[SettlementWorld] FAIL ' -e '[ExoFix] FAIL ' -e '[PetWorld] FAIL ' -e '[ArmorClassWorld] FAIL ' -e '[LoadoutFit] FAIL ' -e '[HoldoutWorld] FAIL ' -e '[OnlyRule] FAIL ' -e '[AllyTags] FAIL ' -e '[ActiveArmy] FAIL ' -e '[SetAbility] FAIL ' -e '[SummonSweep] FAIL ' -e '[SummonAB] FAIL ' -e '[AmmoWorld] FAIL ' -e '[PerfPass] FAIL ' -e '[BossScene] FAIL ' -e '[AoeDmg] FAIL ' -e '[ScalArena] FAIL ' -e '[AvatarBehave] FAIL ' | head -20
   grep -E "$KNOWN_FAIL_RE" "$L" | head -1 | sed 's/^/  (known, excluded) /'
   echo "FAIL lines in the whole log (known excluded): $(fail_lines "$L" | wc -l)"
   local ex; ex=$(grep -c -E -i "$EXC_RE" "$L"); echo "exceptions: $ex"

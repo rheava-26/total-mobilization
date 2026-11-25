@@ -66,7 +66,7 @@ namespace Levy.Common.Testing
 		/// <summary>The observer a run of <see cref="SumRun"/> calls when set: counts every tick, mirrors the enemy line at the half, and starts / stops the recording.</summary>
 		private sealed class AbCtx
 		{
-			public AbResult R; public int Ticks, Tiles; public bool Record, Focus, Sentry, FollowMode; public int Levies = 1; public readonly HashSet<int> Bodies = new(); public int Adds = int.TryParse(Environment.GetEnvironmentVariable("LEVY_SUMMONAB_ADDS"), out int ad) ? ad : 0; public string RecDir, RecName; public bool Commander; public int Body = -1; public Vector2 At; public bool Mirrored;
+			public AbResult R; public int Ticks, Tiles; public bool Record, Focus, Sentry, FollowMode; public string StaffName = ""; public int Levies = 1; public readonly HashSet<int> Bodies = new(); public int Adds = int.TryParse(Environment.GetEnvironmentVariable("LEVY_SUMMONAB_ADDS"), out int ad) ? ad : 0; public string RecDir, RecName; public bool Commander; public int Body = -1; public Vector2 At; public bool Mirrored;
 			public int MirrorTick => Ticks / 2;
 			private bool _recOn; private int _cur => Mirrored ? 1 : 0; private int _sinceMirror;
 
@@ -83,7 +83,8 @@ namespace Levy.Common.Testing
 						FightRecorder.TraceTargets.Clear();
 						if (_sweepTarget != null) FightRecorder.TraceTargets.Add(_sweepTarget.whoAmI);
 						foreach (NPC a in _rogueAdds) if (a != null && a.active) FightRecorder.TraceTargets.Add(a.whoAmI);
-						string path = FightRecorder.Start(Main.player[0], RecName, out string err, new Dictionary<string, string> { ["label"] = R.Label, ["who"] = R.Who }, RecName);
+						var meta = new Dictionary<string, string> { ["label"] = R.Label, ["who"] = R.Who, ["bossName"] = StaffName, ["mode"] = R.Who, ["arena"] = FollowMode ? "A/B, commander walks, levy follows" : Adds > 0 ? "A/B, line of enemies" : "A/B, one enemy", ["gear"] = "n" + (Commander ? 0 : Levies), ["levies"] = (Commander ? 0 : Levies).ToString() };
+						string path = FightRecorder.Start(Main.player[0], StaffName, out string err, meta, RecName);
 						if (path == null) ABNote($"{R.Label} [{R.Who}]: the recorder did not start ({err})"); else { _recOn = true; R.Rec = path; }
 					}
 					catch (Exception e) { ABNote($"{R.Label} [{R.Who}]: recorder threw {e.GetType().Name}: {e.Message}"); }
@@ -205,7 +206,7 @@ namespace Levy.Common.Testing
 		{
 			var res = new AbResult { Label = label, Who = commander ? "player" : "levy" };
 			string safe = new string(label.Select(c => char.IsLetterOrDigit(c) ? c : '_').ToArray());
-			_ab = new AbCtx { R = res, Levies = levies, Sentry = WeaponClassifier.GetProfile(SumItem(type)).Family == WeaponFamily.Sentry, Ticks = ticks, Tiles = tiles, Record = !string.IsNullOrEmpty(recDir), Focus = focus, RecDir = recDir, FollowMode = Environment.GetEnvironmentVariable("LEVY_SUMMONAB_MODE") == "follow", RecName = (Environment.GetEnvironmentVariable("LEVY_SUMMONAB_MODE") == "follow" ? "abf_" : levies > 1 ? "abarmy" + levies + "_" : "ab_") + res.Who + "_" + safe };
+			_ab = new AbCtx { R = res, StaffName = SumItem(type).Name, Levies = levies, Sentry = WeaponClassifier.GetProfile(SumItem(type)).Family == WeaponFamily.Sentry, Ticks = ticks, Tiles = tiles, Record = !string.IsNullOrEmpty(recDir), Focus = focus, RecDir = recDir, FollowMode = Environment.GetEnvironmentVariable("LEVY_SUMMONAB_MODE") == "follow", RecName = (Environment.GetEnvironmentVariable("LEVY_SUMMONAB_MODE") == "follow" ? "abf_" : levies > 1 ? "abarmy" + levies + "_" : "ab_") + res.Who + "_" + safe };
 			try { res.Stat = SumRun(type, label, ticks, commander, slots); }
 			finally { _ab = null; }
 			return res;
@@ -262,7 +263,7 @@ namespace Levy.Common.Testing
 			w.Flush();
 		}
 		/// <summary>ARMY MODE (LEVY_SUMMONAB_ARMY=N): N levies with the same staff hold ground beside each other against the same enemy; each should do what a lone levy does (N times the lone levy's damage), as N players would. Logged as an ARMY row; a share under 0.7 is flagged SCALES-DOWN.</summary>
-		private static void AbArmyRow(int type, string label, AbResult one, int n, int ticks, int slots, int tiles, StreamWriter jw)
+		private static float AbArmyRow(int type, string label, AbResult one, int n, int ticks, int slots, int tiles, StreamWriter jw)
 		{
 			long p0 = ArmyHitCooldown.Passes, st0 = ArmyHitCooldown.Set, id0 = ArmyHitCooldown.IdPasses;
 			AbResult many = AbRun(type, label, false, ticks, slots, tiles, Environment.GetEnvironmentVariable("LEVY_SUMMONAB_ARMYREC") == "1" ? Environment.GetEnvironmentVariable("LEVY_SUMMONAB_OUT") : null, false, n);
@@ -270,12 +271,16 @@ namespace Levy.Common.Testing
 			string v = share < 0.7f ? "SCALES-DOWN" : share > 1.4f ? "SCALES-UP" : "SCALES";
 			_mod.Logger.Info($"[SummonAB] ARMY | {label} | {v} | dps one {Fx(one.Dps, "0")} x{n} levies {Fx(many.Dps, "0")} (share {Fx(share)}) | hits one {one.Hits} army {many.Hits} | minions per levy one {Fx(one.AvgMinions, "0.0")} army {Fx(many.AvgMinions / n, "0.0")} | hits by levy [{string.Join(",", many.HitsByBody.OrderBy(kv => kv.Key).Select(kv => kv.Value))}] | hit-cooldown passes {ArmyHitCooldown.Passes - p0} cooldowns set {ArmyHitCooldown.Set - st0} | id-static passes {ArmyHitCooldown.IdPasses - id0} | target immune[255]>0 on {many.ImmTicks} of {many.Ticks} ticks (max {many.ImmMax}), alone {one.ImmTicks} of {one.Ticks}");
 			jw?.WriteLine($"{{\"label\":{JQ(label)},\"army\":{n},\"verdict\":{JQ(v)},\"oneDps\":{Fx(one.Dps, "0.#")},\"armyDps\":{Fx(many.Dps, "0.#")},\"share\":{Fx(share, "0.###")},\"oneHits\":{one.Hits},\"armyHits\":{many.Hits}}}"); jw?.Flush();
+			return share;
 		}
 		private static string JQ(string s) => "\"" + (s ?? "").Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\n", " ") + "\"";
 
 		/// <summary>The ship sample: one staff for each way a minion behaves (a walker, a flyer, a shooter, a swarm, a chain, a tower, a whip's summon tag excluded: whips are not minions).</summary>
-		private static readonly short[] AbSampleVanilla = { ItemID.SlimeStaff, ItemID.RavenStaff, ItemID.OpticStaff, ItemID.XenoStaff, ItemID.StardustDragonStaff, ItemID.EmpressBlade, ItemID.DD2LightningAuraT3Popper };
-		private static readonly string[] AbSampleCal = { "EtherealSubjugator", "CorvidHarbringerStaff", "TacticalPlagueEngine" };
+		private static readonly short[] AbSampleVanilla = { ItemID.SlimeStaff, ItemID.RavenStaff, ItemID.OpticStaff, ItemID.XenoStaff, ItemID.StardustDragonStaff, ItemID.EmpressBlade, ItemID.VampireFrogStaff, ItemID.FlinxStaff };
+		private static readonly string[] AbSampleCal = { "EtherealSubjugator", "CorvidHarbringerStaff", "EnchantedConch" };
+		/// <summary>The staves whose army run is part of the ship sample: contact minions on the game's static ID immunity (one cooldown per projectile type, shared by every owner), the ones that shared one cooldown across the whole army.</summary>
+		private static readonly int[] AbArmySample = { ItemID.SlimeStaff, ItemID.VampireFrogStaff, ItemID.FlinxStaff };
+		private const int AbArmyShipN = 3;
 
 		private static void SummonAbCheck()
 		{
@@ -326,11 +331,13 @@ namespace Levy.Common.Testing
 						AbResult pc = AbRun(type, label, true, ticks, slots, tiles, rec ? outDir : null, focus);
 						AbResult lv = AbRun(type, label, false, ticks, slots, tiles, rec ? outDir : null, focus);
 						string v = AbVerdict(pc, lv, sentry);
-						if (armyN > 1 && !sentry && lv.Hits > 0) AbArmyRow(type, label, lv, armyN, ticks, slots, tiles, jw);
+						int armyHere = armyN > 1 ? armyN : !all && Array.IndexOf(AbArmySample, type) >= 0 ? AbArmyShipN : 0;
+						if (armyHere > 1 && !sentry && lv.Hits > 0) { float armyShare = AbArmyRow(type, label, lv, armyHere, ticks, slots, tiles, jw); if (!all && armyN <= 1) ABCheck($"A/B army {label}: {armyHere} levies with the staff do {armyHere} times one levy's damage, as {armyHere} players would (share {Fx(armyShare)}, at least 0.7)", armyShare >= 0.7f); }
 						tally[v] = tally.GetValueOrDefault(v) + 1;
 						_mod.Logger.Info("[SummonAB] " + AbRowText(pc, lv, v));
 						if (jw != null) AbJson(jw, pc, lv, v);
-						if (!all) ABCheck($"A/B {label}: the levy's staff behaves as the player's ({v}: dps player {Fx(pc.Dps, "0")} levy {Fx(lv.Dps, "0")}; engaged {Fx(pc.Engaged)} vs {Fx(lv.Engaged)}; near owner {Fx(pc.Near)} vs {Fx(lv.Near)})", v == "OK" || v == "NONE");
+						// the ship asserts what the A/B is sure of: the stand-in player really hurts the enemy (else the row says nothing) and the levy's minions fight, with at least half the player's damage (the rows are two boots of a random fight, a staff 0.9 one time is 0.7 the next)
+						if (!all) ABCheck($"A/B {label}: the stand-in player deals damage ({pc.Hits} hits, {Fx(pc.Dps, "0")} dps) and the levy's minions fight as hers do ({v}: dps levy {Fx(lv.Dps, "0")} = x{Fx(pc.Dps > 0 ? lv.Dps / pc.Dps : 0)}; engaged {Fx(pc.Engaged)} vs {Fx(lv.Engaged)}; near owner {Fx(pc.Near)} vs {Fx(lv.Near)})", pc.Hits > 0 && lv.Hits > 0 && lv.Dps >= 0.5f * pc.Dps);
 					}
 					catch (Exception e) { _mod.Logger.Info($"[SummonAB] ROW | {label} | threw {e.GetType().Name}: {e.Message} @ {(e.StackTrace ?? "").Split('\n')[0].Trim()}"); if (!all) ABCheck($"A/B {label} threw {e.GetType().Name}", false); }
 				}

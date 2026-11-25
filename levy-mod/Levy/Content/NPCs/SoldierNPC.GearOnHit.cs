@@ -31,7 +31,7 @@ namespace Levy.Content.NPCs
 		/// <summary>The levy's shot <paramref name="p"/> just hit <paramref name="target"/>: the dummy's ModPlayer hooks for a projectile hit run, as for a player's own shot. Server / single player.</summary>
 		internal void GearOnHitProj(Projectile p, NPC target, NPC.HitInfo hit, int damageDone)
 		{
-			if (!GearOnHitOn || _inGearHit || LevyUtil.IsClient || !IsAlive || !UpkeepActive || p == null || target == null || !p.npcProj || (PlayerCounters.HasHitRows && PlayerCounters.CountsShot(p))) return; // a shot that is not npcProj already ran vanilla's own hook for its owner (a held chain's real owner)
+			if (!GearOnHitOn || _inGearHit || LevyUtil.IsClient || !IsAlive || !GearModLoaded || !UpkeepActive || p == null || target == null || !p.npcProj || (PlayerCounters.HasHitRows && PlayerCounters.CountsShot(p))) return; // a shot that is not npcProj already ran vanilla's own hook for its owner (a held chain's real owner)
 			if (_gearHitTick != Main.GameUpdateCount) { _gearHitTick = Main.GameUpdateCount; _gearHitCount = 0; }
 			if (++_gearHitCount > HitsPerTick) { GearHitCapped++; return; }
 			_inGearHit = true;

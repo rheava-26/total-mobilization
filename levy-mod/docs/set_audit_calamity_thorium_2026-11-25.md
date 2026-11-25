@@ -86,3 +86,9 @@ Thorium, from the `ProcessTriggers` readers and the "Pressing the ..." set texts
 * **Modify-side projectile hooks** (`ModifyHitNPCWithProj`): Thorium Master Marksman, Yew Wood and Magma Seer's. Replaying it would double what `LevyRippers` already does for Calamity's Rage and Adrenaline damage. Calamity has no set reader there.
 * **Set flags read by a projectile's or NPC's own hook from `Main.player[owner]`**: Calamity Daedalus rogue split (`CalamityGlobalProjectile.AI`), the Thorium bard, healer and thrower flags above. The generic fix is a `C` row in `PlayerCounters.tsv` per flag (the field is held as the levy's for every pass of his shot). I added the Daedalus row, then removed it: the lab levy never threw a Daedalus-rogue knife, so it could not be shown to work.
 * Terrarium's max-life difference and the bard, healer and thrower sets' real effects (class gear the lab levy does not use well).
+
+## Ship (Calamity half, commit 03318ba, private roots, ports 9230-9232)
+
+Vanilla boot exc=0 (only the known summon-staff pick line); Calamity boot exc=0 compat=1; Calamity world half: MechWorld 84/0, IdentityWorld 353/0, MachineDorm 59/0, PerfBoss 23/0, PerfPass 7/0, ActiveArmy 52/0, BossBugs 334/0, SummonSweep 143/0, SummonAB 23/0, AmmoWorld 158/0, SetAbility 37/1 (the 1 is the known natural-zombie hit in the vanilla Forbidden trial; the new `onhit` trial is 6/0), HoldoutWorld 76/1 (the known IonBlaster alt). Magic Storage boot exc=0, 52 checks OK.
+
+MachineDorm: "room for a boss ... (free before 99 for 102; freed 4: ... hostiles 1, machines packed 3)" is a check that counts slots to the unit; one extra consumer in the head's first tick (inferred: a natural spawn) makes the room four slots. The trial now gates natural spawns (`DormSpawnGate`, lab only) and its arithmetic reads `>= 3`; the line also names any hostile taken. Not reproduced in isolation: 59/0 every time (Calamity x3 with the gate off, WotG x2, Calamity with the gate on).

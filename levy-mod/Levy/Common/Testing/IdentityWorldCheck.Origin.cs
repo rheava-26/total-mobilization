@@ -74,10 +74,10 @@ namespace Levy.Common.Testing
 		}
 
 		/// <summary>Moves the pinned enemy to the spot 12 tiles right of the levy (a fresh slime, pinned like the safety sweep's).</summary>
-		private static void SpawnOriginTarget(Vector2 levyAt)
+		private static void SpawnOriginTarget(Vector2 levyAt, int tiles = OriginTargetTiles)
 		{
 			if (_sweepTarget != null) _sweepTarget.active = false;
-			_sweepTargetAt = new Vector2(levyAt.X + OriginTargetTiles * 16f, FloorY * 16f);
+			_sweepTargetAt = new Vector2(levyAt.X + tiles * 16f, FloorY * 16f);
 			int ti = NPC.NewNPC(new EntitySource_WorldEvent("IdentityWorldCheck"), (int)_sweepTargetAt.X, (int)_sweepTargetAt.Y, NPCID.GreenSlime);
 			if (ti < 0 || ti >= Main.maxNPCs) throw new Exception("enemy did not spawn");
 			_sweepTarget = Main.npc[ti];

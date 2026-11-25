@@ -51,7 +51,10 @@ namespace Levy.Common.Testing
 		}
 
 		// the server drops a slot with no connection every tick, and the NPCs despawn with nobody on: slot 0 is kept alive and made local only while NPCs and projectiles update
-		public override void PostUpdatePlayers() { if (_running && Main.player[0] != null) Main.player[0].active = true; }
+		public override void PostUpdatePlayers() { if (_running && Main.player[0] != null) Main.player[0].active = true; if (_playerLocal) { Main.myPlayer = _savedMyPlayers; _playerLocal = false; } }
+		/// <summary>The summon A/B's stand-in player updates as the local player (a real client's own Player.Update: the minion count reset, a controller minion's Desert Tiger / Abigail spawn, her minion target), see IdentityWorldCheck.SummonAB.</summary>
+		public override void PreUpdatePlayers() { if (_running && _ab != null && _ab.Commander && _abLocalUpdate) { _savedMyPlayers = Main.myPlayer; Main.myPlayer = _my; _playerLocal = true; } }
+		private static int _savedMyPlayers; private static bool _playerLocal;
 		public override void PreUpdateNPCs() { if (!_running) return; Main.player[0].active = true; if (_cmdHolds) { Main.player[0].channel = true; Main.player[0].controlUseItem = true; } Pin(); PinSweepTarget(); PinRogueAdds(); _savedMy = Main.myPlayer; Main.myPlayer = _my; _savedNet = Main.netMode; if (_spNet) Main.netMode = NetmodeID.SinglePlayer; PhaseOpen(); }
 		public override void PostUpdateNPCs() { if (!_running) return; PhaseClose("npcs"); Main.myPlayer = _savedMy; Main.netMode = _savedNet; }
 		public override void PreUpdateProjectiles() { if (!_running) return; if (_parityAim.HasValue) { Main.screenPosition = Vector2.Zero; Main.mouseX = (int)_parityAim.Value.X; Main.mouseY = (int)_parityAim.Value.Y; } Main.player[0].active = true; if (_cmdHolds) { Main.player[0].channel = true; Main.player[0].controlUseItem = true; } _savedMy = Main.myPlayer; Main.myPlayer = _my; _savedNet = Main.netMode; if (_spNet) Main.netMode = NetmodeID.SinglePlayer; PhaseOpen(); }
@@ -175,6 +178,7 @@ namespace Levy.Common.Testing
 			if (Environment.GetEnvironmentVariable("LEVY_HOLDOUTWORLD_ALONE") == "1") { HoldoutWorldCheck(); ClearSoldiers(); return; }
 			if (Environment.GetEnvironmentVariable("LEVY_AMMOWORLD_ALONE") == "1") { AmmoWorldCheck(); ClearSoldiers(); return; }
 			if (Environment.GetEnvironmentVariable("LEVY_SUMMONSWEEP_ALONE") == "1") { SummonSweepCheck(); ClearSoldiers(); return; }
+			if (Environment.GetEnvironmentVariable("LEVY_SUMMONAB_ALONE") == "1") { SummonAbCheck(); ClearSoldiers(); return; }
 			if (Environment.GetEnvironmentVariable("LEVY_ORIGIN_ALONE") != "1")
 			{
 				AlchemistMenu();
@@ -208,6 +212,8 @@ namespace Levy.Common.Testing
 			AmmoWorldCheck();
 			ClearSoldiers();
 			SummonSweepCheck();
+			ClearSoldiers();
+			SummonAbCheck(); // behind LEVY_SUMMONAB=1 (a sample) | all
 			ClearSoldiers();
 			SentryProbe();
 			ClearSoldiers();

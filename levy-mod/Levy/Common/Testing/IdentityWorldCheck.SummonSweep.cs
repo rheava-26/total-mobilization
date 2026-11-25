@@ -64,8 +64,8 @@ namespace Levy.Common.Testing
 		/// <summary>The four pinned enemies of the dummy line: the main one 12 tiles right of the levy, then 3, 6 and 9 tiles past it.</summary>
 		private static void SumLine(Vector2 levyAt)
 		{
-			SpawnOriginTarget(levyAt); ClearRogueAdds();
-			for (int c = 1; c <= 3; c++)
+			SpawnOriginTarget(levyAt, _ab != null && _ab.Tiles > 0 ? _ab.Tiles : OriginTargetTiles); ClearRogueAdds();
+			for (int c = 1; c <= (_ab != null && _ab.Adds >= 0 ? _ab.Adds : 3); c++)
 			{
 				Vector2 pos = new Vector2(_sweepTargetAt.X + 3 * 16f * c, FloorY * 16f);
 				int ai = NPC.NewNPC(new EntitySource_WorldEvent("IdentityWorldCheck"), (int)pos.X, (int)pos.Y, NPCID.GreenSlime);
@@ -95,7 +95,7 @@ namespace Levy.Common.Testing
 			var st = new SumStat { Label = label, Mode = commander ? "commander alone" : "1 levy" };
 			short[] kit = SumKit(kitSlots);
 			Vector2 at = new Vector2(Cx * 16f + 8f, FloorY * 16f);
-			_cmdAt = commander ? new Vector2(at.X, at.Y - 24f) : HoldCmdAt();
+			_cmdAt = commander ? new Vector2(at.X + (_ab != null && _ab.FollowMode ? AbFollowCentre * 16f : 0f), at.Y - 24f) : _ab != null && _ab.FollowMode ? new Vector2(at.X + (AbFollowCentre - 3) * 16f, at.Y - 24f) : HoldCmdAt();
 			ClearSoldiers(); ClearRogueAdds(); _cmdHolds = false; ReleaseCommanderButtons();
 			Player cmd = Main.player[0];
 			Item[] savedArmor = new Item[cmd.armor.Length]; for (int i = 0; i < cmd.armor.Length; i++) savedArmor[i] = cmd.armor[i];
@@ -115,11 +115,24 @@ namespace Levy.Common.Testing
 				SoldierRecord rec = MakeOriginRecord(w, 0); rec.Name = "Pvt. Summoner";
 				rec.Gear.Set(SoldierGear.SlotHead, SumItem(kit[0])); rec.Gear.Set(SoldierGear.SlotBody, SumItem(kit[1])); rec.Gear.Set(SoldierGear.SlotLegs, SumItem(kit[2]));
 				foreach (int sl in new[] { SoldierGear.SlotHead, SoldierGear.SlotBody, SoldierGear.SlotLegs }) rec.Gear.SetLocked(sl, true);
-				rec.Order = SoldierOrder.Hold; rec.HoldPos = at;
+				rec.Order = _ab != null && _ab.FollowMode ? SoldierOrder.Follow : SoldierOrder.Hold; rec.HoldPos = at;
 				RosterSystem.Instance.Regulars.Add(rec);
 				body = RosterSystem.Instance.SpawnBody(rec, at);
 				if (body < 0 || !rec.HasBody) throw new Exception("levy did not spawn");
 				Main.npc[body].Bottom = at; sn = Main.npc[body].ModNPC as SoldierNPC;
+				// the summon A/B's army mode: more levies with the same staff and kit stand beside him (2 tiles apart), holding the same ground
+				for (int extra = 1; _ab != null && extra < _ab.Levies; extra++)
+				{
+					SoldierRecord r2 = MakeOriginRecord(SumItem(weaponType), 0); r2.Name = "Pvt. Summoner " + (extra + 1);
+					r2.Gear.Set(SoldierGear.SlotHead, SumItem(kit[0])); r2.Gear.Set(SoldierGear.SlotBody, SumItem(kit[1])); r2.Gear.Set(SoldierGear.SlotLegs, SumItem(kit[2]));
+					foreach (int sl in new[] { SoldierGear.SlotHead, SoldierGear.SlotBody, SoldierGear.SlotLegs }) r2.Gear.SetLocked(sl, true);
+					Vector2 at2 = at + new Vector2(-2 * 16f * extra, 0f);
+					r2.Order = SoldierOrder.Hold; r2.HoldPos = at2;
+					RosterSystem.Instance.Regulars.Add(r2);
+					int b2 = RosterSystem.Instance.SpawnBody(r2, at2);
+					if (b2 < 0 || !r2.HasBody) throw new Exception("levy " + (extra + 1) + " did not spawn");
+					Main.npc[b2].Bottom = at2; _ab.Bodies.Add(b2);
+				}
 				// a stack of gel on the floor beside him, as a battlefield has: a minion that fetches its owner's items (the Void Eater Marionette) must still fight
 				int gi = Item.NewItem(new EntitySource_WorldEvent("IdentityWorldCheck"), (int)at.X - 5 * 16, (int)at.Y - 24, 16, 16, ItemID.Gel, 20, noGrabDelay: true);
 				if (gi >= 0 && gi < Main.maxItems) Main.item[gi].noGrabDelay = 0;
@@ -129,6 +142,7 @@ namespace Levy.Common.Testing
 			bool saros = label.EndsWith(":SarosPossession");
 			Main.rand = new Terraria.Utilities.UnifiedRandom(5151);
 			KeepCommander(); PinSweepTarget(); PinRogueAdds(); CursorOnCommander(); Step(4);
+			_ab?.Begin(commander, body, at);
 			var lastSerial = new long[Main.maxProjectiles]; var seen = new HashSet<(int, long)>(); var buffNames = new HashSet<string>(); int dbg = 0, fullSince = -1; bool again = false;
 			HoldBirthProbe.At.Clear(); HoldBirthProbe.On = true;
 			Vector2 enemy0 = _sweepTargetAt; bool wasGone = false;
@@ -138,6 +152,7 @@ namespace Levy.Common.Testing
 			{
 				for (int k = 0; k < ticks; k++)
 				{
+					_ab?.Pre(k);
 					foreach (var r in RosterSystem.Instance.Regulars) r.Mana = r.MaxMana;
 					if (commander)
 					{
@@ -146,7 +161,7 @@ namespace Levy.Common.Testing
 						if (full && fullSince < 0) fullSince = k;
 						if (fullSince >= 0 && !again && k - fullSince >= 3 && cmd.itemAnimation == 0) again = true; // the button let go until the last use is over, then clicked and held
 						// her cursor is on the main target, the plain one and Calamity's own (a staff casts at it, the Saros ray turns to it): a server never updates Calamity's for her
-						Vector2 aim = _sweepTarget != null ? _sweepTarget.Center : cmd.Center; _parityAim = aim;
+						Vector2 aim = _sweepTarget != null ? _sweepTarget.Center + _abAimOffset : cmd.Center; _parityAim = aim;
 						try { object cp = AltPolicies.CalamityPlayerOf(cmd); if (cp != null) AltPolicies.SetCalAimPublic(cp, aim - cmd.MountedCenter); } catch (Exception) { }
 						if (SumDebug && fullSince >= 0 && k - fullSince < 8) { bool cu = false; try { cu = ItemLoader.CanUseItem(w, cmd); } catch (Exception) { } SNote($"  dbg {label} [commander] t={k} full-tick press={SumPress(w, k, fullSince, again)} canUse={cu} anim={cmd.itemAnimation} release={cmd.releaseUseItem} channel={cmd.channel} held={cmd.HeldItem?.Name} sel={cmd.selectedItem} noItems={cmd.noItems} cc={cmd.CCed}"); }
 						if (SumDebug && k % 45 == 0) SNote($"  dbg {label} [commander] t={k} ownSlots={own} full={full} since={fullSince} press={SumPress(w, k, fullSince, again)} anim={cmd.itemAnimation} time={cmd.itemTime} release={cmd.releaseUseItem} counts(shoot)={(w.shoot < cmd.ownedProjectileCounts.Length ? cmd.ownedProjectileCounts[w.shoot] : -1)} max={cmd.maxMinions}");
@@ -160,6 +175,7 @@ namespace Levy.Common.Testing
 					if (_sweepTarget != null && _sweepTarget.active) { int d = _sweepTarget.lifeMax - _sweepTarget.life; if (d > 0) st.Damage += d; }
 					foreach (NPC a in _rogueAdds) if (a != null && a.active) { int d = a.lifeMax - a.life; if (d > 0) st.Damage += d; }
 					st.Ticks++;
+					_ab?.Post(k, sn);
 					if (sn != null && sn.NPC.active) { st.Capacity = Math.Max(st.Capacity, sn.MinionCapacity(w)); st.MaxMinions = Math.Max(st.MaxMinions, sn.Dummy?.maxMinions ?? 0); if (Main.GameUpdateCount < sn.RecastHoldUntil) st.HoldTicks++; }
 					if (saros) { float u = AltPolicies.ReadMeter(commander ? cmd : sn?.Dummy, "sarosEclipseBeamUsage"); if (!float.IsNaN(u)) { st.UsageMax = Math.Max(st.UsageMax, u); st.UsageEnd = u; } }
 					Vector2 cmdC = cmd.Center, levyC = sn != null && sn.NPC.active ? sn.NPC.Center : at;
@@ -213,6 +229,7 @@ namespace Levy.Common.Testing
 			}
 			finally
 			{
+				_ab?.End();
 				_sumGone = false; _sweepTargetAt = enemy0;
 				HoldBirthProbe.On = false; HoldBirthProbe.At.Clear(); _cmdHolds = false; _parityAim = null;
 				if (SumDebug && !commander) On_Projectile.Kill -= KillSpy;

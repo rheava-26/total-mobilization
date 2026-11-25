@@ -64,6 +64,9 @@ namespace Levy.Common.Recording
 	{
 		public override bool AppliesToEntity(NPC entity, bool lateInstantiation) => lateInstantiation && !(entity.ModNPC is SoldierNPC) && !entity.friendly && !entity.townNPC;
 
+		/// <summary>Self-check harness only (IdentityWorldCheck.SummonAB): sees every hit on an enemy, whether or not a recording runs.</summary>
+		internal static System.Action<NPC, Player, Projectile, Item, int> AbSink;
+
 		public override void HitEffect(NPC npc, NPC.HitInfo hit)
 		{
 			if (FightRecorder.On) FightRecorder.NoteBossHit(npc, hit.Damage);
@@ -71,6 +74,7 @@ namespace Levy.Common.Recording
 
 		public override void OnHitByItem(NPC npc, Player player, Item item, NPC.HitInfo hit, int damageDone)
 		{
+			AbSink?.Invoke(npc, player, null, item, damageDone);
 			if (EventRecorder.On) EventRecorder.NoteDamage(npc, player, null, item, damageDone, hit.Crit);
 			if (!FightRecorder.On) return;
 			FightRecorder.NoteBossSource(npc, "item", item.type, item.Name);
@@ -79,6 +83,7 @@ namespace Levy.Common.Recording
 
 		public override void OnHitByProjectile(NPC npc, Projectile projectile, NPC.HitInfo hit, int damageDone)
 		{
+			AbSink?.Invoke(npc, null, projectile, null, damageDone);
 			if (EventRecorder.On) EventRecorder.NoteDamage(npc, null, projectile, null, damageDone, hit.Crit);
 			if (!FightRecorder.On) return;
 			FightRecorder.NoteBossSource(npc, "proj", projectile.type, Terraria.Lang.GetProjectileName(projectile.type).Value);

@@ -99,6 +99,10 @@ namespace Levy.Common.Recording
 	///         bph.army counts the levies within ArenaRangeTiles of the commander or a fight boss.
 	///         PART FILES: a recording whose compressed part passes FightRecorder.PartBytes (9 MB) goes on in NAME_part2.levyrec, NAME_part3.levyrec ...; each part starts with the header plus "part": n, and its rows start full, so it reads on its own.
 	///           The names and end records are in the last part. FightRecReader.Read, make_site.py and the viewer join the parts back into one fight. The size cap of the setting counts every part.
+	///         Format 14 adds the levies' minions to the recording (every field appended or optional; readers of format 13 skip the new key and the new field):
+	///         frame key m: the LEVIES' own minions and sentries (type, x, y, vx, vy, w, h, slot, owner, kind: SchemaM; at most 100 a sample, row coded like c with the slot as the key). owner = the levy's id (the l row's id), kind 1 minion, 2 sentry, 4 a shot. The commander's own minions were
+	///         already in c; c rows gain the same kind as field 8. A levy's friendly shots go into m only in the summon A/B harness (FightRecorder.SummonTrace, up to 300 rows), so the viewer's "summon trace" can draw "its shots" for both sides. Files of format 13 and older have no m
+	///         and no kind (the viewer draws their c rows as plain shots).
 	///   names type id to name tables (items, npcs, projectiles, buffs, soldiers), written at the end
 	///   end   stop reason and counts
 	/// All positions are world pixels (centers). Plain data; nothing here touches the game, so it can self-check at boot.
@@ -120,6 +124,8 @@ namespace Levy.Common.Recording
 		public List<double[]> S = new();
 		/// <summary>Format 11: the commander's own projectiles [type,x,y,vx,vy,w,h] (format 13: + slot).</summary>
 		public List<double[]> C = new();
+		/// <summary>Format 14: the levies' minions and sentries (and, in a summon trace, their friendly shots) [type,x,y,vx,vy,w,h,slot,owner (the levy's id),kind]; kind 1 minion, 2 sentry, 4 shot.</summary>
+		public List<double[]> M = new();
 	}
 
 	/// <summary>Format 13 part files: NAME.levyrec, NAME_part2.levyrec, NAME_part3.levyrec ... Plain file names, no game types (the command-line report tool uses them too).</summary>
@@ -159,7 +165,7 @@ namespace Levy.Common.Recording
 
 	internal static class FightRecFormat
 	{
-		public const int Version = 13;
+		public const int Version = 14;
 		/// <summary>Levies this close (tiles) to the commander or a fight boss are "in the arena": bph.army, and the report's army counts read from the frames.</summary>
 		public const int ArenaRangeTiles = 120;
 		/// <summary>FightRecorder.LostWindowTicks: a boss that leaves this soon after the commander's fall left because of it.</summary>
@@ -185,7 +191,8 @@ namespace Levy.Common.Recording
 		public const string SchemaS = "type,id,x,y,w,h,realLife,flags  (a row of 3 = id,x,y: same type, size, realLife and flags as that id's last full row)";
 		public const string SFlags = "1 deals contact damage,2 does not take damage,4 body segment (realLife = the head that owns its life)";
 		public const string SchemaJ = "type,x,y,vx,vy,damage,w,h,slot";
-		public const string SchemaC = "type,x,y,vx,vy,w,h,slot";
+		public const string SchemaC = "type,x,y,vx,vy,w,h,slot,kind  (kind: 1 minion, 2 sentry, 4 shot; absent before format 14)";
+		public const string SchemaM = "type,x,y,vx,vy,w,h,slot,owner,kind  (the levies' minions and sentries: owner = the levy's id, kind 1 minion, 2 sentry, 4 shot; format 14)";
 		public const string SchemaL = "id,x,y,vx,vy,flags,life,state,held,wingTime,lifeMax,w,h";
 		public const string ImpNames = "0 normal,1 miniboss,2 boss";
 		public const string SchemaLFlags = "1 grounded,2 flying,4 aerial,8 hooking,16 blocked";
@@ -238,8 +245,8 @@ namespace Levy.Common.Recording
 		{
 			var sb = new StringBuilder(256);
 			sb.Append("{\"k\":\"f\",\"t\":").Append(f.T).Append(",\"p\":"); Arr(sb, f.P);
-			if (codec == null) { Rows(sb, "b", f.B); Rows(sb, "j", f.J); Rows(sb, "l", f.L); Rows(sb, "a", f.A); Rows(sb, "s", f.S); Rows(sb, "c", f.C); }
-			else { codec.Rows(sb, 0, f.B); codec.Rows(sb, 3, f.J); codec.Rows(sb, 2, f.L); codec.Rows(sb, 1, f.A); Rows(sb, "s", f.S); codec.Rows(sb, 4, f.C); }
+			if (codec == null) { Rows(sb, "b", f.B); Rows(sb, "j", f.J); Rows(sb, "l", f.L); Rows(sb, "a", f.A); Rows(sb, "s", f.S); Rows(sb, "c", f.C); Rows(sb, "m", f.M); }
+			else { codec.Rows(sb, 0, f.B); codec.Rows(sb, 3, f.J); codec.Rows(sb, 2, f.L); codec.Rows(sb, 1, f.A); Rows(sb, "s", f.S); codec.Rows(sb, 4, f.C); codec.Rows(sb, 5, f.M); }
 			return sb.Append('}').ToString();
 		}
 
@@ -319,6 +326,7 @@ namespace Levy.Common.Recording
 					r[3] += rnd.Next(-3, 4) * 0.13; r[4] += rnd.NextDouble() < 0.3 ? 0.3 : 0; r[1] += r[3] * 2 * (k % 3 == 0 ? 3 : 1) + (k % 5 == 0 ? rnd.Next(-40, 40) : 0); r[2] += r[4] * 2;
 					if (k == 3 && t == 40) r[5] = double.NaN; else if (k == 3) r[5] = 30;
 					f.J.Add((double[])r.Clone());
+					if (k % 4 == 0) f.M.Add(new double[] { 5, r[1], r[2], r[3], r[4], 16, 16, k, 65 + k % 3, 1 + k % 4 }); // format 14: the levies' minions (owner = the levy, kind), row coded like the rest
 					if (k == 11 && t % 6 == 0) f.J.Add((double[])r.Clone()); // the same key twice in one sample
 				}
 				f.B.Add(new double[] { 125, 4, 1e7 + t * 3.3, -t, 1.25, -0.05, 2.5e6 - t, 3e6, 1.5, 2e9, -3, 0.15, 255, 0, 1, -1, 40, 40, 4 });
@@ -331,6 +339,14 @@ namespace Levy.Common.Recording
 					{
 						double want = RowCodec.Q(f.J[i][c], c == 3 || c == 4) / (c == 3 || c == 4 ? 10.0 : 1.0);
 						if (Math.Abs(back[i][c] - want) > 1e-9) return "t=" + t + " row " + i + " field " + c + ": " + back[i][c] + " for " + want;
+					}
+				var mm = dec.Rows(d.RootElement, 5);
+				if (mm.Count != f.M.Count) return "t=" + t + ": " + mm.Count + " minion rows of " + f.M.Count;
+				for (int i = 0; i < mm.Count; i++)
+					for (int c = 0; c < 10; c++)
+					{
+						double want = RowCodec.Q(f.M[i][c], c == 3 || c == 4) / (c == 3 || c == 4 ? 10.0 : 1.0);
+						if (Math.Abs(mm[i][c] - want) > 1e-9) return "t=" + t + " minion row " + i + " field " + c + ": " + mm[i][c] + " for " + want;
 					}
 				var bb = dec.Rows(d.RootElement, 0);
 				if (bb.Count != 1 || Math.Abs(bb[0][2] - RowCodec.Q(f.B[0][2], false)) > 1e-9 || Math.Abs(bb[0][9] - 2e9) > 1e-6 || bb[0][18] != 4 || Math.Abs(bb[0][11] - 0.2) > 1e-9) return "t=" + t + ": boss row";
@@ -402,7 +418,7 @@ namespace Levy.Common.Recording
 			public Spec(string key, int ki, int n, int[] pos, int[] ten) { Key = key; Ki = ki; Pos = pos; Ten = ten; IsTen = new bool[n]; foreach (int t in ten) IsTen[t] = true; }
 			public bool TenAt(int i) => i < IsTen.Length && IsTen[i];
 		}
-		/// <summary>0 b, 1 a, 2 l, 3 j, 4 c.</summary>
+		/// <summary>0 b, 1 a, 2 l, 3 j, 4 c, 5 m.</summary>
 		internal static readonly Spec[] Specs =
 		{
 			new Spec("b", 1, 19, new[] { 2, 3 }, new[] { 4, 5, 8, 9, 10, 11 }),
@@ -410,13 +426,14 @@ namespace Levy.Common.Recording
 			new Spec("l", 0, 13, new[] { 1, 2 }, new[] { 3, 4 }),
 			new Spec("j", 8, 9, new[] { 1, 2 }, new[] { 3, 4 }),
 			new Spec("c", 7, 8, new[] { 1, 2 }, new[] { 3, 4 }),
+			new Spec("m", 7, 10, new[] { 1, 2 }, new[] { 3, 4 }),
 		};
 
 		internal sealed class State { public long[] Q; public long S0, S1; public bool Vel = true; }
-		private readonly Dictionary<long, State>[] _old = new Dictionary<long, State>[5], _new = new Dictionary<long, State>[5];
+		private readonly Dictionary<long, State>[] _old = new Dictionary<long, State>[6], _new = new Dictionary<long, State>[6];
 
-		public RowCodec() { for (int i = 0; i < 5; i++) { _old[i] = new Dictionary<long, State>(); _new[i] = new Dictionary<long, State>(); } }
-		public void Reset() { for (int i = 0; i < 5; i++) { _old[i].Clear(); _new[i].Clear(); } }
+		public RowCodec() { for (int i = 0; i < 6; i++) { _old[i] = new Dictionary<long, State>(); _new[i] = new Dictionary<long, State>(); } }
+		public void Reset() { for (int i = 0; i < 6; i++) { _old[i].Clear(); _new[i].Clear(); } }
 
 		internal static long Q(double v, bool ten)
 		{
@@ -500,18 +517,18 @@ namespace Levy.Common.Recording
 	internal sealed class RowDecoder
 	{
 		public bool On;
-		private readonly Dictionary<long, RowCodec.State>[] _old = new Dictionary<long, RowCodec.State>[5];
-		public RowDecoder() { for (int i = 0; i < 5; i++) _old[i] = new Dictionary<long, RowCodec.State>(); }
+		private readonly Dictionary<long, RowCodec.State>[] _old = new Dictionary<long, RowCodec.State>[6];
+		public RowDecoder() { for (int i = 0; i < 6; i++) _old[i] = new Dictionary<long, RowCodec.State>(); }
 
 		public void Header(JsonElement hdr)
 		{
 			On = hdr.TryGetProperty("codec", out var c) && c.ValueKind == JsonValueKind.Number && c.GetInt32() == 1;
-			for (int i = 0; i < 5; i++) _old[i].Clear();
+			for (int i = 0; i < 6; i++) _old[i].Clear();
 		}
 
 		private static double Num(JsonElement e) => e.ValueKind == JsonValueKind.Number ? e.GetDouble() : 0;
 
-		/// <summary>The rows of list <paramref name="li"/> (0 b, 1 a, 2 l, 3 j, 4 c) in this frame, natural units. Call it for every frame, also when the key is absent, so entities that left are forgotten.</summary>
+		/// <summary>The rows of list <paramref name="li"/> (0 b, 1 a, 2 l, 3 j, 4 c, 5 m) in this frame, natural units. Call it for every frame, also when the key is absent, so entities that left are forgotten.</summary>
 		public List<double[]> Rows(JsonElement frame, int li)
 		{
 			var sp = RowCodec.Specs[li]; var res = new List<double[]>();

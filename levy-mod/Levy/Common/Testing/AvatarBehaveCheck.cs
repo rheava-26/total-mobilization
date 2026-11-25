@@ -62,7 +62,7 @@ namespace Levy.Common.Testing
 			bool sp = global::Levy.Common.Util.LevyUtil.SpEmulation; int gm = Main.GameMode; bool hm = Main.hardMode; bool day = Main.dayTime; double time = Main.time; bool? on0 = AvatarFight.TestOn;
 			try { global::Levy.Common.Util.LevyUtil.SpEmulation = true; Main.player[0] = Main.player[0] ?? new Player(); Run(); }
 			catch (Exception e) { Check("driver threw " + e.GetType().Name + ": " + e.Message + " @ " + string.Join(" | ", (e.StackTrace ?? "").Split('\n').Take(4).Select(l => l.Trim())), false); }
-			finally { On_Player.KillMe -= killDet; _running = false; global::Levy.Common.Util.LevyUtil.SpEmulation = sp; Main.netMode = NetmodeID.Server; Cleanup(); AvatarFight.TestOn = on0; AvatarFight.TestZones = null; WotgScenes.TestAvatarPercent = null; Main.GameMode = gm; Main.hardMode = hm; Main.dayTime = day; Main.time = time; }
+			finally { On_Player.KillMe -= killDet; _running = false; global::Levy.Common.Util.LevyUtil.SpEmulation = sp; Main.netMode = NetmodeID.Server; Cleanup(); AvatarFight.TestOn = on0; AvatarFight.TestZones = null; WotgScenes.TestAvatarPercent = null; WotgScenes.TestVoice = null; Main.GameMode = gm; Main.hardMode = hm; Main.dayTime = day; Main.time = time; }
 			_mod.Logger.Info($"[AvatarBehave] self-check pass={_pass} fail={_fail}");
 		}
 
@@ -219,15 +219,15 @@ namespace Levy.Common.Testing
 		{
 			public Acc All = new(), Flier = new(), Foot = new(), Hook = new(); public int Hits, Ticks, Lost, Shifts, AliveAtEnd; public long Damage; public double Near2s, Near10s; public int Near2sN, Near10sN;
 			public int Lines, Floating, Reforced, CmdKills, Moments, Dropped, Voice, FightLines; public long InSphere; public bool BossAlive; public readonly HashSet<string> States = new();
-			public readonly Dictionary<string, long> StateTicks = new(); public readonly Dictionary<string, int> HitBy = new(), ZoneTicks = new(); public long Urgent;
+			public readonly Dictionary<string, long> StateTicks = new(); public readonly Dictionary<string, int> HitBy = new(), ZoneTicks = new(), HitState = new(); public long Urgent;
 		}
 
-		private sealed record Scn(string Name, int Phase, string[] States, int Ticks, bool Send, bool Zone = false);
+		private sealed record Scn(string Name, int Phase, string[] States, int Ticks, bool Send, bool Zone = false, int Up = 0);
 
 		private static Result RunScene(Scn sc, int variant)
 		{
 			var r = new Result();
-			bool behave = variant > 0; Cleanup(); AvatarFight.TestOn = behave; AvatarFight.TestZones = variant == 1 ? false : null; WotgScenes.TestAvatarPercent = behave ? null : 100;   // off = the chatter the army had before (every line of the fight pools at the old rate)
+			bool behave = variant > 0; WotgScenes.TestVoice = false; Cleanup(); AvatarFight.TestOn = behave; AvatarFight.TestZones = variant == 1 ? false : null; WotgScenes.TestAvatarPercent = behave ? null : 100;   // off = the chatter the army had before (every line of the fight pools at the old rate)
 			Terraria.Main.rand = new Terraria.Utilities.UnifiedRandom(4242);
 			Arena();
 			Main.GameMode = GameModeID.Master; Main.hardMode = true;
@@ -235,7 +235,7 @@ namespace Levy.Common.Testing
 			ModContent.TryFind("NoxusBoss/AvatarOfEmptiness", out ModNPC av);
 			BossDownedSystem.SetDownedForTest(av.Type, true);
 			_shifts = 0; _lastShiftTick = -100000; _tick = 0; _cmdKills = 0; _goneNotes = 0; _goneLogged.Clear(); _seen.Clear();
-			_anchor = new Vector2(Cx * 16f, (FloorY - 12) * 16f); _cmdAt = _anchor;
+			_anchor = new Vector2(Cx * 16f, (FloorY - 12 - sc.Up) * 16f); _cmdAt = _anchor;
 			KeepCommander(); Step(2);
 			var levies = new List<(SoldierNPC s, Cls c)>();
 			var plan = new List<Cls>(); for (int i = 0; i < 5; i++) plan.Add(Cls.Flier); for (int i = 0; i < 6; i++) plan.Add(Cls.Foot); for (int i = 0; i < 4; i++) plan.Add(Cls.Hooker);
@@ -246,7 +246,7 @@ namespace Levy.Common.Testing
 			}
 			Step(60);
 			// the army walks up to the commander on the ground, then the fight starts
-			Vector2 spawnAt = new Vector2(Cx * 16f, (FloorY - 55) * 16f);
+			Vector2 spawnAt = new Vector2(Cx * 16f, _anchor.Y - 43f * 16f);
 			int bi = NPC.NewNPC(new Terraria.DataStructures.EntitySource_WorldEvent("AvatarBehaveCheck"), (int)spawnAt.X, (int)spawnAt.Y, av.Type, 1);
 			if (bi < 0 || bi >= Main.maxNPCs) { Check("the Avatar of Emptiness spawns", false); return r; }
 			NPC boss = Main.npc[bi]; _boss = boss; boss.timeLeft = 99999; boss.netOffset = Vector2.Zero;
@@ -297,7 +297,7 @@ namespace Levy.Common.Testing
 						if (pr.ModProjectile?.Name == "AnnihilationSphere") { if (Vector2.Distance(pr.Center, n.Center) < pr.width * 0.38f) r.InSphere++; continue; }
 						if (pr.damage <= 0 || !pr.Hitbox.Intersects(body)) continue;
 						if (!hitSeen.Add(((long)pr.identity << 20) ^ ((long)pr.type << 8) ^ (long)n.whoAmI)) continue;
-						r.Hits++; r.Damage += pr.damage; string hn = pr.ModProjectile?.Name ?? pr.type.ToString(); r.HitBy[hn] = r.HitBy.GetValueOrDefault(hn) + 1;
+						r.Hits++; r.Damage += pr.damage; string hn = pr.ModProjectile?.Name ?? pr.type.ToString(); r.HitBy[hn] = r.HitBy.GetValueOrDefault(hn) + 1; r.HitState[st] = r.HitState.GetValueOrDefault(st) + 1;
 					}
 					Acc a = c == Cls.Flier ? r.Flier : c == Cls.Foot ? r.Foot : r.Hook;
 					float d = Vector2.Distance(n.Center, cm.Center) / 16f;
@@ -310,6 +310,7 @@ namespace Levy.Common.Testing
 						if (!stand) acc.Aloft++;
 					}
 				}
+				if (Trace && t % 120 == 0) foreach (var (fs, fc) in levies.Where(l => l.s.NPC.active && Vector2.Distance(l.s.NPC.Center, cm.Center) > 40f * 16f).Take(3)) _mod.Logger.Info($"[AvatarBehave] TRACE far t={t} {fc} d={Vector2.Distance(fs.NPC.Center, cm.Center) / 16f:0} state={fs.State} goal={(fs.HasMoveGoal ? ((fs.MoveGoal.X - fs.NPC.Center.X) / 16f).ToString("0") + "," + ((fs.MoveGoal.Y - fs.NPC.Center.Y) / 16f).ToString("0") : "-")} blocked={fs.MoveBlocked} flying={fs.IsFlying} v=({fs.NPC.velocity.X:0.0},{fs.NPC.velocity.Y:0.0}) at ({(fs.NPC.Center.X - cm.Center.X) / 16f:0},{(fs.NPC.Center.Y - cm.Center.Y) / 16f:0}) cmdY {(cm.Center.Y / 16f):0}");
 				if (Trace && (t % 120 == 0 || (t >= 100 && t < 240 && t % 10 == 0 && st.StartsWith("RealityShatter")))) _mod.Logger.Info($"[AvatarBehave] TRACE t={t} state={st} void={AvatarFight.Void} zones={AvatarFight.Zones.Count} avatarDx={(boss.Center.X - cm.Center.X) / 16f:0} zone[{string.Join(";", AvatarFight.Zones.Select(z => z.Why + " x " + ((z.Rect.Left - cm.Center.X) / 16f).ToString("0") + ".." + ((z.Rect.Right - cm.Center.X) / 16f).ToString("0") + " y " + ((z.Rect.Top - cm.Center.Y) / 16f).ToString("0") + ".." + ((z.Rect.Bottom - cm.Center.Y) / 16f).ToString("0")))}] cmd=({cm.Center.X / 16f:0},{cm.Center.Y / 16f:0}) levies: " + string.Join(" ", levies.Where((l, i) => i % 3 == 0 && l.s.NPC.active).Select(l => $"{l.c.ToString()[0]}({(l.s.NPC.Center.X - cm.Center.X) / 16f:0},{(l.s.NPC.Center.Y - cm.Center.Y) / 16f:0})v{l.s.NPC.velocity.X:0},{l.s.NPC.velocity.Y:0}")));
 			}
 			r.Lost = levies.Count(l => !l.s.NPC.active); r.CmdKills = _cmdKills;
@@ -323,7 +324,7 @@ namespace Levy.Common.Testing
 			Acc A = r.All; double n = Math.Max(1, A.Ticks);
 			string cls(Acc a) => P(100.0 * a.Far / Math.Max(1, a.Ticks));
 			return $"{name}: {r.Ticks} ticks, moved {r.Shifts}x; mean distance {F(A.Dist / n)} tiles, stranded(>40) {P(100.0 * A.Far / n)} (fliers {cls(r.Flier)}, foot {cls(r.Foot)}, hookers {cls(r.Hook)}), lost(>100) {P(100.0 * A.Lost / n)}, falling {P(100.0 * A.Fall / n)}, aloft {P(100.0 * A.Aloft / n)} (fliers {P(100.0 * r.Flier.Aloft / Math.Max(1, r.Flier.Ticks))}, foot {P(100.0 * r.Foot.Aloft / Math.Max(1, r.Foot.Ticks))}); " +
-				$"near after move 2s {(r.Near2sN > 0 ? P(r.Near2s / r.Near2sN) : "-")}, 10s {(r.Near10sN > 0 ? P(r.Near10s / r.Near10sN) : "-")}; hits {r.Hits} (dmg {r.Damage}) [{string.Join(",", r.HitBy.OrderByDescending(kv => kv.Value).Take(4).Select(kv => kv.Key + ":" + kv.Value))}], in annihilation sphere {r.InSphere} body-ticks; lines {r.Lines} scripted ({r.FightLines} worried, {r.Moments} moments started, {r.Dropped} cues dropped, the boss held the floor {r.Voice} ticks) + {r.Floating - r.Lines} other floating in {F(r.Ticks / 3600.0)} min; levies lost {r.Lost}; the commander would have died {r.CmdKills}x; attack put back {r.Reforced}x; attack rules active [{string.Join(",", r.ZoneTicks.Select(kv => kv.Key + ":" + kv.Value))}]; states [{string.Join(",", r.StateTicks.OrderByDescending(kv => kv.Value).Take(4).Select(kv => kv.Key + ":" + kv.Value))}]";
+				$"near after move 2s {(r.Near2sN > 0 ? P(r.Near2s / r.Near2sN) : "-")}, 10s {(r.Near10sN > 0 ? P(r.Near10s / r.Near10sN) : "-")}; hits {r.Hits} (dmg {r.Damage}) [{string.Join(",", r.HitBy.OrderByDescending(kv => kv.Value).Take(4).Select(kv => kv.Key + ":" + kv.Value))}], by state [{string.Join(",", r.HitState.OrderByDescending(kv => kv.Value).Take(4).Select(kv => kv.Key + ":" + kv.Value))}], in annihilation sphere {r.InSphere} body-ticks; lines {r.Lines} scripted ({r.FightLines} worried, {r.Moments} moments started, {r.Dropped} cues dropped, the boss held the floor {r.Voice} ticks) + {r.Floating - r.Lines} other floating in {F(r.Ticks / 3600.0)} min; levies lost {r.Lost}; the commander would have died {r.CmdKills}x; attack put back {r.Reforced}x; attack rules active [{string.Join(",", r.ZoneTicks.Select(kv => kv.Key + ":" + kv.Value))}]; states [{string.Join(",", r.StateTicks.OrderByDescending(kv => kv.Value).Take(4).Select(kv => kv.Key + ":" + kv.Value))}]";
 		}
 
 		private static readonly Scn[] All =
@@ -332,6 +333,7 @@ namespace Levy.Common.Testing
 			new("RubbleGravitySlam (phase 2)", 0, new[] { "RubbleGravitySlam_ApplyExtremeGravity" }, 1100, false),
 			new("WorldSmash (phase 2)", 0, new[] { "WorldSmash" }, 1500, false),
 			new("DyingStarsWind + LilyStars (phase 2)", 0, new[] { "DyingStarsWind", "LilyStars_ChargePower" }, 1500, false),
+			new("Commander 70 tiles above the ground, Erasure (phase 2)", 0, new[] { "Erasure" }, 1100, false, false, 70),
 			new("Send to the dimension, WhirlingIceStorm (frost)", 1, new[] { "SendPlayerToMyUniverse", "WhirlingIceStorm" }, 1500, true, true),
 			new("Send, AbsoluteZeroOutburst (frost)", 1, new[] { "SendPlayerToMyUniverse", "AbsoluteZeroOutburst" }, 1800, true),
 			new("Send, BloodiedFountainBlasts (blood)", 1, new[] { "SendPlayerToMyUniverse", "BloodiedFountainBlasts" }, 1300, true, true),
@@ -340,7 +342,7 @@ namespace Levy.Common.Testing
 			new("Send, RealityShatter (dark)", 1, new[] { "SendPlayerToMyUniverse", "RealityShatter_CreateAndWaitForTelegraph" }, 1800, true, true),
 			new("Send, EnterBloodWhirlpool + AntishadowOnslaught (phase 4)", 2, new[] { "SendPlayerToMyUniverse", "EnterBloodWhirlpool", "AntishadowOnslaught" }, 1800, true),
 			new("Send, UniversalAnnihilation (phase 4)", 2, new[] { "SendPlayerToMyUniverse", "UniversalAnnihilation" }, 1800, true),
-			new("The whole cycle as the game picks it, phase 4 (what the army says)", 2, new[] { "ResetCycle" }, 7200, false),
+			new("The whole cycle as the game picks it, phase 4 (what the army says)", 2, new[] { "ResetCycle" }, 10800, false),
 		};
 
 		private static void Run()
@@ -372,6 +374,36 @@ namespace Levy.Common.Testing
 				double offFar = 100.0 * off.All.Far / Math.Max(1, off.All.Ticks), onFar = 100.0 * on.All.Far / Math.Max(1, on.All.Ticks);
 				double onFall = 100.0 * on.All.Fall / Math.Max(1, on.All.Ticks);
 				Check($"{s.Name}: the army stays with the commander (stranded {P(onFar)} against {P(offFar)} before)", onFar <= 15.0 && onFar <= offFar + 1.0);
+				bool natural = s.States[0] == "ResetCycle";
+				if (s.Up > 0)
+				{
+					double fo = 100.0 * on.Foot.Far / Math.Max(1, on.Foot.Ticks), ho = 100.0 * on.Hook.Far / Math.Max(1, on.Hook.Ticks), fo0 = 100.0 * off.Foot.Far / Math.Max(1, off.Foot.Ticks);
+					Check($"{s.Name}: levies on foot are not left far below the commander (foot stranded {P(fo)}, hookers {P(ho)}, against {P(fo0)} of the foot before)", fo <= 15.0 && ho <= 15.0);
+				}
+				if (!s.Send && !natural && s.Up == 0)
+				{
+					double fa = 100.0 * on.Flier.Aloft / Math.Max(1, on.Flier.Ticks), fb = 100.0 * off.Flier.Aloft / Math.Max(1, off.Flier.Ticks);
+					Check($"{s.Name}: levies with wings fly in the open-air arena ({P(fa)} airborne, against {P(fb)} before)", fa >= 85.0);
+				}
+				_mids.TryGetValue(s.Name, out Result mid);
+				if (mid != null)
+				{
+					int H(Result r, string n) => r.HitBy.GetValueOrDefault(n);
+					int HS(Result r, string n) => r.HitState.GetValueOrDefault(n);
+					if (s.States.Contains("RealityShatter_CreateAndWaitForTelegraph"))
+						Check($"{s.Name}: the army leaves the slam's lane (levies lost: {on.Lost}, against {off.Lost} before and {mid.Lost} without the rule)", on.Lost <= 3 && on.Lost < Math.Max(1, mid.Lost));
+					else if (s.States.Contains("WhirlingIceStorm"))
+						Check($"{s.Name}: the army keeps out of the frost columns (column hits {H(on, "FrostColumn")}, against {H(mid, "FrostColumn")} without the rule)", H(mid, "FrostColumn") < 12 || H(on, "FrostColumn") <= 0.7 * H(mid, "FrostColumn"));
+					else if (s.States.Contains("BloodiedFountainBlasts"))
+						Check($"{s.Name}: the army shelters under Solyn's shield (blood-rain hits in the burst {HS(on, "BloodiedFountainBlasts_DenseBurst")}, against {HS(mid, "BloodiedFountainBlasts_DenseBurst")} without the rule)", on.ZoneTicks.GetValueOrDefault("solyn shield") > 0 && (HS(mid, "BloodiedFountainBlasts_DenseBurst") < 12 || HS(on, "BloodiedFountainBlasts_DenseBurst") <= 0.7 * HS(mid, "BloodiedFountainBlasts_DenseBurst")));
+					else if (s.States.Contains("ArmPortalStrikes"))
+						Check($"{s.Name}: the army spreads out of the arm strikes (hits {on.Hits}, against {mid.Hits} in the tight ring)", mid.Hits < 100 || on.Hits <= 0.6 * mid.Hits);
+				}
+				if (natural)
+				{
+					double lpmOn = on.Lines / Math.Max(0.1, on.Ticks / 3600.0), lpmOff = off.Lines / Math.Max(0.1, off.Ticks / 3600.0);
+					Check($"{s.Name}: the Avatar fight is quiet ({F(lpmOn)} scripted lines a minute, against {F(lpmOff)} before)", lpmOn <= 3.5 && (lpmOn < lpmOff || lpmOff < 3.0));
+				}
 				if (s.Send)
 				{
 					double n2 = on.Near2sN > 0 ? on.Near2s / on.Near2sN : 0, n10 = on.Near10sN > 0 ? on.Near10s / on.Near10sN : 0;

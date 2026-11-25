@@ -198,8 +198,8 @@ namespace Levy.Common.Testing
 		private static readonly bool ArmyWall = Environment.GetEnvironmentVariable("LEVY_ARMYSWEEP_WALL") == "1";
 		private static void ArmyWallSet(bool on)
 		{
-			int x0 = (int)(_sweepTargetAt.X / 16f) - 5;
-			for (int x = x0; x < x0 + 3; x++)
+			int x0 = (int)(_sweepTargetAt.X / 16f) - 3;
+			for (int x = x0; x < x0 + 1; x++)
 				for (int y = FloorY - 60; y < FloorY; y++)
 				{
 					Tile t = Main.tile[x, y];

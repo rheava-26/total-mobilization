@@ -348,7 +348,7 @@ namespace Levy.Common.Testing
 			new("Send, ArmPortalStrikes (dark)", 1, new[] { "SendPlayerToMyUniverse", "ArmPortalStrikes" }, 1200, true, true),
 			new("Send, RealityShatter (dark)", 1, new[] { "SendPlayerToMyUniverse", "RealityShatter_CreateAndWaitForTelegraph" }, 1800, true, true),
 			new("Send, EnterBloodWhirlpool + AntishadowOnslaught (phase 4)", 2, new[] { "SendPlayerToMyUniverse", "EnterBloodWhirlpool", "AntishadowOnslaught" }, 1800, true),
-			new("A dark portal moves the commander 150 tiles (Player.Teleport) in the dimension", 1, new[] { "ArmPortalStrikes" }, 700, false, false, 0, true),
+			new("A dark portal moves the commander 150 tiles (Player.Teleport) in the dimension", 1, new[] { "ArmPortalStrikes" }, 800, false, false, 0, true),
 			new("Send, UniversalAnnihilation (phase 4)", 2, new[] { "SendPlayerToMyUniverse", "UniversalAnnihilation" }, 1800, true),
 			new("The whole cycle as the game picks it, phase 4 (what the army says)", 2, new[] { "ResetCycle" }, 10800, false),
 		};

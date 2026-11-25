@@ -438,7 +438,7 @@ namespace Levy.Common.Testing
 		}
 
 		/// <summary>What an army with no Avatar says and feels over two minutes: floating lines, how many are not a plain combat callout (the ordinary chat), the rift mood, and every reading that would hush or redirect it.</summary>
-		private sealed record Calm(int Lines, int Ordinary, RiftPhase Phase, bool Active, bool Applies, bool Voice, bool Hush, bool Void, int Alive, string State, int Picked, int Held, int HushDropped, int Met, string World);
+		private sealed record Calm(int Lines, int Ordinary, RiftPhase Phase, bool Active, bool Applies, bool Voice, bool Hush, bool Void, int Alive, string State, int Picked, int Held, int HushDropped, int Met, string World, int Idle = 0);
 		private const int CalmTicks = 7200;
 
 		/// <summary>Report text: what else is in the world with the army (live NPCs that are not levies, projectiles) and what the commander stands in.</summary>
@@ -477,7 +477,7 @@ namespace Levy.Common.Testing
 				var log = AoeVoice.FloatLog;
 				return new Calm(log.Count, log.Count(f => !AoeVoice.IsPlainText(f.text)), RiftMood.Phase, AvatarFight.Active, AvatarFight.Applies, AoeVoice.Active, global::Levy.Common.Death.NoxusFights.Hush, AvatarFight.Void, levies.Count(l => l.NPC.active), AvatarFight.State ?? "-",
 					SoldierNPC.ChatterLines - pick0, RiftMood.FloatingHeld - held0, global::Levy.Common.Death.NoxusFights.HushDropped - drop0, Housekept - hk0,
-					$"natural enemies met {Housekept - hk0}, by trigger [{string.Join(", ", AoeVoice.FloatLog.GroupBy(f => f.trigger).Select(g => (g.Key == byte.MaxValue ? "plain" : ((DialogueTrigger)g.Key).ToString()) + "x" + g.Count()))}] raining={Main.raining} bloodMoon={Main.bloodMoon} eclipse={Main.eclipse} mode={Main.GameMode} hard={Main.hardMode} chatter={SoldierNPC.ChatterOverride} {Census()}");
+					$"natural enemies met {Housekept - hk0}, by trigger [{string.Join(", ", AoeVoice.FloatLog.GroupBy(f => f.trigger).Select(g => (g.Key == byte.MaxValue ? "plain" : ((DialogueTrigger)g.Key).ToString()) + "x" + g.Count()))}] raining={Main.raining} bloodMoon={Main.bloodMoon} eclipse={Main.eclipse} mode={Main.GameMode} hard={Main.hardMode} chatter={SoldierNPC.ChatterOverride} {Census()}", log.Count(f => f.trigger == (byte)DialogueTrigger.IDLE || f.trigger == (byte)DialogueTrigger.IDLE_NIGHT));
 			}
 			finally { SoldierNPC.ChatterOverride = chat0; AoeVoice.FloatLog = log0; Cleanup(); }
 		}
@@ -489,7 +489,8 @@ namespace Levy.Common.Testing
 			Note($"two minutes with no Avatar, before the scenes: {before.Lines} floating lines ({before.Ordinary} not plain callouts), mood {before.Phase} (picked {before.Picked}, thinned by the mood {before.Held}, held by the hush {before.HushDropped}; {before.World}); after the last scene: {after.Lines} floating lines ({after.Ordinary} not plain callouts), mood {after.Phase} (picked {after.Picked}, thinned by the mood {after.Held}, held by the hush {after.HushDropped}; {after.World}); Avatar up {after.Active}, fight behaviour {after.Applies}, fight voice {after.Voice}, fight hush {after.Hush}, dimension {after.Void}, state {after.State}");
 			Check($"after the fight nothing of it is still on (Avatar up {after.Active}, behaviour {after.Applies}, voice {after.Voice}, hush {after.Hush}, dimension {after.Void})", !after.Active && !after.Applies && !after.Voice && !after.Hush && !after.Void);
 			Check($"after the fight the mood is the sky's own again ({after.Phase}, as before the fight: {before.Phase})", after.Phase == before.Phase && after.Phase != RiftPhase.Silent);
-			Check($"after the fight the army chats as before ({after.Lines} floating lines in two minutes, {before.Lines} before)", after.Alive == before.Alive && after.Lines >= 2 && after.Lines * 2 >= before.Lines);
+			// LIKE WITH LIKE: the idle chatter is what the army says whatever the world throws at it; the combat lines (ENGAGE, HURT...) follow the natural enemies that happen to spawn near it in that window (a long WotG chain: 93 enemies met before, 11 after, 25 floating lines against 9 with the mood None, no hush)
+			Check($"after the fight the army chats as before ({after.Idle} idle floating lines in two minutes, {before.Idle} before; {after.Lines} lines of every kind against {before.Lines}, {after.Met} enemies met against {before.Met})", after.Alive == before.Alive && after.Idle >= 2 && after.Idle * 2 >= before.Idle);
 			Check($"after the fight the ordinary chat is back, not only the plain callouts ({after.Ordinary} of {after.Lines} lines are not plain callouts, {before.Ordinary} of {before.Lines} before)", before.Ordinary == 0 || after.Ordinary >= 1);
 			Check($"after the fight the world's own enemies come again, so nothing the fight left on the commander keeps the world empty ({after.Met} enemies met in two minutes, {before.Met} before)", before.Met == 0 || after.Met > 0);
 		}

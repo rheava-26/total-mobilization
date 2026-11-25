@@ -207,6 +207,14 @@ namespace Levy.Common.Testing
 				+ " avatar-on=" + V(global::Levy.Common.Compat.Wotg.AvatarFight.TestOn) + " avatar-void=" + V(global::Levy.Common.Compat.Wotg.AvatarFight.TestVoid) + " avatar-voice=" + V(global::Levy.Common.Compat.Wotg.AoeVoice.TestActive);
 		}
 
+		/// <summary>Floating lines in <paramref name="log"/> from <paramref name="from"/> on that are the army's ambient chatter (the mood thins them to a share of RiftTenseChatterShare); combat barks and the other kinds are not.</summary>
+		private static int AmbientOut(List<(byte trigger, string text)> log, int from)
+		{
+			int n = 0;
+			for (int i = from; i < log.Count; i++) { byte t = log[i].trigger; if (t != byte.MaxValue && RiftMood.Share((DialogueTrigger)t, RiftPhase.Tense) == LevyConstants.RiftTenseChatterShare) n++; }
+			return n;
+		}
+
 		private static void Rift(List<SoldierNPC> army)
 		{
 			bool real = RiftSky.Installed && RiftSky.Problem.Length == 0;
@@ -214,15 +222,20 @@ namespace Levy.Common.Testing
 			int chat0 = SoldierNPC.ChatterOverride; bool rain0 = Main.raining;
 			SoldierNPC.ChatterOverride = 1; Main.raining = false;
 			bool ml0 = NPC.downedMoonlord;
+			var floatLog0 = global::Levy.Common.Compat.Wotg.AoeVoice.FloatLog;
 			try
 			{
 				Main.dayTime = true; Main.time = 9000; Note("the world as the rift check begins: " + WorldVoiceState());
 				// this check owns the sky it tests: an earlier check that killed Moon Lord leaves Wrath of the Gods armed or the sun covered, and Moon Lord's flag is what arms it again by itself
 				if (real) { NPC.downedMoonlord = false; RiftSky.SetReal(covered: false, eventTimer: 0, waiting: false, snowHeight: 0f, dukeKilled: false); }
 				RiftMood.Reset(); DialogueSystem.ResetRuntime();
+				// LIKE WITH LIKE: the minutes are compared on the army's ambient chatter (the lines the mood thins to a third), not on every floating line: a natural enemy that happens to spawn near the army in one window and not the other
+				// adds combat barks (thinned much less, or not at all) to the total, which has nothing to do with whether the army is muted (a long WotG chain: 11 floating lines against 17 with 16 picked, every one of the extra a bark)
+				var flog = new List<(byte trigger, string text)>(); global::Levy.Common.Compat.Wotg.AoeVoice.FloatLog = flog;
+				int fl0 = 0;
 				int d0 = DialogueSystem.FloatingDelivered, a0 = SoldierNPC.ChatterLines;
 				RiftStep(RiftWindow);
-				int control = DialogueSystem.FloatingDelivered - d0, controlSaid = SoldierNPC.ChatterLines - a0;
+				int control = DialogueSystem.FloatingDelivered - d0, controlSaid = SoldierNPC.ChatterLines - a0, controlAmb = AmbientOut(flog, fl0);
 				Note($"control, no mood, three minutes: {controlSaid} ambient lines picked, {control} floating lines out = {control / 3f:F1} lines a minute from {Standing(army)} standing levies ({_bandsCleared} band members cleared from the arena)");
 				Check($"with no rift the army chats as usual ({control} floating lines in three minutes)", control >= 5 && RiftMood.Phase == RiftPhase.None);
 
@@ -262,11 +275,11 @@ namespace Levy.Common.Testing
 				}
 				Check($"in the tense days every right-click chat is a rift line ({riftChat} rift, {otherChat} other{(other != null ? ": " + other : "")})", riftChat > 0 && otherChat == 0);
 				DialogueSystem.ResetRuntime(); // the chat sampling above used up the rift lines' repeat cooldowns; the ambient minutes start fresh, as the control did
-				d0 = DialogueSystem.FloatingDelivered; a0 = SoldierNPC.ChatterLines;
+				d0 = DialogueSystem.FloatingDelivered; a0 = SoldierNPC.ChatterLines; fl0 = flog.Count;
 				RiftStep(RiftWindow);
-				int tense = DialogueSystem.FloatingDelivered - d0, tenseSaid = SoldierNPC.ChatterLines - a0;
-				Note($"tense, three minutes: {tenseSaid} ambient lines picked, {tense} floating lines out = {tense / 3f:F1} a minute (control {control / 3f:F1}), {Standing(army)} standing");
-				Check($"the tense army is much quieter, but not mute ({tense} floating lines against {control}; {tenseSaid} picked)", tense <= control * 0.6f && tenseSaid > 0);
+				int tense = DialogueSystem.FloatingDelivered - d0, tenseSaid = SoldierNPC.ChatterLines - a0, tenseAmb = AmbientOut(flog, fl0);
+				Note($"tense, three minutes: {tenseSaid} ambient lines picked, {tense} floating lines out of all kinds = {tense / 3f:F1} a minute (control {control / 3f:F1}); ambient lines out {tenseAmb} (control {controlAmb}); {Standing(army)} standing");
+				Check($"the tense army is much quieter, but not mute ({tenseAmb} ambient floating lines against {controlAmb}; {tenseSaid} picked; {tense} lines of every kind against {control})", tenseAmb <= controlAmb * 0.6f && tenseSaid > 0);
 
 				// the sky's later turns: the rift grows, the water freezes, a Blood Moon rises
 				int gl0 = RiftMood.BurstLinesOf(DialogueTrigger.RIFT_GROW1), il0 = RiftMood.BurstLinesOf(DialogueTrigger.RIFT_ICE), bl0 = RiftMood.BurstLinesOf(DialogueTrigger.RIFT_BLOOD);
@@ -361,6 +374,7 @@ namespace Levy.Common.Testing
 			}
 			finally
 			{
+				global::Levy.Common.Compat.Wotg.AoeVoice.FloatLog = floatLog0;
 				_keepDuke = false;
 				Main.bloodMoon = false;
 				if (real) RiftSky.SetReal(covered: false, eventTimer: 0, waiting: false, snowHeight: 0f, dukeKilled: false);

@@ -471,6 +471,62 @@ namespace Levy.Common.Weapons
 		/// <summary>Lab counters: casts whose Shoot powered up a minion already out instead of making one (Saros Possession, Sirius, Void Eater Marionette), and RECAST uses of a full flock's staff.</summary>
 		internal static int StackTally, RecastTally;
 
+		/// <summary>Lab A/B (env LEVY_SUMMONCAST=0): the old cast beside the soldier's feet for every staff that has no entry of its own.</summary>
+		internal static readonly bool CastAtCursor = Environment.GetEnvironmentVariable("LEVY_SUMMONCAST") != "0";
+		/// <summary>Lab counters: casts made at the cursor point / that fell back to the feet.</summary>
+		internal static int CursorCasts, CursorCastFallbacks;
+		private static readonly bool CastLog = Environment.GetEnvironmentVariable("LEVY_SUMMONCAST_LOG") == "1";
+		/// <summary>
+		/// Where a player's cursor would be for a summon cast: a point inside the soldier's target (not its exact centre), within the reach a player could click; with no target a few tiles ahead of him. Vanilla's SpawnMinionOnCursor
+		/// and a modded staff's Shoot that reads Main.MouseWorld put the minion there; a staff that spawns at the player's position (the Shoot's own position argument) ignores it, so those stay at the soldier. A point inside a wall steps back
+		/// toward the soldier until it is clear; the soldier's own centre is the last resort.
+		/// </summary>
+		/// <summary>The nearest enemy a player could click on from <paramref name="me"/> (inside the cast reach), or null.</summary>
+		private static NPC NearestEnemyInReach(Vector2 me)
+		{
+			NPC best = null; float bestD = float.MaxValue;
+			float rx = LevyConstants.MinionCastReachX * 16f, ry = LevyConstants.MinionCastReachY * 16f;
+			for (int i = 0; i < Main.maxNPCs; i++)
+			{
+				NPC n = Main.npc[i];
+				if (!n.active || n.friendly || n.townNPC || n.dontTakeDamage || !n.CanBeChasedBy()) continue;
+				Vector2 d = n.Center - me;
+				if (d.X * d.X / (rx * rx) + d.Y * d.Y / (ry * ry) > 1f) continue;
+				float dd = d.LengthSquared();
+				if (dd < bestD) { bestD = dd; best = n; }
+			}
+			return best;
+		}
+
+		internal static Vector2 CastCursor(SoldierNPC s)
+		{
+			Vector2 me = s.NPC.Center, want;
+			int ti = s.TargetIndex;
+			NPC t = ti >= 0 && ti < Main.maxNPCs ? Main.npc[ti] : null;
+			if (t == null || !t.active) t = NearestEnemyInReach(me); // no target chosen yet (a flock is first cast as the fight begins): the enemy a player would click on, if one is on screen
+			if (t != null && t.active)
+			{
+				float hw = Math.Max(4f, t.width * 0.3f), hh = Math.Max(4f, t.height * 0.3f);
+				Vector2 off = new Vector2(Main.rand.NextFloat(-hw, hw), Main.rand.NextFloat(-hh, hh));
+				if (off.LengthSquared() < LevyConstants.MinionCastMinOffsetPx * LevyConstants.MinionCastMinOffsetPx) off = new Vector2(off.X < 0f ? -LevyConstants.MinionCastMinOffsetPx : LevyConstants.MinionCastMinOffsetPx, -LevyConstants.MinionCastMinOffsetPx);
+				want = t.Center + off;
+			}
+			else want = me + new Vector2((s.NPC.direction == 0 ? 1 : s.NPC.direction) * LevyConstants.MinionCastIdleTiles * 16f, -8f);
+			Vector2 d = want - me;
+			float rx = LevyConstants.MinionCastReachX * 16f, ry = LevyConstants.MinionCastReachY * 16f;
+			float k = (float)Math.Sqrt(d.X * d.X / (rx * rx) + d.Y * d.Y / (ry * ry));
+			if (k > 1f) d /= k;
+			Vector2 at = me + d;
+			if (CastLog && CursorCasts < 40) Levy.Instance?.Logger.Info($"[SummonCast] tick {Main.GameUpdateCount} soldier {s.NPC.whoAmI} at {me / 16f} cursor {at / 16f} target {(t != null && t.active ? (t.Center / 16f).ToString() : "-")}");
+			for (int i = 0; i < 5; i++)
+			{
+				if (!Collision.SolidCollision(at - LevyConstants.MinionSpawnProbe * 0.5f, (int)LevyConstants.MinionSpawnProbe.X, (int)LevyConstants.MinionSpawnProbe.Y)) { CursorCasts++; return at; }
+				d *= 0.6f; at = me + d;
+			}
+			CursorCastFallbacks++;
+			return me;
+		}
+
 		internal static bool Summon(SoldierNPC s, Item weapon, int damage)
 		{
 			int shoot = weapon.shoot;
@@ -496,6 +552,7 @@ namespace Levy.Common.Weapons
 			float scatter = Main.rand.NextFloat(-1f, 1f) * LevyConstants.MinionSpawnScatterPx;
 			Vector2 at = s.NPC.Center + new Vector2(scatter, 0f);
 			if (Collision.SolidCollision(at - LevyConstants.MinionSpawnProbe * 0.5f, (int)LevyConstants.MinionSpawnProbe.X, (int)LevyConstants.MinionSpawnProbe.Y)) at = s.NPC.Center; // scatter must not drop a walker inside a wall
+			if (CastAtCursor) at = CastCursor(s); // vanilla's SpawnMinionOnCursor puts the minion at the player's cursor: a levy's cursor is on his target
 			Projectile first = NewMinion(s, at, type, damage, weapon.knockBack, ai1);
 			if (first == null) return false;
 			if (localAi0 > 0f) first.localAI[0] = localAi0;
@@ -663,14 +720,15 @@ namespace Levy.Common.Weapons
 				Vector2 aim = s.AimCursor() - new Vector2(0f, 16f * AltPolicies.CastUp(weapon));
 				if (SoldierNPC.TransientStaff(weapon) || !Collision.SolidCollision(aim - LevyConstants.MinionSpawnProbe * 0.5f, (int)LevyConstants.MinionSpawnProbe.X, (int)LevyConstants.MinionSpawnProbe.Y)) at = aim;
 			}
+			else if (CastAtCursor) at = CastCursor(s); // the mouse stand-in during Shoot is where a player's cursor would be (a staff that reads Main.MouseWorld spawns there; one that spawns at the player's position is unchanged)
 			float far = CastFarPx(weapon);
 			if (far > 0f)
 			{
 				bool hasTarget = s.TargetIndex >= 0 && s.TargetIndex < Main.maxNPCs && Main.npc[s.TargetIndex].active;
 				Vector2 dir = hasTarget ? Main.npc[s.TargetIndex].Center - s.NPC.Center : Vector2.Zero;
 				if (dir.LengthSquared() < 1f) dir = new Vector2(s.NPC.direction == 0 ? 1f : s.NPC.direction, -0.15f);
-				dir.Normalize();
-				at = s.NPC.Center + dir * far; // a flier that ignores tiles: no wall test
+				float dist = dir.Length(); dir.Normalize();
+				at = s.NPC.Center + dir * Math.Max(far, Math.Min(dist, LevyConstants.MinionCastReachX * 16f)); // a flier that ignores tiles: no wall test; never nearer than her bubble-leaving distance
 			}
 			List<Projectile> made;
 			SaveBuffs(d);

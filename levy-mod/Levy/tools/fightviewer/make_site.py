@@ -14,7 +14,7 @@ For every set directory it reads the recordings (*.levyrec, *.jsonl or *.jsonl.g
 
   <outdir>/index.html            copy of site/index.html (the page, no data inside)
   <outdir>/data/manifest.json    the fight list: one row per fight with boss, mode, levies, arena, result, targeting %, hits, deaths, note
-  <outdir>/data/<id>.json        one plain-JSON file per fight (frames downsampled to --hz, coordinates rounded, levy and boss rows delta-coded), loaded lazily by the page
+  <outdir>/data/<id>.json.gz     one gzip-compressed JSON file per fight (the manifest still names it <id>.json; the page tries .gz first, then the plain name) (frames downsampled to --hz, coordinates rounded, levy and boss rows delta-coded), loaded lazily by the page
 
   make_site.py --stamp <site>/data/manifest.json
   writes the "Hide broken or very old fights" rules (HIDE, the eras' broken flags, BROKEN; see below) into an existing manifest in place and prints
@@ -821,9 +821,9 @@ def main():
         total, count = 0, 0
         for fid, blob in blobs.items():
             if (batch_of[fid] == upto) if nb else True:
-                with open(os.path.join(data, fid + ".json"), "wb") as fh:
-                    fh.write(blob)
-                total += len(blob); count += 1
+                with open(os.path.join(data, fid + ".json.gz"), "wb") as fh:   # the page fetches NAME.json.gz (manifest "file" still says NAME.json)
+                    fh.write(gzip.compress(blob, 9, mtime=0))
+                total += os.path.getsize(os.path.join(data, fid + ".json.gz")); count += 1
         sets = []
         for st in manifest_sets:
             fl = [f for f in st["fights"] if (not nb) or batch_of[f["id"]] <= upto]

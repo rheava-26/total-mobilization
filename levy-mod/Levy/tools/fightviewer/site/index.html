@@ -290,6 +290,22 @@ function retheme(){loadTokens(); if(D){makeArena(D);draw();drawStrip();}}
 try{matchMedia("(prefers-color-scheme: light)").addEventListener("change",retheme);}catch(e){}
 try{new MutationObserver(retheme).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});}catch(e){}
 
+// Data files are served gzip-compressed (NAME.json.gz); the manifest names them NAME.json. The .gz is tried first, the plain .json after it, so an older published path still works.
+// A host that already undoes the gzip (Content-Encoding) hands over plain text: the two magic bytes tell which it is.
+async function loadJson(path){
+  let r=null; try{r=await fetch(path+".gz");}catch(e){}
+  if(r&&r.ok){
+    const u8=new Uint8Array(await r.arrayBuffer());
+    if(u8.length>1&&u8[0]===0x1f&&u8[1]===0x8b){
+      if(typeof DecompressionStream!=="function") throw new Error("This browser cannot unzip the data files (no DecompressionStream). Use a current Chrome, Edge, Firefox or Safari.");
+      const ds=new DecompressionStream("gzip"), w=ds.writable.getWriter(); w.write(u8); w.close();
+      return JSON.parse(await new Response(ds.readable).text());
+    }
+    return JSON.parse(new TextDecoder("utf-8").decode(u8));
+  }
+  const r2=await fetch(path); if(!r2.ok) throw new Error("the server answered "+r2.status+" for "+path);
+  return r2.json();
+}
 // ================================================================ parsing
 function parseRec(text){   // a raw FightRecorder .jsonl (local file)
   const R={hdr:null,arena:null,arenas:[],cam:null,frames:[],events:[],names:{items:{},npcs:{},projectiles:{},buffs:{},soldiers:{}},end:null};
@@ -531,8 +547,7 @@ async function openFight(id){
   try{
     let R=cache.get(id);
     if(!R){
-      const r=await fetch(f.file); if(!r.ok) throw new Error("the server answered "+r.status+" for "+f.file);
-      R=fromData(await r.json());
+      R=fromData(await loadJson(f.file));
     }
     if(seq!==loadSeq) return;
     remember(id,R); setRec(R,f.boss,f);

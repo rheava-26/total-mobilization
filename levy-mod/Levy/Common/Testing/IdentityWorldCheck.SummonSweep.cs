@@ -285,7 +285,8 @@ namespace Levy.Common.Testing
 		// Env: LEVY_SUMMONSWEEP_TABLE=1 the whole catalogue of the loaded mods (vanilla and Calamity), LEVY_SUMMONSWEEP_SLOTSET=1,3,6.
 
 		private static readonly short[] SumParityVanilla = { ItemID.SlimeStaff, ItemID.PygmyStaff, ItemID.RavenStaff, ItemID.XenoStaff, ItemID.StardustDragonStaff, ItemID.EmpressBlade };
-		private static readonly string[] SumParityCal = { "MidnightSunBeacon", "EtherealSubjugator", "CorvidHarbringerStaff", "TacticalPlagueEngine", "Cosmilamp", "PoleWarper", "AbandonedSlimeStaff", "SarosPossession" };
+		/// <summary>The ship table: the staves fixed in the summons and summons2 passes, one for each way a cast can differ from a minion that takes its slots at birth: a self-ending cast (Borealis Bomber, Slime Puppet Staff), a minion that takes its slots in its own update (Glacial Embrace, Void Eater Marionette), a shot that becomes the minion later (Fuel Cell Bundle, Dormant Brimseeker), a cast that asks its owner for slots (Ares' Exoskeleton, King of Constellations).</summary>
+		private static readonly string[] SumParityCal = { "MidnightSunBeacon", "EtherealSubjugator", "CorvidHarbringerStaff", "TacticalPlagueEngine", "Cosmilamp", "PoleWarper", "AbandonedSlimeStaff", "SarosPossession", "BorealisBomber", "SlimePuppetStaff", "GlacialEmbrace", "VoidEaterMarionette", "FuelCellBundle", "DormantBrimseeker", "AresExoskeleton", "KingofConstellationsTenryu" };
 
 		/// <summary>The verdict of one (staff, slot count) pair. <paramref name="n"/> is the slots the kit gives both. A levy over his slots for no more than a few ticks is the replace-on-cast overlap a player's own cast has too; longer is OVERCAST.</summary>
 		private static string SumVerdict(SumStat lv, SumStat pc, int n, bool selfEnding = false)

@@ -38,6 +38,7 @@ namespace Levy.Content.NPCs
 		internal bool FlockDirty;
 		/// <summary>The game tick until which his modded minions are updated with his real slots in view (set by every cast of a staff's own Shoot, see SoldierMinions.RunUpdate).</summary>
 		internal uint TruthUntil;
+		private bool _transientWake;
 		/// <summary>The shot of the carried staff with a RECAST row (AltPolicies.RecastWanted), or -1; and the tick until which his button stays held for that staff's channelled use (the Saros ray).</summary>
 		internal int RecastShoot = -1;
 		internal uint RecastHoldUntil;
@@ -161,10 +162,11 @@ namespace Levy.Content.NPCs
 
 		private void MaintainMinions()
 		{
-			if (_minionSpawnCd > 0) _minionSpawnCd--;
+			bool wake = false; // a self-ending staff's use time is over: the next cast is made now, not at the next upkeep pass (a player clicks again the tick the use ends)
+			if (_minionSpawnCd > 0 && --_minionSpawnCd == 0 && _transientWake) { wake = true; _transientWake = false; }
 			bool pass = ++_minionTick >= LevyConstants.MinionMaintainIntervalTicks;
-			if (!pass && !FlockDirty) return;
-			bool trimOnly = !pass; // between upkeep passes only the overflow check runs, and only when a minion was born or resized
+			if (!pass && !wake && !FlockDirty) return;
+			bool trimOnly = !pass && !wake; // between upkeep passes only the overflow check runs, and only when a minion was born or resized
 			FlockDirty = false;
 			if (pass) _minionTick = 0;
 			try
@@ -322,7 +324,8 @@ namespace Levy.Content.NPCs
 			if (transient && !SoldierMinions.CanUse(this, weapon)) return; // and only when the staff allows a use, as for a player (the Universe Splitter waits while its field is out)
 
 			if (!CrowdBudget.MayAddProjectiles(Math.Max(1, (int)Math.Ceiling(perCast)))) return; // the army entity budget
-			_minionSpawnCd = transient ? Math.Max(LevyConstants.MinionMaintainIntervalTicks, weapon.useTime) : LevyConstants.MinionSpawnCooldownTicks; // a player's click again as soon as the use is over; the upkeep looks every MinionMaintainIntervalTicks
+			_minionSpawnCd = transient ? Math.Max(3, weapon.useTime) : LevyConstants.MinionSpawnCooldownTicks; // a player's click again as soon as the use is over: a self-ending staff wakes the upkeep the tick its use time ends
+			_transientWake = transient;
 			if (!SoldierMinions.Summon(this, weapon, damage)) return;
 			SoldierMinions.CastTally++;
 			CrowdBudget.NoteAdded();

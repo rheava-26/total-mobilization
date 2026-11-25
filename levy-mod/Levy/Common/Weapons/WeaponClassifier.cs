@@ -125,6 +125,12 @@ namespace Levy.Common.Weapons
 			return family;
 		}
 
+		/// <summary>
+		/// Wrath of the Gods' Emptiness Spray: a channeled holdout that sprays a gas which erases every NPC in it (EmptinessSprayerGas). The item deals no damage itself (the gas does the erasing) and names no damage class, so the zero-damage and
+		/// no-class gates would bench it; a levy may carry it and works it as a player does (held, the gas out of its muzzle). Levy's own bodies are protected from the gas (Compat/Calamity/EmptinessSprayGuard.cs).
+		/// </summary>
+		internal static bool IsEmptinessSprayer(Item item) => item?.ModItem != null && item.ModItem.Name == "EmptinessSprayer" && item.ModItem.Mod.Name == "NoxusBoss" && item.channel && item.shoot > 0;
+
 		/// <summary>A heal-driven weapon that also damages, and is nothing but a melee swing: a plain swing with no shot, no mana and no ammo.</summary>
 		public static bool IsSwungHybrid(Item item) =>
 			item != null && item.damage > 0 && item.shoot <= 0 && item.useStyle == ItemUseStyleID.Swing && !item.noMelee && item.mana <= 0 && item.useAmmo == AmmoID.None && !item.consumable;
@@ -142,7 +148,7 @@ namespace Levy.Common.Weapons
 			// EXCEPT a hybrid that is a plain melee swing (Heretic Breaker: damage, ally heal on hit, no shot): as a "caster" it had nothing to fire, so its soldier stood off at heal range and never swung. It is a sword like any other
 			// (the swing's on-hit heal sweep is what heals), the heal AI keeps its long reach (HealerCompat.ReachPx).
 			if (item.type >= ItemID.Count && AiDrivenHealerSafe(item) && !IsSwungHybrid(item)) { extended = false; return WeaponFamily.Magic; }
-			if (item.damage <= 0 && !(item.type >= ItemID.Count && ExtraCombatClass != null && ExtraClassSafe(item))) return WeaponFamily.Unsupported; // a companion-declared class may be a zero-damage support weapon
+			if (item.damage <= 0 && !IsEmptinessSprayer(item) && !(item.type >= ItemID.Count && ExtraCombatClass != null && ExtraClassSafe(item))) return WeaponFamily.Unsupported; // a companion-declared class may be a zero-damage support weapon
 			// Soldiers do not mine: any pickaxe / drill is refused. An axe or hammer is accepted only when it is a plain melee swing that launches nothing (Chlorophyte Greataxe / Warhammer);
 			// channeled saws and drills (Chlorophyte Chainsaw: useStyle Shoot, shoot > 0, owner-anchored) fail the Swing / shoot == 0 gate and stay benched.
 			if (item.pick > 0) return WeaponFamily.Unsupported;
@@ -150,7 +156,7 @@ namespace Levy.Common.Weapons
 			if (item.consumable) return WeaponFamily.Unsupported;
 			if (item.useStyle == ItemUseStyleID.None) return WeaponFamily.Unsupported;
 			// A modded weapon that counts as none of the five combat classes runs on a custom resource (Mechanica's MechanicDamage power weapons): not issued.
-			if (item.type >= ItemID.Count && !CountsAsAnyCombatClass(item)) return WeaponFamily.Unsupported;
+			if (item.type >= ItemID.Count && !CountsAsAnyCombatClass(item) && !IsEmptinessSprayer(item)) return WeaponFamily.Unsupported;
 			// Sentries are Summon-class items but not minion staves: decided by the item flag, BEFORE any of the Summon/Whip/shooter rules below.
 			if (item.sentry) return item.shoot > 0 && ProjectileSample(item.shoot) != null ? WeaponFamily.Sentry : WeaponFamily.Unsupported;
 

@@ -334,6 +334,7 @@ namespace Levy.Common.Weapons
 					if (b.Name == ShortswordBase) shortsword = true;
 					else if (b.Name == MaceFlailBase || b.Name == FlailBase) mace = true;
 				}
+			if (WeaponClassifier.IsEmptinessSprayer(item) && sample?.ModProjectile != null) return ModShotKind.Holdout; // the spray's holdout reads its owner's button and makes the gas
 			// An Ark: a melee item whose Shoot hook spawns an owner-anchored swung blade and a parry holdout (found from the hook's own code, not from a name).
 			if (item.ModItem?.Mod.Name == "CalamityMod" && item.CountsAsClass(DamageClass.Melee) && ArkSwings.IsArk(item)) return ModShotKind.ArkSwing;
 			// A Biome Blade: a melee item that carries attunements (found from the item's own fields).

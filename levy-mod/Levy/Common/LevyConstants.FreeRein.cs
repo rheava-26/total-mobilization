@@ -27,6 +27,16 @@ namespace Levy.Common
 		/// <summary>A levy outside its box walks home: how often it re-plans (ticks).</summary>
 		public const int FreeReinRecallRetryTicks = 90;
 
+		// ---------- Regroup & Engage in a boss fight: Free Rein rules, leashed to the commander (SoldierNPC.Regroup.cs) ----------
+		/// <summary>A levy that has not been targeting the boss for this long (ticks), and stands farther than <see cref="RegroupNearTiles"/> from the commander, hops back beside them.</summary>
+		public const int RegroupIdleTicks = 120;
+		/// <summary>Tiles from the commander inside which a levy that is not on the boss is already where it should be.</summary>
+		public const int RegroupNearTiles = 14;
+		/// <summary>Ticks between two hops of one levy.</summary>
+		public const int RegroupSnapCooldownTicks = 180;
+		/// <summary>The hop lands this many tiles to the side of the commander (searching a few tiles around for ground).</summary>
+		public const int RegroupBesideTiles = 4, RegroupSpotSearchTiles = 8;
+
 		// ---------- Free Rein: off-duty life ----------
 		/// <summary>A free-roaming levy that has been calm this long may take up a pastime.</summary>
 		public const int LeisureCalmTicks = 60 * 8;

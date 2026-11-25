@@ -223,6 +223,14 @@ namespace Levy.Content.NPCs
 			HurtProjectile = _projResolved ? projectile : null;
 			SeqSourceDamage = _projResolved ? LastProjectileResult.Info.SourceDamage : 0;
 			try { AfterHit(damageDone, LastAttackerIndex, _projResolved ? HostileContact.EffectiveSlot(ProjectileSlot(projectile)) : -1); } finally { HurtProjectile = null; SeqSourceDamage = 0; }
+			if (IsAlive && ImmuneTime > 0 && SpecialImmunity.On && (!_projResolved || HostileContact.EffectiveSlot(ProjectileSlot(projectile)) < 0))
+			{
+				// an attack that shortens a player's window on purpose (Nameless Deity's super cosmic beam) shortens the levy's too (Common/Util/SpecialImmunity.cs)
+				bool longI = Dummy != null && Dummy.longInvince;
+				int ordinary = damageDone <= 1 ? (longI ? 40 : 20) : (longI ? 80 : 40);
+				int w = SpecialImmunity.Window(projectile, NPC, damageDone, ordinary);
+				if (w < ordinary) ImmuneTime = Math.Min(ImmuneTime, Math.Max(1, LevyConstants.ScaledImmune(w)));
+			}
 			if (IsAlive && _projResolved) { var res = LastProjectileResult; PlayerOnHit(null, projectile, in res, projectile.Center.X < NPC.Center.X ? 1 : -1); }
 			else if (IsAlive) global::Levy.Common.Util.HostileProjectile.OnHit(projectile, this, damageDone); // earlier intake: the debuffs a player would have caught
 			_projResolved = false;

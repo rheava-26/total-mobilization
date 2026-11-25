@@ -34,7 +34,7 @@ namespace Levy.Common.Testing
 		};
 
 		/// <summary>The Calamity weapons of the ship run (the rest with LEVY_GUNPARITY_ALL=1): the ones the gunparity pass fixed, one sibling of the shark guns and two bows. The Calamity half of the ship run has no time to spare.</summary>
-		private static readonly HashSet<string> GunParityShipCal = new() { "Infinity", "Svantechnical", "Seadragon", "Auralis", "DragonsBreath", "Archerfish", "Galeforce", "TheBallista" };
+		private static readonly HashSet<string> GunParityShipCal = new() { "Infinity", "Svantechnical", "Seadragon", "Auralis", "DragonsBreath", "Archerfish", "Galeforce", "TheBallista", "Voidragon" };
 
 		/// <summary>Weapons this check found off and the gunparity pass did not fix: their DPS is noted, not checked (the designer rules on them). Name to what was measured.</summary>
 		private static readonly Dictionary<string, string> GunParityNoteOnly = new()
@@ -44,7 +44,6 @@ namespace Levy.Common.Testing
 			["DaedalusStormbow"] = "a levy's rain lands 0.62 to 0.90 of a player's DPS at the same rate (15.9 against 18.6 a shot): the levy's rain is SkyDrop's, a player's is vanilla's own scatter over her cursor: not found",
 			["BlossomFlux"] = "a levy shoots 0.58 as often as a player (its use is 4 shots in a 16-tick animation) for 0.73 of her DPS: not found",
 			["Megalodon"] = "0.67 to 0.81 of a player's DPS (0.59 to 0.65 before the pass): the levy's rockets carry his own hit count now (30, as hers), but he fired 4 rockets to her 6 in 1,500 ticks: not found",
-			["Voidragon"] = "0.88 of a player's DPS over 600 ticks, 1.59 over 1,500 (0.07 before the pass): the levy's Abyssal Fire beam lands 318 hits a beam to her 181 (its local hit cooldown is 2 ticks, at most 250): not found",
 		};
 
 		/// <summary>Weapons whose shots pass the commander in this check's geometry by their own flight, not by reading her: the near-commander check is a note for them. Name to reason.</summary>
@@ -115,7 +114,8 @@ namespace Levy.Common.Testing
 					bool alters = false; try { alters = WorldAlter.AltersWith(gi, ammo > 0 ? ContentSamples.ItemsByType[ammo] : null); } catch (Exception) { }
 					if (alters) { ANote($"gun parity: {label} breaks blocks, not fired by the world check"); continue; }
 					WeaponProfile wp = WeaponClassifier.GetProfile(gi);
-					int ticks = fixedTicks > 0 ? fixedTicks : Math.Clamp(Math.Max(smp.useAnimation, smp.useTime) * 40, 900, 1500); // at least 900 ticks and about 40 uses: in 600 ticks a slow gun's few shots (a Sniper Rifle's 16) and the Hellwing's wandering bats measured 0.73 to 1.11
+					int ticks = fixedTicks > 0 ? fixedTicks : Math.Clamp(Math.Max(smp.useAnimation, smp.useTime) * 40, 900, 1500);
+					if (label.EndsWith(":Voidragon") && fixedTicks <= 0) ticks = 1500; // its beam outlived its holdout only past the first cycle (about 900 ticks): the window must hold two cycles // at least 900 ticks and about 40 uses: in 600 ticks a slow gun's few shots (a Sniper Rifle's 16) and the Hellwing's wandering bats measured 0.73 to 1.11
 					// The commander stands 60 tiles straight above the levy. A shot's own flight never reaches her there (Svantechnical's splits fly back about 50 tiles past the shooter before they turn: a commander standing far
 					// behind the levy is where they fly by design, as they fly behind a player), while a shot that steers to her cursor climbs to her: her cursor is pointed at herself from the levy's spot, because a shot that reads it
 					// while it flies for him reads it from his place (OwnerPuppet lends the owner's place to the levy).
@@ -126,7 +126,9 @@ namespace Levy.Common.Testing
 					try { lv = AmmoRun(type, ammo, label, false, ticks, 0f, 1, 0, 0, 0, left ? null : above); }
 					finally { AmmoCmdCursor = envCursor; }
 					if (AmmoDebug) ANote($"  {label}: player counter swaps {PlayerCounters.Swaps - ctrSwaps0}, hit counts {PlayerCounters.HitCounts - ctrHits0} (rows {PlayerCounters.RowNames}), owned-count swaps {OwnerPuppet.CountSwaps - cntSwaps0}, declined uses run as uses {WeaponUse.DeclinedUses - declined0}");
+					if (AmmoProbe.GapName != null) ANote($"  gap probe {label} LEVY: {AmmoProbe.GapReport()}");
 					AmmoStat pl = AmmoRun(type, ammo, label, true, ticks, lv.LevyX);
+					if (AmmoProbe.GapName != null) ANote($"  gap probe {label} PLAYER: {AmmoProbe.GapReport()}");
 					double dps = pl.DpsAfter > 0 ? lv.DpsAfter / pl.DpsAfter : 0, rate = pl.RatePerSec > 0 ? lv.RatePerSec / pl.RatePerSec : 0;
 					bool bow = wp.Family == WeaponFamily.Bow || smp.useAmmo == AmmoID.Arrow;
 					ANote($"gun parity: {label} family={wp.Family} useTime={smp.useTime} useAnimation={smp.useAnimation} reuseDelay={smp.reuseDelay} autoReuse={smp.autoReuse} channel={smp.channel} ammo={ItemName(ammo)} | levy: first shot t={lv.FirstShot} shots={lv.Roots} ({lv.RatePerSec:0.00}/s) dps={lv.DpsAfter:0} perShot={lv.PerShot:0.0} near cmd={lv.NearCmd} at cmd={lv.AtCmd} | player: first shot t={pl.FirstShot} shots={pl.Roots} ({pl.RatePerSec:0.00}/s) dps={pl.DpsAfter:0} perShot={pl.PerShot:0.0} | levy/player dps {dps:0.00} rate {rate:0.00}");

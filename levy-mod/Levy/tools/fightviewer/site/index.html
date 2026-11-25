@@ -869,6 +869,15 @@ function fitView(){
   if(D&&(D.isEvent||D.pvp)){if(D.pvp){const el=$("viewNote");if(el){el.innerHTML="";el.hidden=true;}}evFit();return;}
   const {w,h}=canvasSize($("view")); let x0=1e12,y0=1e12,x1=-1e12,y1=-1e12;
   fitNotes();
+  if(D&&D.hdr&&D.hdr.meta&&D.hdr.meta.who&&D.hasSum){   // a summon A/B (player or levy with a staff): frame the enemy, the owner and every minion's path, never the commander standing far away in a levy's run
+    const add=(x,y)=>{x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y);};
+    for(const f of D.frames){for(const b of (f.b||[])) add(b[2],b[3]); if(D.hdr.meta.who==="player") add(f.p[0],f.p[1]);}
+    for(const tr of D.trL.values()) for(const t of tr) add(t[1],t[2]);
+    for(const tr of sumBuild(D)) if(tr.k!==4) for(const t of tr.p) add(t[1],t[2]);
+    x0-=6*TILE;x1+=6*TILE;y0-=8*TILE;y1+=5*TILE;
+    if(x1-x0<640){const c=(x0+x1)/2;x0=c-320;x1=c+320;} if(y1-y0<360){const c=(y0+y1)/2;y0=c-180;y1=c+180;}
+    cam.x=(x0+x1)/2; cam.y=(y0+y1)/2; cam.z=Math.min(w/(x1-x0),h/(y1-y0))*0.98; return;
+  }
   const B=fightBox(D);
   if(B){x0=B.x0-8*TILE;x1=B.x1+8*TILE;y0=B.y0-8*TILE;y1=B.y1+8*TILE;
     if(x1-x0<400){const c=(x0+x1)/2;x0=c-200;x1=c+200;} if(y1-y0<300){const c=(y0+y1)/2;y0=c-150;y1=c+150;}

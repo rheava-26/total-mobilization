@@ -58,7 +58,22 @@ namespace Levy.Content.NPCs
 			return _avSlot;
 		}
 
-		internal Vector2 AvatarSlotCenter(Player cmd) => cmd.Center + AvatarSlotOffset(AvatarSlot());
+		/// <summary>
+		/// The slot's point. In the open sky of the arena a slot inside the ground or a platform (the commander is low, or was slammed down) is lifted to the first air above it with a tile and a half clear under the feet: a flier
+		/// hovers there instead of resting on the floor. In the dimension nothing holds anything up and the slot is where it is.
+		/// </summary>
+		internal Vector2 AvatarSlotCenter(Player cmd)
+		{
+			Vector2 c = cmd.Center + AvatarSlotOffset(AvatarSlot());
+			if (AvatarFight.Void) return c;
+			Vector2 half = NPC.Size * 0.5f;
+			for (int k = 0; k <= 30; k++)
+			{
+				Vector2 p = c - new Vector2(0f, k * 8f);
+				if (!Collision.SolidCollision(p - half, NPC.width, NPC.height + 24)) return p;
+			}
+			return c;
+		}
 
 		/// <summary>The commander moved this body's way: put it in its slot now (no ground search; the air of the fight is where the army is). A body that cannot fly and is not in the dimension is put on the ground near him when there is some.</summary>
 		internal void AvatarRejoin(Player cmd, bool air)
@@ -79,7 +94,7 @@ namespace Levy.Content.NPCs
 		private int AvatarMode(out Player cmd)
 		{
 			cmd = null;
-			if (Record == null || State == SoldierState.Dead) { AvWhy[0]++; return 0; }
+			if (Record == null || State == SoldierState.Dead || Hostile) { AvWhy[0]++; return 0; }
 			if (_avYieldUntil > (int)Main.GameUpdateCount && !AvatarFight.Void) { AvWhy[1]++; return 0; }
 			bool voidNow = AvatarFight.Void;
 			Player c = Commander;

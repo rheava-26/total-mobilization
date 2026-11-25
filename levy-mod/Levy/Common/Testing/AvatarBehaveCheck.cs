@@ -170,7 +170,7 @@ namespace Levy.Common.Testing
 		{
 			try
 			{
-				Clear();
+				Clear(); AvatarFight.TestVoid = null;
 				for (int i = 0; i < Main.maxNPCs; i++)
 				{
 					NPC n = Main.npc[i];
@@ -222,12 +222,12 @@ namespace Levy.Common.Testing
 			public readonly Dictionary<string, long> StateTicks = new(); public readonly Dictionary<string, int> HitBy = new(), ZoneTicks = new(), HitState = new(); public long Urgent;
 		}
 
-		private sealed record Scn(string Name, int Phase, string[] States, int Ticks, bool Send, bool Zone = false, int Up = 0);
+		private sealed record Scn(string Name, int Phase, string[] States, int Ticks, bool Send, bool Zone = false, int Up = 0, bool Portal = false);
 
 		private static Result RunScene(Scn sc, int variant)
 		{
 			var r = new Result();
-			bool behave = variant > 0; WotgScenes.TestVoice = false; Cleanup(); AvatarFight.TestOn = behave; AvatarFight.TestZones = variant == 1 ? false : null; WotgScenes.TestAvatarPercent = behave ? null : 100;   // off = the chatter the army had before (every line of the fight pools at the old rate)
+			bool behave = variant > 0; WotgScenes.TestVoice = false; Cleanup(); AvatarFight.TestVoid = sc.Portal ? true : null; AvatarFight.TestOn = behave; AvatarFight.TestZones = variant == 1 ? false : null; WotgScenes.TestAvatarPercent = behave ? null : 100;   // off = the chatter the army had before (every line of the fight pools at the old rate)
 			Terraria.Main.rand = new Terraria.Utilities.UnifiedRandom(4242);
 			Arena();
 			Main.GameMode = GameModeID.Master; Main.hardMode = true;
@@ -260,6 +260,13 @@ namespace Levy.Common.Testing
 			for (int t = 0; t < sc.Ticks; t++)
 			{
 				_tick = t;
+				if (sc.Portal && t == 100)
+				{
+					// a dark portal moves the player with Player.Teleport (DarkPortal.cs): 150 tiles along, in the dimension
+					_anchor += new Vector2(150f * 16f, 0f); _cmdAt = _anchor + WeaveOffset(t);
+					Main.player[0].Teleport(_cmdAt - new Vector2(Main.player[0].width / 2f, Main.player[0].height / 2f), TeleportationStyleID.Portal);
+					_shifts++; _lastShiftTick = t;
+				}
 				_cmdAt = _anchor + WeaveOffset(t);
 				foreach (var (s0, _) in levies) { NPC n0 = s0.NPC; if (n0.active) { n0.dontTakeDamage = true; n0.life = n0.lifeMax; s0.Record.CurrentHp = n0.lifeMax; } }
 				Step(1);
@@ -341,6 +348,7 @@ namespace Levy.Common.Testing
 			new("Send, ArmPortalStrikes (dark)", 1, new[] { "SendPlayerToMyUniverse", "ArmPortalStrikes" }, 1200, true, true),
 			new("Send, RealityShatter (dark)", 1, new[] { "SendPlayerToMyUniverse", "RealityShatter_CreateAndWaitForTelegraph" }, 1800, true, true),
 			new("Send, EnterBloodWhirlpool + AntishadowOnslaught (phase 4)", 2, new[] { "SendPlayerToMyUniverse", "EnterBloodWhirlpool", "AntishadowOnslaught" }, 1800, true),
+			new("A dark portal moves the commander 150 tiles (Player.Teleport) in the dimension", 1, new[] { "ArmPortalStrikes" }, 700, false, false, 0, true),
 			new("Send, UniversalAnnihilation (phase 4)", 2, new[] { "SendPlayerToMyUniverse", "UniversalAnnihilation" }, 1800, true),
 			new("The whole cycle as the game picks it, phase 4 (what the army says)", 2, new[] { "ResetCycle" }, 10800, false),
 		};
@@ -375,12 +383,17 @@ namespace Levy.Common.Testing
 				double onFall = 100.0 * on.All.Fall / Math.Max(1, on.All.Ticks);
 				Check($"{s.Name}: the army stays with the commander (stranded {P(onFar)} against {P(offFar)} before)", onFar <= 15.0 && onFar <= offFar + 1.0);
 				bool natural = s.States[0] == "ResetCycle";
+				if (s.Portal)
+				{
+					double p2 = on.Near2sN > 0 ? on.Near2s / on.Near2sN : 0, p10 = on.Near10sN > 0 ? on.Near10s / on.Near10sN : 0;
+					Check($"{s.Name}: the army comes through the portal (within 40 tiles: {P(p2)} after 2 s, {P(p10)} after 10 s)", on.Shifts > 0 && p2 >= 80.0 && p10 >= 90.0);
+				}
 				if (s.Up > 0)
 				{
 					double fo = 100.0 * on.Foot.Far / Math.Max(1, on.Foot.Ticks), ho = 100.0 * on.Hook.Far / Math.Max(1, on.Hook.Ticks), fo0 = 100.0 * off.Foot.Far / Math.Max(1, off.Foot.Ticks);
 					Check($"{s.Name}: levies on foot are not left far below the commander (foot stranded {P(fo)}, hookers {P(ho)}, against {P(fo0)} of the foot before)", fo <= 15.0 && ho <= 15.0);
 				}
-				if (!s.Send && !natural && s.Up == 0)
+				if (!s.Send && !natural && s.Up == 0 && !s.Portal)
 				{
 					double fa = 100.0 * on.Flier.Aloft / Math.Max(1, on.Flier.Ticks), fb = 100.0 * off.Flier.Aloft / Math.Max(1, off.Flier.Ticks);
 					Check($"{s.Name}: levies with wings fly in the open-air arena ({P(fa)} airborne, against {P(fb)} before)", fa >= 85.0);

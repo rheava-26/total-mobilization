@@ -60,6 +60,19 @@ namespace Levy.Common.Compat.Calamity
 		/// <summary>True while a Calamity arena box is up.</summary>
 		public static bool Active { get { if (!On) return false; Init(); return _ok && Boxes() != null; } }
 
+		/// <summary>Every active box's walls (top-left, bottom-right) into <paramref name="into"/>.</summary>
+		public static void AllBounds(System.Collections.Generic.List<(Vector2 tl, Vector2 br)> into)
+		{
+			into.Clear();
+			if (!On) return;
+			Init();
+			if (!_ok) return;
+			IList boxes = Boxes();
+			if (boxes == null) return;
+			try { for (int i = 0; i < boxes.Count; i++) if (boxes[i] != null) into.Add(((Vector2)_topLeft.GetValue(boxes[i]), (Vector2)_bottomRight.GetValue(boxes[i]))); }
+			catch (Exception) { into.Clear(); }
+		}
+
 		/// <summary>The walls of the active box that holds <paramref name="npc"/> (the first one that would hold a player standing there), so a goal can be chosen inside them. False with no box up.</summary>
 		public static bool TryBounds(NPC npc, out Vector2 topLeft, out Vector2 bottomRight)
 		{

@@ -13,6 +13,22 @@ namespace Levy.Common.Compat.Calamity
 	/// </summary>
 	public sealed class ArenaBoxSystem : ModSystem
 	{
+		private static readonly System.Collections.Generic.List<(Microsoft.Xna.Framework.Vector2 tl, Microsoft.Xna.Framework.Vector2 br)> _bounds = new();
+
+		/// <summary>The start of the tick: each box's bottom wall is a floor row to the tile queries (TileNav.IsFloor).</summary>
+		public override void PreUpdateNPCs()
+		{
+			if (!ArenaBoxes.Active) { if (global::Levy.Common.Movement.TileNav.VFloorN != 0) global::Levy.Common.Movement.TileNav.SetBoxFloors(0); return; }
+			ArenaBoxes.AllBounds(_bounds);
+			int n = System.Math.Min(4, _bounds.Count);
+			for (int i = 0; i < n; i++)
+			{
+				var (tl, br) = _bounds[i];
+				global::Levy.Common.Movement.TileNav.SetBoxFloor(i, (int)((br.Y - 1f) / 16f) + 1, (int)(tl.X / 16f), (int)((br.X - 1f) / 16f));
+			}
+			global::Levy.Common.Movement.TileNav.SetBoxFloors(n);
+		}
+
 		public override void PostUpdateNPCs()
 		{
 			if (Main.netMode == NetmodeID.MultiplayerClient || !ArenaBoxes.Active) return;

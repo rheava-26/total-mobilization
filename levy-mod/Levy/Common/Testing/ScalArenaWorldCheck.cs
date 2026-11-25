@@ -352,7 +352,7 @@ namespace Levy.Common.Testing
 					foreach (var (s, c) in levies.Where((l, idx) => l.s.NPC.active && (idx == 0 || idx == 5 || idx == 11 || idx == 14)))
 					{
 						NPC n = s.NPC; Player cm = Main.player[0];
-						_mod.Logger.Info($"[ScalArena] TRACE {(boxed ? "box" : "open")} t={t} {c} pos=({(n.Center.X - _lo.X) / 16f:0},{(n.Center.Y - _lo.Y) / 16f:0}) of box {(_hi.X - _lo.X) / 16f:0}x{(_hi.Y - _lo.Y) / 16f:0} cmd=({(cm.Center.X - _lo.X) / 16f:0},{(cm.Center.Y - _lo.Y) / 16f:0}) fly={s.IsFlying} goal={(s.HasMoveGoal ? ((s.MoveGoal.X - _lo.X) / 16f).ToString("0") + "," + ((s.MoveGoal.Y - _lo.Y) / 16f).ToString("0") : "-")} state={s.State} why={s.StillReason()} v=({n.velocity.X:0.0},{n.velocity.Y:0.0})");
+						_mod.Logger.Info($"[ScalArena] TRACE {(boxed ? "box" : "open")} t={t} {c} pos=({(n.Center.X - _lo.X) / 16f:0},{(n.Center.Y - _lo.Y) / 16f:0}) of box {(_hi.X - _lo.X) / 16f:0}x{(_hi.Y - _lo.Y) / 16f:0} cmd=({(cm.Center.X - _lo.X) / 16f:0},{(cm.Center.Y - _lo.Y) / 16f:0}) boss=({(boss.Center.X - _lo.X) / 16f:0},{(boss.Center.Y - _lo.Y) / 16f:0}) fly={s.IsFlying} goal={(s.HasMoveGoal ? ((s.MoveGoal.X - _lo.X) / 16f).ToString("0") + "," + ((s.MoveGoal.Y - _lo.Y) / 16f).ToString("0") : "-")} state={s.State} why={s.StillReason()} v=({n.velocity.X:0.0},{n.velocity.Y:0.0})");
 					}
 			}
 			int hostile = 0; for (int i = 0; i < Main.maxProjectiles; i++) { var pr = Main.projectile[i]; if (pr.active && pr.hostile) hostile++; }

@@ -194,6 +194,19 @@ namespace Levy.Common.Testing
 			return best;
 		}
 
+		/// <summary>LEVY_ARMYSWEEP_WALL=1: three solid columns, 60 tiles high, three tiles in front of the enemy on the shooter's side. A weapon that hits through it hits what a player standing there could not.</summary>
+		private static readonly bool ArmyWall = Environment.GetEnvironmentVariable("LEVY_ARMYSWEEP_WALL") == "1";
+		private static void ArmyWallSet(bool on)
+		{
+			int x0 = (int)(_sweepTargetAt.X / 16f) - 5;
+			for (int x = x0; x < x0 + 3; x++)
+				for (int y = FloorY - 60; y < FloorY; y++)
+				{
+					Tile t = Main.tile[x, y];
+					if (on) { t.HasTile = true; t.TileType = TileID.GrayBrick; t.BlockType = BlockType.Solid; } else t.ClearEverything();
+				}
+		}
+
 		private static ArmyRes ArmyOne(int weaponType, int ammoType, int ticks, bool player, bool cmdHolds, int minionCap = 1, int turretCap = 1)
 		{
 			var res = new ArmyRes { Who = player ? "player" : (cmdHolds ? "levy, commander holding her button" : "levy, commander idle 60 tiles away") };
@@ -205,6 +218,7 @@ namespace Levy.Common.Testing
 			bool close = !w.noMelee || w.shoot <= 0 || ItemID.Sets.Yoyo[w.type] || ItemID.Sets.Spears[w.type]; // a blade or spear is used next to the enemy (5 tiles), a shooter from 12 tiles
 				if (!close && (ArmyReachPlace || WeaponClassifier.IsAnchoredSwing(w))) { try { close = WeaponClassifier.GetProfile(w).RangeTiles <= 10; } catch (Exception) { } } // a short-reach weapon (a slash that circles its wielder): the enemy stands inside the levy's own reach, so a levy posted on Hold is measured fighting, not waiting
 			SpawnOriginTarget(close ? at - new Vector2(7 * 16f, 0f) : at); _sweepTarget.boss = true;
+			if (ArmyWall) ArmyWallSet(true); // LEVY_ARMYSWEEP_WALL=1: a wall stands between the shooter and the enemy (the hit gate's A/B)
 			Player scratch = null, saved255 = null; int body = -1; SoldierRecord rec = null;
 			ArmySweepTally.Target = _sweepTarget.whoAmI; ArmySweepTally.On = true; ArmySweepTally.ByProj = new();
 			try
@@ -280,7 +294,7 @@ namespace Levy.Common.Testing
 			catch (Exception e) { res.Err = e.GetType().Name + ": " + e.Message + " @ " + string.Join(" < ", (e.StackTrace ?? "").Split('\n').Take(3).Select(l => l.Trim())); }
 			finally
 			{
-				ArmySweepTally.On = false; _costBody = -1;
+				ArmySweepTally.On = false; _costBody = -1; if (ArmyWall) ArmyWallSet(false);
 				if (player) { _my = 0; if (scratch != null && ReferenceEquals(Main.player[255], scratch)) Main.player[255] = saved255; global::Levy.Common.Targeting.EnemyTargeting.ResetState(); }
 				ClearSoldiers(); _cmdHolds = false; ReleaseCommanderButtons(); _cmdAt = OriginCmdAt();
 			}

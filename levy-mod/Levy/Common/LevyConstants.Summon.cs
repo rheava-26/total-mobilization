@@ -41,8 +41,13 @@ namespace Levy.Common
 		public const float MinionSlotEpsilon = 0.01f;
 		/// <summary>A modded cast that dies by itself within this many driven ticks of spawning counts as an immediate self-kill (lifetime only, hits are never considered).</summary>
 		public const int ModdedMinionShortLifeTicks = 10;
-		/// <summary>Flood guard: projectiles a modded flock's minions may create per upkeep pass (20 ticks) / may have alive at once before its staff uses the stand-in. Measured peaks of the heaviest Calamity minions: 31 per pass (Dragonblood Disgorger), 76 alive (Ares' Exoskeleton; 62 to 152 in the summon sweep of 2026-11-22, so it stays on the stand-in); the runaway (Void Concentration Staff, before its ring counted for its owner) made 420 per pass.</summary>
-		public const int ModdedMinionMaxChildSpawnsPerPass = 40, ModdedMinionMaxChildrenAlive = 60;
+		/// <summary>
+		/// Flood guard: projectiles a modded flock's minions may create per upkeep pass (20 ticks), and the children they may have alive at once before its staff uses the stand-in. The alive limit follows the holder's slots, like what a player
+		/// holds does: <c>max(ModdedMinionMaxChildrenAlive, ModdedMinionChildrenPerSlot * slots)</c>, and has to be exceeded on <see cref="ModdedMinionFloodPasses"/> passes in a row (a flock's peaks last a few ticks).
+		/// Measured in the parity table (a player and a levy with the same kit): the heaviest steady flock is the Stormjaw Staff, 8 children a slot on average and 9 to 12 at the peak (peaks of 62 to 64 for the PLAYER at 6 slots, which a fixed 60 cut);
+		/// the Vigilance, Viral Sprout, Scab Ripper and Mirror of Kalandra stay under 9 a slot. The runaways are 20 a slot and up (Ares' Exoskeleton: 61 alive at 3 slots, 62 to 152 at 6, where a player's makes 1); the Void Concentration Staff made 420 per pass.
+		/// </summary>
+		public const int ModdedMinionMaxChildSpawnsPerPass = 40, ModdedMinionMaxChildrenAlive = 60, ModdedMinionChildrenPerSlot = 16, ModdedMinionFloodPasses = 2;
 		/// <summary>Consecutive immediate self-kills of a modded cast after which the staff uses the stand-in minion.</summary>
 		public const int ModdedMinionMaxShortLives = 3;
 		/// <summary>Upkeep passes (20 ticks each) between the tries of a full flock's staff at making its helper.</summary>

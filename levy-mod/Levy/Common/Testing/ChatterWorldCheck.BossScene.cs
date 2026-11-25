@@ -112,16 +112,19 @@ namespace Levy.Common.Testing
 				SCheck($"'show the original too' sends the army line, then the original marked as such (\"{string.Join(" | ", heard)}\")", heard.Count == 2 && heard[0] == army1 && heard[1].Contains(orig1) && heard[1] != orig1);
 				BossLines.TestShowOriginal = null;
 
-				// a real Draedon, left to talk: his second introduction line has an army version
+				// a real Draedon, left to talk: his lines are held to Calamity's originals (BossLines.DraedonHeld) until the designer's own lines are in
 				if (cal.TryFind("Draedon", out ModNPC dr))
 				{
 					_keepCal = true; heard.Clear();
 					int seen0 = BossLines.Seen, swapped0 = BossLines.Swapped;
 					int di = NPC.NewNPC(new Terraria.DataStructures.EntitySource_WorldEvent(), (int)_cmdAt.X + 200, (int)_cmdAt.Y - 200, dr.Type, 0, 0f, 0f, 0f, 0f, 0);
-					int t = 0; string want = Language.GetTextValue(BossLines.LevyPrefix + "DraedonIntroductionText2");
+					int t = 0; string want = Language.GetTextValue(BossLines.CalamityPrefix + "DraedonIntroductionText2");
 					while (t < 420 && !heard.Contains(want)) { Step(1); t++; }
 					SNote($"a real Draedon (slot {di}) after {t} ticks: heard [{string.Join(" | ", heard)}], lines seen {BossLines.Seen - seen0}, swapped {BossLines.Swapped - swapped0}, last key {BossLines.LastKey}");
-					SCheck($"a real Draedon's own introduction goes through the hook and his second line comes out in its army version ({BossLines.Seen - seen0} lines seen, {BossLines.Swapped - swapped0} swapped)", heard.Contains(want) && heard.Contains(Language.GetTextValue(BossLines.CalamityPrefix + "DraedonIntroductionText1")));
+					SCheck($"a real Draedon's own introduction goes through the hook and stays his original with an army on the field ({BossLines.Seen - seen0} lines seen, {BossLines.Swapped - swapped0} swapped)", heard.Contains(want) && heard.Contains(Language.GetTextValue(BossLines.CalamityPrefix + "DraedonIntroductionText1")) && BossLines.Swapped - swapped0 == 0 && BossLines.Seen - seen0 > 0);
+					BossLines.DraedonHeld = false;
+					SCheck("with the hold lifted a Draedon line has its army version", BossLines.ArmyKeyFor(BossLines.CalamityPrefix + "DraedonIntroductionText2") != null);
+					BossLines.DraedonHeld = true;
 					for (int i = 0; i < Main.maxNPCs; i++) if (Main.npc[i].active && Main.npc[i].ModNPC?.Mod == cal) Main.npc[i].active = false;
 					for (int i = 0; i < Main.maxProjectiles; i++) if (Main.projectile[i].active && Main.projectile[i].ModProjectile?.Mod == cal) Main.projectile[i].active = false;
 					_keepCal = false; Step(2);

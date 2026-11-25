@@ -55,6 +55,10 @@ namespace Levy.Common.Compat.Calamity
 			if (ShowOriginal) SayOriginal(key, Dim(textColor ?? Color.White));
 		} private static int _hl_BroadcastDetour_1;
 
+		/// <summary>Draedon speaks his own lines for now: the designer is writing his army lines, and his first meeting stays Calamity's original
+		/// (army lines only from a later fight, a gate not built yet). The Levy Draedon keys stay in the hjson, unused, until then.</summary>
+		internal static bool DraedonHeld = true;
+
 		/// <summary>The Levy key to send in place of <paramref name="key"/>, or null to send it as it is.</summary>
 		internal static string SwapFor(string key)
 		{
@@ -67,7 +71,9 @@ namespace Levy.Common.Compat.Calamity
 		internal static string ArmyKeyFor(string key)
 		{
 			if (key == null || !key.StartsWith(CalamityPrefix, StringComparison.Ordinal)) return null;
-			string levy = LevyPrefix + key.Substring(CalamityPrefix.Length);
+			string bare = key.Substring(CalamityPrefix.Length);
+			if (DraedonHeld && bare.StartsWith("Draedon", StringComparison.Ordinal)) return null;
+			string levy = LevyPrefix + bare;
 			return Language.Exists(levy) ? levy : null;
 		}
 

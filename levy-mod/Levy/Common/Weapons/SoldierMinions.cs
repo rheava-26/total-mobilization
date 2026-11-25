@@ -291,6 +291,12 @@ namespace Levy.Common.Weapons
 			Item staff = MiscProjSwap.BodyOf(p)?.SummonWeaponFor(p.type);
 			if (staff == null || staff.shoot <= 0) return; // the soldier gave the staff back (rearm), left, or fell: a death with no staff in hand is not evidence about the staff
 			if (SoldierNPC.TransientStaff(staff)) return; // a self-ending cast (a bomber that dives, a fist that strikes) dies within moments by design: it says nothing about whether it can live under a dummy owner
+			SoldierNPC holder = MiscProjSwap.BodyOf(p);
+			if (holder?.Dummy != null && Math.Max(p.minionSlots, SoldierNPC.SlotsPerMinion(staff)) > Math.Max(1, holder.Dummy.maxMinions) + LevyConstants.MinionSlotEpsilon)
+			{
+				if (TooBig.Add((staff.type, Math.Max(1, holder.Dummy.maxMinions)))) ModContent.GetInstance<Levy>()?.Logger.Info("Levy: " + staff.Name + "'s minion takes " + Math.Max(p.minionSlots, SoldierNPC.SlotsPerMinion(staff)) + " slots, more than a holder with " + holder.Dummy.maxMinions + " has: it ended itself, and is not cast at that many.");
+				return; // a minion that takes more slots than its holder has ends itself in its first update, as it does for a player with those slots (Ares' Exoskeleton's cannons at 1 slot): that says nothing about the staff, and a holder with more slots must still get the real minion
+			}
 			int root = staff.shoot;
 			if (age >= LevyConstants.ModdedMinionShortLifeTicks) { ShortLives[root] = 0; return; }
 			int n = ShortLives.GetValueOrDefault(root) + 1;

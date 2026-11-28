@@ -2030,87 +2030,351 @@ function capWake(x, s) {   // naval wake foam, ported convention
   x.save(); x.globalAlpha = .5; x.fillStyle = '#eaf6ff';
   x.fillRect(-s * 3.2, s * .42, s * .48, s * .08); x.fillRect(s * 2.9, s * .28, s * .5, s * .07); x.restore();
 }
+/* ---- GROUND-VEHICLE ART KIT — shared parts for the player ground vehicles: tracks, tyres, skirts, barrels. Each art draws its dropped-shadow silhouette first, calls gvNS, then paints detail with the shadow off. ---- */
+const GV_DK = '#12151a', GV_MD = '#3b424b', GV_LT = '#8c97a5', GV_PL = '#e04dff';
+function gvNS(x) { x.shadowColor = 'rgba(0,0,0,0)'; x.shadowBlur = 0; x.shadowOffsetX = 0; x.shadowOffsetY = 0; }
+function gvLw(x, s, k) { x.lineWidth = Math.max(s * (k || .03), .35); }
+function gvCirc(x, cx, cy, r, f) { x.fillStyle = f; x.beginPath(); x.arc(cx, cy, r, 0, 6.2832); x.fill(); }
+function gvPoly(x, f, s, p) { x.fillStyle = f; x.beginPath(); x.moveTo(p[0] * s, p[1] * s); for (let i = 2; i < p.length; i += 2) x.lineTo(p[i] * s, p[i + 1] * s); x.closePath(); x.fill(); }
+function gvGlow(x, s, on) { if (on) { x.shadowColor = GV_PL; x.shadowBlur = Math.max(s * .22, 1); } else { x.shadowColor = 'rgba(0,0,0,0)'; x.shadowBlur = 0; } }
+function gvBelt(x, s, x0, x1) { x.fillStyle = '#15181d'; rr(x, x0 * s, -.31 * s, (x1 - x0) * s, .39 * s, .19 * s); x.fill(); }   // track belt — carries the sprite's drop shadow
+function gvRun(x, s, x0, x1, n, r) {   // track links, sprocket, idler, road wheels and return rollers
+  x.fillStyle = '#2d343c'; for (let t = x0 + .1; t < x1 - .12; t += .14) { x.fillRect(t * s, .05 * s, .06 * s, .03 * s); x.fillRect(t * s, -.31 * s, .06 * s, .03 * s); }
+  const sx = (x0 + .2) * s, ix = (x1 - .18) * s, cy = -.1 * s;
+  for (let k = 0; k < 8; k++) { const th = k * .7854 + .2; gvCirc(x, sx + Math.cos(th) * .19 * s, cy + Math.sin(th) * .19 * s, .035 * s, '#0b0d10'); }
+  gvCirc(x, sx, cy, .17 * s, '#0b0d10'); gvCirc(x, sx, cy, .1 * s, '#4a525c'); gvCirc(x, sx, cy, .04 * s, GV_LT);
+  gvCirc(x, ix, cy, .15 * s, '#0b0d10'); gvCirc(x, ix, cy, .09 * s, '#4a525c'); gvCirc(x, ix, cy, .035 * s, GV_LT);
+  const a0 = x0 + .52, a1 = x1 - .48;
+  for (let i = 0; i < n; i++) { const cx = (a0 + (a1 - a0) * i / (n - 1)) * s; gvCirc(x, cx, cy, r * s, '#090b0e'); gvCirc(x, cx, cy, r * s * .62, '#475059'); gvCirc(x, cx - r * s * .12, cy - r * s * .12, r * s * .3, GV_LT); gvCirc(x, cx, cy, r * s * .14, '#1c2026'); }
+  for (let i = 0; i < 3; i++) { const cx = (x0 + .6 + (x1 - x0 - 1.2) * i / 2) * s; gvCirc(x, cx, -.275 * s, .045 * s, '#0b0d10'); gvCirc(x, cx, -.275 * s, .022 * s, '#7d8793'); }   // return rollers
+}
+function gvSkirt(x, s, x0, x1, segs) {   // hinged side-armour skirt: panels, lit top edge, shaded foot, rivets
+  const w = (x1 - x0) / segs, y0 = -.41 * s, h = .21 * s;
+  for (let i = 0; i < segs; i++) {
+    const sx0 = (x0 + i * w) * s, pw = w * s - .035 * s;
+    x.fillStyle = INK; rr(x, sx0, y0, pw, h, .03 * s); x.fill();
+    x.fillStyle = HI(); x.fillRect(sx0 + .02 * s, y0, pw - .04 * s, .035 * s);
+    x.fillStyle = LO(); x.fillRect(sx0, y0 + h - .06 * s, pw, .06 * s);
+    x.fillStyle = GV_DK; x.fillRect(sx0 + .03 * s, y0 + .09 * s, .028 * s, .028 * s); x.fillRect(sx0 + pw - .06 * s, y0 + .09 * s, .028 * s, .028 * s);
+  }
+}
+function gvTyre(x, s, cx, R) {   // truck tyre: tread notches, rim, lug nuts
+  gvCirc(x, cx, -R * s + .06 * s, R * s, '#090b0e'); const cy = -R * s + .06 * s;
+  x.fillStyle = '#1f242a'; for (let k = 0; k < 12; k++) { const th = k * .5236; gvCirc(x, cx + Math.cos(th) * R * s * .92, cy + Math.sin(th) * R * s * .92, R * s * .08, '#1f242a'); }
+  gvCirc(x, cx, cy, R * s * .58, '#4a525c'); gvCirc(x, cx - R * s * .1, cy - R * s * .1, R * s * .3, GV_LT); gvCirc(x, cx, cy, R * s * .15, '#1c2026');
+  for (let k = 0; k < 5; k++) { const th = k * 1.2566; gvCirc(x, cx + Math.cos(th) * R * s * .38, cy + Math.sin(th) * R * s * .38, R * s * .06, '#0b0d10'); }
+}
+function gvBarrel(x, s, len, th, oy, o) {   // one gun barrel along +x from the pivot: sleeve, fume extractor, muzzle brake (or plasma coils). o = { p: plasma }
+  const t = th * s, y = oy * s, L = len * s;
+  x.fillStyle = INK; x.fillRect(0, y - t / 2, L, t);
+  x.fillStyle = HI(); x.fillRect(0, y - t / 2, L, t * .26); x.fillStyle = LO(); x.fillRect(0, y + t * .2, L, t * .3);
+  x.fillStyle = INK; x.fillRect(.22 * s, y - t * .64, L * .5, t * 1.28); x.fillStyle = HI(); x.fillRect(.22 * s, y - t * .64, L * .5, t * .24); x.fillStyle = LO(); x.fillRect(.22 * s, y + t * .26, L * .5, t * .38);   // thermal sleeve
+  x.fillStyle = GV_DK; x.globalAlpha = .45; for (let k = 1; k < 3; k++) x.fillRect(.22 * s + L * .5 * k / 3, y - t * .64, Math.max(.02 * s, .3), t * 1.28); x.globalAlpha = 1;
+  const fx = L * .66; x.fillStyle = LO(); rr(x, fx, y - t * .95, .24 * s, t * 1.9, .05 * s); x.fill(); x.fillStyle = HI(); x.fillRect(fx + .02 * s, y - t * .95, .2 * s, t * .3); x.fillStyle = GV_DK; x.fillRect(fx + .08 * s, y - t * .7, .02 * s, t * 1.4);   // fume extractor
+  if (o && o.p) { gvGlow(x, s, true); x.fillStyle = GV_PL; for (let k = 0; k < 3; k++) x.fillRect(L * (.3 + k * .15) - .02 * s, y - t * .9, .04 * s, t * 1.8); gvCirc(x, L - .02 * s, y, t * .62, GV_PL); gvGlow(x, s, false); gvCirc(x, L - .02 * s, y, t * .26, '#fdeaff'); }
+  else { x.fillStyle = INK; x.fillRect(L - .22 * s, y - t * .78, .22 * s, t * 1.56); x.fillStyle = HI(); x.fillRect(L - .22 * s, y - t * .78, .22 * s, t * .26); x.fillStyle = GV_DK; x.fillRect(L - .16 * s, y - t * .7, .03 * s, t * 1.4); x.fillRect(L - .09 * s, y - t * .7, .03 * s, t * 1.4); x.fillRect(L - .02 * s, y - t * .45, .03 * s, t * .9); }   // double-baffle muzzle brake
+}
+function gvTank(x, s, a, o) {   /* o = { h: heavy, m: mammoth, p: plasma } — hull faces +x, gun pivot at (.45, turret roof + .18) */
+  const H = o.h, M = o.m, P = o.p, x0 = M ? -1.38 : H ? -1.34 : -1.3, x1 = M ? 1.5 : H ? 1.46 : 1.42, nw = M ? 8 : H ? 7 : 6, tt = M ? -1.24 : H ? -1.17 : -1.12;
+  const ang = typeof a === 'number' ? Math.max(-1.0, Math.min(.05, a)) : -.15, px = (M ? .5 : .45) * s, py = (tt + .18) * s, th = M ? .1 : H ? .125 : .12, bl = M ? 1.95 : H ? 1.9 : 1.8, tl = M ? -.86 : H ? -.8 : -.72, tr = M ? .9 : H ? .84 : .78;
+  /* --- silhouette underlay (carries the drop shadow) --- */
+  gvBelt(x, s, x0, x1);
+  gvPoly(x, INK, s, [-1.25, -.35, -1.25, -.68, .9, -.68, 1.5, -.4, 1.5, -.35]);   // sloped hull
+  gvPoly(x, INK, s, [tl, -.68, tl - .02, tt + .2, tl + .22, tt, .3, tt, tr - .16, tt + .1, tr, -.82, tr - .06, -.68]);   // turret with angled cheeks
+  x.fillStyle = INK; rr(x, (tl - .2) * s, (tt + .22) * s, .34 * s, (-.7 - tt - .22) * s, .04 * s); x.fill();   // rear bustle / ammo box
+  x.save(); x.translate(px, py); x.rotate(ang); if (M) { x.fillRect(0, -.17 * s, bl * s, .1 * s); x.fillRect(0, .07 * s, bl * s, .1 * s); } else x.fillRect(0, -th * s / 2, bl * s, th * s); x.restore();
+  gvNS(x);
+  /* --- running gear + armour skirt --- */
+  gvRun(x, s, x0, x1, nw, M ? .16 : .15);
+  gvSkirt(x, s, x0 + .22, x1 - .38, M ? 5 : 4);
+  /* --- hull shading, panels, details --- */
+  gvPoly(x, HI(), s, [-1.25, -.68, .9, -.68, 1.04, -.61, -1.25, -.61]);   // sunlit roof
+  x.globalAlpha = .55; gvPoly(x, HI(), s, [.9, -.68, 1.5, -.4, 1.5, -.46, 1.0, -.64]); x.globalAlpha = 1;   // sloped glacis facet
+  x.fillStyle = LO(); x.fillRect(-1.25 * s, -.48 * s, 2.66 * s, .07 * s);   // shaded sponson
+  gvLw(x, s, .025); x.strokeStyle = GV_DK; x.globalAlpha = .55; x.beginPath(); for (const lx of [-.95, -.4, .15, .62]) { x.moveTo(lx * s, -.66 * s); x.lineTo(lx * s, -.49 * s); } x.moveTo(1.0 * s, -.62 * s); x.lineTo(1.0 * s, -.45 * s); x.stroke(); x.globalAlpha = 1;   // panel seams
+  x.fillStyle = GV_DK; for (let k = 0; k < 3; k++) x.fillRect(-1.22 * s, (-.6 + k * .05) * s, .3 * s, .028 * s);   // engine louvres
+  x.fillStyle = '#0b0d10'; x.fillRect((x0 - .1) * s, -.6 * s, .16 * s, .08 * s); x.fillStyle = GV_MD; x.fillRect((x0 - .1) * s, -.6 * s, .16 * s, .025 * s);   // exhaust stub
+  x.fillStyle = LO(); rr(x, .62 * s, -.77 * s, .2 * s, .1 * s, .04 * s); x.fill(); x.fillStyle = HI(); x.fillRect(.64 * s, -.77 * s, .16 * s, .025 * s);   // driver hatch
+  x.fillStyle = GV_DK; x.fillRect(-1.16 * s, -.76 * s, .4 * s, .09 * s); x.fillStyle = GV_MD; for (let k = 0; k < 5; k++) x.fillRect((-1.14 + k * .08) * s, -.75 * s, .045 * s, .07 * s);   // engine grille deck
+  x.fillStyle = '#ffe9a8'; x.fillRect((x1 - .12) * s, -.47 * s, .08 * s, .05 * s); x.fillStyle = TRIM(); x.fillRect(-1.2 * s, -.62 * s, .05 * s, .05 * s);   // headlight + rear marker
+  if (H || M) { x.fillStyle = LO(); for (let c = 0; c < 4; c++) x.fillRect((.98 + c * .11) * s, (-.665 + c * .06) * s, .09 * s, .06 * s); x.fillStyle = HI(); for (let c = 0; c < 4; c++) x.fillRect((.98 + c * .11) * s, (-.665 + c * .06) * s, .09 * s, .018 * s); }   // reactive-armour bricks on the glacis
+  /* --- turret --- */
+  x.globalAlpha = .55; gvPoly(x, LO(), s, [tl, -.68, tr - .06, -.68, tr, -.82, tl - .02, -.8]); x.globalAlpha = 1;   // shaded lower turret
+  x.fillStyle = HI(); x.fillRect((tl + .2) * s, tt * s, (.3 - tl - .2) * s, .07 * s); gvPoly(x, HI(), s, [.3, tt, tr - .16, tt + .1, tr - .2, tt + .17, .3, tt + .07]);   // lit roof
+  x.globalAlpha = .28; gvPoly(x, HI(), s, [.3, tt + .07, tr - .2, tt + .17, tr - .02, -.84, .38, -.84]); x.globalAlpha = 1;   // cheek facet
+  gvLw(x, s, .025); x.strokeStyle = GV_DK; x.globalAlpha = .5; x.beginPath(); x.moveTo(-.3 * s, (tt + .08) * s); x.lineTo(-.34 * s, -.7 * s); x.moveTo(.3 * s, (tt + .08) * s); x.lineTo(.34 * s, -.74 * s); x.stroke(); x.globalAlpha = 1;
+  x.fillStyle = HI(); x.fillRect((tl - .2) * s, (tt + .22) * s, .34 * s, .035 * s); x.fillStyle = GV_DK; x.fillRect((tl - .14) * s, (tt + .32) * s, .22 * s, .02 * s); x.fillRect((tl - .14) * s, (tt + .4) * s, .22 * s, .02 * s);   // bustle: lit lid + strap seams
+  x.fillStyle = TRIM(); x.fillRect((tl + .1) * s, -.86 * s, (tr - tl - .35) * s, .055 * s);   // ID stripe
+  if (H || M) { x.fillStyle = LO(); for (let r = 0; r < 2; r++) for (let c = 0; c < 3; c++) x.fillRect((.4 + c * .1) * s, (tt + .26 + r * .13) * s, .08 * s, .1 * s); x.fillStyle = HI(); for (let c = 0; c < 3; c++) x.fillRect((.4 + c * .1) * s, (tt + .26) * s, .08 * s, .022 * s); }   // reactive blocks on the cheek
+  x.fillStyle = GLASS; x.fillRect(.18 * s, (tt + .045) * s, .13 * s, .06 * s); x.fillStyle = '#d8f2ff'; x.fillRect(.19 * s, (tt + .05) * s, .04 * s, .02 * s);   // gunner sight
+  gvCirc(x, -.12 * s, tt * s, .17 * s, LO()); x.beginPath(); x.arc(-.12 * s, tt * s, .17 * s, Math.PI * 1.1, Math.PI * 1.9); gvLw(x, s, .035); x.strokeStyle = HI(); x.stroke();   // commander cupola
+  x.fillStyle = GLASS; for (let k = -2; k <= 2; k++) x.fillRect((-.12 + k * .055) * s - .02 * s, (tt - .09) * s, .035 * s, .045 * s);   // vision blocks
+  x.fillStyle = GV_DK; x.fillRect(-.1 * s, (tt - .2) * s, .26 * s, .035 * s); x.fillRect(-.16 * s, (tt - .22) * s, .06 * s, .09 * s);   // roof machine gun
+  x.fillStyle = LO(); rr(x, -.52 * s, (tt - .03) * s, .22 * s, .06 * s, .02 * s); x.fill(); x.fillStyle = HI(); x.fillRect(-.5 * s, (tt - .03) * s, .18 * s, .02 * s);   // loader hatch
+  x.fillStyle = GV_DK; for (let k = 0; k < 3; k++) x.fillRect((tr - .08) * s, (tt + .27 + k * .12) * s, .05 * s, .07 * s); x.fillStyle = GV_MD; for (let k = 0; k < 3; k++) x.fillRect((tr - .08) * s, (tt + .27 + k * .12) * s, .05 * s, .02 * s);   // smoke dischargers
+  gvLw(x, s, .02); x.strokeStyle = GV_LT; x.beginPath(); x.moveTo((tl + .06) * s, (tt + .08) * s); x.lineTo((tl - .12) * s, (tt - .62) * s); x.stroke(); gvCirc(x, (tl - .12) * s, (tt - .62) * s, .03 * s, TRIM());   // whip antenna
+  x.fillStyle = TRIM(); x.fillRect((tr - .12) * s, (tt + .04) * s, .04 * s, .04 * s);   // turret marker light
+  if (P) { gvGlow(x, s, true); x.fillStyle = GV_PL; for (let k = 0; k < 4; k++) x.fillRect((-.62 + k * .1) * s, -.93 * s, .055 * s, .05 * s); for (let k = 0; k < 4; k++) x.fillRect((-1.0 + k * .12) * s, -.56 * s, .07 * s, .03 * s); gvGlow(x, s, false); x.fillStyle = '#fdeaff'; for (let k = 0; k < 4; k++) x.fillRect((-.61 + k * .1) * s, -.92 * s, .03 * s, .018 * s); }   // plasma vents
+  /* --- gun + mantlet (aimed) --- */
+  x.save(); x.translate(px, py); x.rotate(ang);
+  if (M) { gvBarrel(x, s, bl, th, -.12, { p: P }); gvBarrel(x, s, bl, th, .12, { p: P }); } else gvBarrel(x, s, bl, th, 0, { p: P });
+  const mh = M ? .46 : H ? .38 : .33; x.fillStyle = INK; rr(x, -.14 * s, -mh * s / 2, .3 * s, mh * s, .07 * s); x.fill(); x.fillStyle = HI(); x.fillRect(-.1 * s, -mh * s / 2, .22 * s, .05 * s); x.fillStyle = LO(); x.fillRect(-.14 * s, mh * s * .2, .3 * s, mh * s * .3); x.fillStyle = GV_DK; x.fillRect(.12 * s, -mh * s * .3, .03 * s, mh * s * .6);   // mantlet
+  x.restore();
+}
+function gvAA(x, s, a, P) {   /* Hailstorm: tracked flak platform — spinning search-radar dish, four-barrel rotary cannon, ammo drum + feed. Aim pivot (.25,-.85). */
+  const ang = typeof a === 'number' ? Math.max(-1.5, Math.min(0, a)) : -.5, px = .25 * s, py = -.85 * s, ph = animClock * .0035, c1 = Math.cos(ph);
+  gvBelt(x, s, -1.12, 1.12);
+  gvPoly(x, INK, s, [-1.05, -.35, -1.05, -.64, .8, -.64, 1.05, -.45, 1.05, -.35]);   // low hull
+  gvPoly(x, INK, s, [-.7, -.64, -.66, -.96, .5, -.96, .66, -.8, .68, -.64]);   // turret box
+  x.fillStyle = INK; x.fillRect(-.82 * s, -1.38 * s, .1 * s, .5 * s);   // radar mast
+  x.save(); x.translate(px, py); x.rotate(ang); x.fillRect(-.2 * s, -.24 * s, .62 * s, .46 * s); x.fillRect(0, -.14 * s, 1.5 * s, .28 * s); x.restore();
+  gvNS(x);
+  gvRun(x, s, -1.12, 1.12, 5, .15); gvSkirt(x, s, -.9, .62, 4);
+  gvPoly(x, HI(), s, [-1.05, -.64, .8, -.64, .94, -.57, -1.05, -.57]);
+  x.fillStyle = LO(); x.fillRect(-1.05 * s, -.48 * s, 2.1 * s, .07 * s);
+  gvLw(x, s, .025); x.strokeStyle = GV_DK; x.globalAlpha = .55; x.beginPath(); for (const lx of [-.7, -.2, .35]) { x.moveTo(lx * s, -.62 * s); x.lineTo(lx * s, -.5 * s); } x.stroke(); x.globalAlpha = 1;
+  x.fillStyle = GV_DK; for (let k = 0; k < 3; k++) x.fillRect(-1.0 * s, (-.6 + k * .045) * s, .26 * s, .026 * s);
+  x.fillStyle = '#ffe9a8'; x.fillRect(.95 * s, -.5 * s, .07 * s, .05 * s);
+  /* turret shading + hatches */
+  gvPoly(x, HI(), s, [-.66, -.96, .5, -.96, .56, -.9, -.68, -.9]);
+  x.globalAlpha = .5; gvPoly(x, LO(), s, [-.7, -.64, .68, -.64, .67, -.72, -.69, -.72]); x.globalAlpha = 1;
+  x.fillStyle = TRIM(); x.fillRect(-.58 * s, -.68 * s, 1.1 * s, .05 * s);   // ID stripe
+  x.strokeStyle = GV_DK; x.globalAlpha = .5; x.beginPath(); x.moveTo(-.22 * s, -.94 * s); x.lineTo(-.22 * s, -.7 * s); x.moveTo(.1 * s, -.92 * s); x.lineTo(.1 * s, -.7 * s); x.stroke(); x.globalAlpha = 1;
+  x.fillStyle = LO(); rr(x, -.55 * s, -1.0 * s, .28 * s, .07 * s, .025 * s); x.fill(); x.fillStyle = HI(); x.fillRect(-.53 * s, -1.0 * s, .24 * s, .02 * s);   // crew hatch
+  x.fillStyle = GLASS; x.fillRect(.18 * s, -.9 * s, .16 * s, .08 * s); x.fillStyle = '#d8f2ff'; x.fillRect(.2 * s, -.89 * s, .05 * s, .025 * s);   // fire-control sight
+  gvCirc(x, -.02 * s, -1.0 * s, .15 * s, LO()); gvCirc(x, -.02 * s, -1.0 * s, .1 * s, INK); gvCirc(x, -.05 * s, -1.03 * s, .04 * s, HI());   // ammo drum
+  gvLw(x, s, .03); x.strokeStyle = GV_DK; x.beginPath(); x.moveTo(.1 * s, -1.0 * s); x.quadraticCurveTo(.3 * s, -1.2 * s, .38 * s, -.98 * s); x.stroke();   // belt feed
+  x.fillStyle = HI(); x.fillRect(-.82 * s, -1.38 * s, .03 * s, .5 * s); x.fillStyle = GV_DK; x.fillRect(-.86 * s, -1.0 * s, .18 * s, .05 * s);   // mast + cross-brace
+  x.save(); x.translate(-.77 * s, -1.4 * s); x.scale(c1, 1);   // SEARCH RADAR — dish turns about its mast (width follows cos)
+  x.fillStyle = INK; x.beginPath(); x.ellipse(0, 0, .3 * s, .13 * s, 0, 0, 6.2832); x.fill(); x.fillStyle = HI(); x.beginPath(); x.ellipse(0, -.03 * s, .26 * s, .07 * s, 0, Math.PI, 0); x.fill();
+  gvLw(x, s, .02); x.strokeStyle = GV_DK; x.beginPath(); x.moveTo(-.28 * s, 0); x.lineTo(.28 * s, 0); x.stroke(); x.restore();
+  gvCirc(x, -.77 * s, -1.4 * s, .035 * s, GV_LT); x.fillStyle = TRIM(); x.fillRect(-.79 * s, -1.47 * s, .04 * s, .04 * s);
+  gvLw(x, s, .02); x.strokeStyle = GV_LT; x.beginPath(); x.moveTo(.5 * s, -.94 * s); x.lineTo(.6 * s, -1.5 * s); x.stroke();   // whip
+  if (P) { gvGlow(x, s, true); x.fillStyle = GV_PL; for (let k = 0; k < 3; k++) x.fillRect((-.55 + k * .12) * s, -.8 * s, .06 * s, .05 * s); gvGlow(x, s, false); }
+  /* aimed rotary cannon */
+  x.save(); x.translate(px, py); x.rotate(ang);
+  x.fillStyle = INK; rr(x, -.2 * s, -.24 * s, .62 * s, .46 * s, .06 * s); x.fill(); x.fillStyle = HI(); x.fillRect(-.16 * s, -.24 * s, .54 * s, .05 * s); x.fillStyle = LO(); x.fillRect(-.2 * s, .1 * s, .62 * s, .12 * s); x.fillStyle = GV_DK; x.fillRect(.08 * s, -.18 * s, .03 * s, .34 * s);   // gun cradle housing
+  const spin = animClock * .02, bars = [];
+  for (let k = 0; k < 4; k++) { const th = spin + k * 1.5708; bars.push([Math.cos(th), Math.sin(th) * .095]); }
+  bars.sort((p, q) => p[0] - q[0]);
+  for (const b of bars) { const y = b[1] * s / .095 * .095; x.fillStyle = b[0] > 0 ? INK : LO(); x.fillRect(.36 * s, y - .036 * s, 1.0 * s, .072 * s); x.fillStyle = b[0] > 0 ? HI() : GV_MD; x.fillRect(.36 * s, y - .036 * s, 1.0 * s, .02 * s); }   // orbiting barrels
+  x.fillStyle = INK; x.fillRect(.4 * s, -.17 * s, .18 * s, .34 * s); x.fillRect(.84 * s, -.16 * s, .1 * s, .32 * s); x.fillStyle = HI(); x.fillRect(.4 * s, -.17 * s, .18 * s, .035 * s); x.fillRect(.84 * s, -.16 * s, .1 * s, .035 * s);   // barrel clamps
+  x.fillStyle = INK; rr(x, 1.26 * s, -.17 * s, .16 * s, .34 * s, .04 * s); x.fill(); x.fillStyle = GV_DK; x.fillRect(1.36 * s, -.13 * s, .06 * s, .26 * s); x.fillStyle = HI(); x.fillRect(1.26 * s, -.17 * s, .16 * s, .035 * s);   // muzzle ring
+  if (P) { gvGlow(x, s, true); x.fillStyle = GV_PL; for (let k = 0; k < 3; k++) x.fillRect((.62 + k * .2) * s, -.2 * s, .035 * s, .4 * s); gvCirc(x, 1.4 * s, 0, .07 * s, GV_PL); gvGlow(x, s, false); gvCirc(x, 1.4 * s, 0, .03 * s, '#fdeaff'); }
+  x.restore();
+}
+function gvSpg(x, s, P) {   /* Thunder: tracked self-propelled howitzer — boxy rear casemate, recoil-spade, long cradled gun at fixed elevation. */
+  const px = -.2 * s, py = -.84 * s, ang = -.62, L = 2.65;
+  gvBelt(x, s, -1.36, 1.32);
+  gvPoly(x, INK, s, [-1.3, -.35, -1.3, -.6, 1.0, -.6, 1.3, -.42, 1.3, -.35]);   // low hull
+  gvPoly(x, INK, s, [-1.0, -.6, -1.0, -1.08, -.12, -1.08, .12, -.92, .12, -.6]);   // boxy casemate
+  gvPoly(x, INK, s, [-1.3, -.4, -1.62, -.1, -1.68, -.14, -1.44, -.52]);   // recoil spade
+  x.save(); x.translate(px, py); x.rotate(ang); x.fillStyle = INK; x.fillRect(0, -.08 * s, L * s, .16 * s); x.restore();
+  gvNS(x);
+  gvRun(x, s, -1.36, 1.32, 6, .15); gvSkirt(x, s, -1.14, .94, 4);
+  gvPoly(x, HI(), s, [-1.3, -.6, 1.0, -.6, 1.16, -.52, -1.3, -.52]);
+  x.fillStyle = LO(); x.fillRect(-1.3 * s, -.47 * s, 2.6 * s, .06 * s);
+  x.fillStyle = GV_DK; for (let k = 0; k < 3; k++) x.fillRect(.3 * s, (-.57 + k * .045) * s, .4 * s, .026 * s);   // engine louvres (forward deck)
+  x.fillStyle = '#ffe9a8'; x.fillRect(1.22 * s, -.47 * s, .07 * s, .05 * s);
+  x.fillStyle = HI(); x.beginPath(); x.moveTo(-1.62 * s, -.1 * s); x.lineTo(-1.68 * s, -.14 * s); x.lineTo(-1.44 * s, -.52 * s); x.lineTo(-1.4 * s, -.46 * s); x.closePath(); x.globalAlpha = .55; x.fill(); x.globalAlpha = 1;   // spade lit edge
+  /* casemate shading */
+  gvPoly(x, HI(), s, [-1.0, -1.08, -.12, -1.08, .02, -1.0, -1.0, -1.0]);
+  x.globalAlpha = .55; gvPoly(x, LO(), s, [-1.0, -.6, .12, -.6, .12, -.7, -1.0, -.7]); x.globalAlpha = 1;
+  x.globalAlpha = .3; gvPoly(x, HI(), s, [-.12, -1.08, .12, -.92, .12, -.8, -.12, -.96]); x.globalAlpha = 1;
+  gvLw(x, s, .025); x.strokeStyle = GV_DK; x.globalAlpha = .55; x.beginPath(); x.moveTo(-.55 * s, -1.06 * s); x.lineTo(-.55 * s, -.62 * s); x.moveTo(-.9 * s, -.8 * s); x.lineTo(-.15 * s, -.8 * s); x.stroke(); x.globalAlpha = 1;
+  x.fillStyle = TRIM(); x.fillRect(-.92 * s, -.9 * s, .7 * s, .055 * s);   // ID stripe
+  x.fillStyle = GV_DK; rr(x, -.96 * s, -.74 * s, .3 * s, .1 * s, .02 * s); x.fill(); x.fillStyle = GV_MD; x.fillRect(-.94 * s, -.73 * s, .26 * s, .025 * s);   // rear ammo door
+  x.fillStyle = LO(); rr(x, -.78 * s, -1.14 * s, .22 * s, .07 * s, .025 * s); x.fill(); x.fillStyle = HI(); x.fillRect(-.76 * s, -1.14 * s, .18 * s, .02 * s);   // crew hatch
+  gvCirc(x, -.3 * s, -1.08 * s, .13 * s, LO()); gvLw(x, s, .03); x.beginPath(); x.arc(-.3 * s, -1.08 * s, .13 * s, Math.PI * 1.1, Math.PI * 1.9); x.strokeStyle = HI(); x.stroke();   // commander cupola
+  x.fillStyle = GV_DK; x.fillRect(-.28 * s, -1.28 * s, .2 * s, .03 * s); x.fillRect(-.33 * s, -1.3 * s, .05 * s, .09 * s);   // MG
+  x.fillStyle = GLASS; for (let k = -1; k <= 1; k++) x.fillRect((-.3 + k * .06) * s - .015 * s, -1.15 * s, .03 * s, .04 * s);
+  gvLw(x, s, .02); x.strokeStyle = GV_LT; x.beginPath(); x.moveTo(-.9 * s, -1.08 * s); x.lineTo(-1.04 * s, -1.66 * s); x.stroke(); gvCirc(x, -1.04 * s, -1.66 * s, .03 * s, TRIM());   // whip antenna
+  x.fillStyle = INK; rr(x, .02 * s, -.99 * s, .22 * s, .3 * s, .04 * s); x.fill(); x.fillStyle = LO(); x.fillRect(.02 * s, -.74 * s, .22 * s, .05 * s);   // gun-port shield
+  /* the howitzer */
+  x.save(); x.translate(px, py); x.rotate(ang);
+  x.fillStyle = INK; rr(x, -.2 * s, -.2 * s, .75 * s, .4 * s, .06 * s); x.fill(); x.fillStyle = HI(); x.fillRect(-.16 * s, -.2 * s, .65 * s, .05 * s); x.fillStyle = LO(); x.fillRect(-.2 * s, .1 * s, .75 * s, .1 * s);   // breech cradle
+  x.fillStyle = LO(); x.fillRect(.3 * s, -.19 * s, 1.0 * s, .04 * s); x.fillRect(.3 * s, .15 * s, 1.0 * s, .04 * s); x.fillStyle = GV_MD; x.fillRect(.3 * s, -.19 * s, 1.0 * s, .015 * s);   // recoil cylinders
+  gvBarrel(x, s, L, .15, 0, { p: P });
+  x.restore();
+}
+function gvMlrs(x, s) {   /* Tempest: 8x8 rocket truck — armoured cab forward (+x), bundle of launch tubes cocked up over the bed, rear stabiliser jacks. */
+  const wx = [-.95, -.55, .45, .85];
+  gvPoly(x, INK, s, [-1.2, -.42, -1.2, -.58, .5, -.58, .5, -.42]);   // chassis deck
+  gvPoly(x, INK, s, [.45, -.42, .45, -.98, .78, -1.02, 1.04, -.76, 1.2, -.7, 1.2, -.42]);   // cab
+  for (const w of wx) gvCirc(x, w * s, -.11 * s, .17 * s, '#090b0e');
+  gvPoly(x, INK, s, [-1.2, -.5, -1.38, -.12, -1.3, -.1, -1.1, -.4]);   // stabiliser jack
+  x.save(); x.translate(-1.0 * s, -.58 * s); x.rotate(-.42); x.fillStyle = INK; x.fillRect(0, -.34 * s, 1.95 * s, .64 * s); x.restore();
+  gvNS(x);
+  for (const w of wx) gvTyre(x, s, w * s, .17);
+  x.fillStyle = LO(); x.fillRect(-1.2 * s, -.5 * s, 1.72 * s, .08 * s); x.fillStyle = HI(); x.fillRect(-1.2 * s, -.58 * s, 1.72 * s, .035 * s);   // frame rail + lit deck
+  x.fillStyle = INK; for (const w of wx) { x.beginPath(); x.arc(w * s, -.11 * s, .22 * s, Math.PI * 1.04, Math.PI * 1.96); x.lineTo(w * s + .22 * s, -.4 * s); x.lineTo(w * s - .22 * s, -.4 * s); x.closePath(); x.fill(); }   // wheel arches
+  x.fillStyle = HI(); for (const w of wx) x.fillRect((w - .17) * s, -.4 * s, .34 * s, .025 * s);
+  for (const w of wx) gvTyre(x, s, w * s, .165);
+  /* cab */
+  x.globalAlpha = .5; gvPoly(x, LO(), s, [.45, -.42, 1.2, -.42, 1.2, -.54, .45, -.54]); x.globalAlpha = 1;
+  gvPoly(x, HI(), s, [.45, -.98, .78, -1.02, .86, -.97, .45, -.93]);
+  gvPoly(x, GLASS, s, [.82, -.96, .98, -.78, 1.05, -.76, .9, -.96, .82, -.96]); gvPoly(x, GLASS, s, [.54, -.9, .78, -.94, .8, -.7, .54, -.7]);   // windscreen + side window
+  x.fillStyle = '#d8f2ff'; x.globalAlpha = .55; x.fillRect(.57 * s, -.88 * s, .08 * s, .03 * s); x.globalAlpha = 1;
+  gvLw(x, s, .025); x.strokeStyle = GV_DK; x.globalAlpha = .6; x.beginPath(); x.moveTo(.78 * s, -.7 * s); x.lineTo(.78 * s, -.45 * s); x.stroke(); x.globalAlpha = 1;
+  x.fillStyle = '#ffe9a8'; x.fillRect(1.16 * s, -.62 * s, .06 * s, .06 * s); x.fillStyle = GV_DK; x.fillRect(1.14 * s, -.5 * s, .1 * s, .06 * s);   // headlight + bumper
+  x.fillStyle = GV_DK; x.fillRect(.42 * s, -1.1 * s, .05 * s, .5 * s); x.fillStyle = GV_MD; x.fillRect(.42 * s, -1.1 * s, .05 * s, .03 * s);   // exhaust stack
+  x.fillStyle = TRIM(); x.fillRect(.46 * s, -.55 * s, .6 * s, .05 * s);
+  gvLw(x, s, .02); x.strokeStyle = GV_LT; x.beginPath(); x.moveTo(.6 * s, -.97 * s); x.lineTo(.5 * s, -1.5 * s); x.stroke();   // whip
+  /* launcher: hinged tube bundle */
+  x.save(); x.translate(-1.0 * s, -.58 * s); x.rotate(-.42);
+  x.fillStyle = INK; x.fillRect(0, -.34 * s, 1.95 * s, .64 * s);
+  for (let q = 0; q < 3; q++) { const ty = (-.32 + q * .21) * s; x.fillStyle = q === 0 ? HI() : q === 1 ? INK : LO(); x.fillRect(.04 * s, ty, 1.85 * s, .19 * s); x.fillStyle = GV_DK; x.fillRect(.04 * s, ty + .17 * s, 1.85 * s, .02 * s); x.fillStyle = '#e9eef3'; x.fillRect(1.88 * s, ty + .03 * s, .06 * s, .13 * s); x.fillStyle = '#ffb24a'; x.fillRect(1.94 * s, ty + .05 * s, .05 * s, .09 * s); }   // three stacked tubes with rocket noses
+  x.fillStyle = GV_MD; for (let k = 0; k < 4; k++) { x.fillRect((.3 + k * .5) * s, -.36 * s, .06 * s, .72 * s); x.fillStyle = HI(); x.fillRect((.3 + k * .5) * s, -.36 * s, .06 * s, .04 * s); x.fillStyle = GV_MD; }   // clamp bands
+  x.fillStyle = TRIM(); x.fillRect(.1 * s, .24 * s, 1.7 * s, .035 * s);
+  x.fillStyle = GV_DK; x.fillRect(-.06 * s, -.3 * s, .1 * s, .58 * s);   // breech frame
+  x.restore();
+  gvLw(x, s, .05); x.strokeStyle = GV_LT; x.beginPath(); x.moveTo(-.5 * s, -.55 * s); x.lineTo(-.15 * s, -.95 * s); x.stroke();   // elevation ram
+  gvLw(x, s, .05); x.strokeStyle = GV_DK; x.beginPath(); x.moveTo(-1.22 * s, -.4 * s); x.lineTo(-1.34 * s, -.12 * s); x.stroke();
+}
+function gvSam(x, s) {   /* Aegis-AA: 8x8 SAM truck — four-canister rack tilted to launch, hydraulic ram, folded phased-array radar mast. */
+  const wx = [-.85, -.45, .4, .8];
+  gvPoly(x, INK, s, [-1.1, -.42, -1.1, -.58, .45, -.58, .45, -.42]);
+  gvPoly(x, INK, s, [.4, -.42, .4, -.92, .7, -.96, .94, -.72, 1.1, -.66, 1.1, -.42]);   // cab
+  for (const w of wx) gvCirc(x, w * s, -.11 * s, .17 * s, '#090b0e');
+  x.fillStyle = INK; x.fillRect(-1.0 * s, -1.34 * s, .2 * s, .78 * s);   // radar tower
+  x.save(); x.translate(-.5 * s, -.58 * s); x.rotate(-1.05); x.fillRect(0, -.34 * s, 1.95 * s, .68 * s); x.restore();
+  gvNS(x);
+  for (const w of wx) gvTyre(x, s, w * s, .17);
+  x.fillStyle = INK; for (const w of wx) { x.beginPath(); x.arc(w * s, -.11 * s, .22 * s, Math.PI * 1.04, Math.PI * 1.96); x.lineTo(w * s + .22 * s, -.4 * s); x.lineTo(w * s - .22 * s, -.4 * s); x.closePath(); x.fill(); }
+  x.fillStyle = HI(); for (const w of wx) x.fillRect((w - .17) * s, -.4 * s, .34 * s, .025 * s);
+  for (const w of wx) gvTyre(x, s, w * s, .165);
+  x.fillStyle = LO(); x.fillRect(-1.1 * s, -.5 * s, 1.55 * s, .08 * s); x.fillStyle = HI(); x.fillRect(-1.1 * s, -.58 * s, 1.55 * s, .035 * s);
+  /* cab */
+  x.globalAlpha = .5; gvPoly(x, LO(), s, [.4, -.42, 1.1, -.42, 1.1, -.54, .4, -.54]); x.globalAlpha = 1;
+  gvPoly(x, HI(), s, [.4, -.92, .7, -.96, .78, -.91, .4, -.87]);
+  gvPoly(x, GLASS, s, [.74, -.9, .88, -.74, .95, -.72, .82, -.9]); gvPoly(x, GLASS, s, [.48, -.84, .7, -.88, .72, -.66, .48, -.66]);
+  x.fillStyle = '#d8f2ff'; x.globalAlpha = .55; x.fillRect(.5 * s, -.82 * s, .08 * s, .03 * s); x.globalAlpha = 1;
+  x.fillStyle = '#ffe9a8'; x.fillRect(1.05 * s, -.6 * s, .06 * s, .06 * s); x.fillStyle = GV_DK; x.fillRect(1.04 * s, -.49 * s, .1 * s, .06 * s);
+  x.fillStyle = TRIM(); x.fillRect(.42 * s, -.54 * s, .56 * s, .05 * s);
+  /* radar mast: flat phased-array panel with a lit grid */
+  x.fillStyle = HI(); x.fillRect(-1.0 * s, -1.34 * s, .035 * s, .78 * s); x.fillStyle = GV_DK; x.fillRect(-1.0 * s, -1.1 * s, .2 * s, .04 * s);
+  gvPoly(x, INK, s, [-1.06, -1.5, -.72, -1.5, -.72, -1.18, -1.06, -1.18]); gvPoly(x, '#0e2530', s, [-1.03, -1.47, -.75, -1.47, -.75, -1.21, -1.03, -1.21]);
+  gvLw(x, s, .012); x.strokeStyle = '#4fa9c8'; x.globalAlpha = .75; x.beginPath(); for (let k = 1; k < 4; k++) { x.moveTo((-1.03 + k * .07) * s, -1.47 * s); x.lineTo((-1.03 + k * .07) * s, -1.21 * s); x.moveTo(-1.03 * s, (-1.47 + k * .065) * s); x.lineTo(-.75 * s, (-1.47 + k * .065) * s); } x.stroke(); x.globalAlpha = 1;
+  x.fillStyle = TRIM(); x.fillRect(-.9 * s, -1.56 * s, .06 * s, .06 * s);
+  /* tilted canister rack */
+  x.save(); x.translate(-.5 * s, -.58 * s); x.rotate(-1.05);
+  x.fillStyle = INK; x.fillRect(0, -.34 * s, 1.95 * s, .68 * s);
+  for (let q = 0; q < 4; q++) { const ty = (-.32 + q * .16) * s; x.fillStyle = q === 0 ? HI() : q === 3 ? LO() : INK; rr(x, .06 * s, ty, 1.82 * s, .15 * s, .05 * s); x.fill(); x.fillStyle = GV_DK; x.fillRect(.06 * s, ty + .13 * s, 1.82 * s, .02 * s); x.fillStyle = '#e9eef3'; x.fillRect(1.82 * s, ty + .02 * s, .09 * s, .11 * s); x.fillStyle = '#d2643e'; x.fillRect(1.9 * s, ty + .04 * s, .04 * s, .07 * s); }   // four sealed canisters + end caps
+  x.fillStyle = GV_MD; for (let k = 0; k < 4; k++) { x.fillRect((.3 + k * .45) * s, -.36 * s, .06 * s, .72 * s); } x.fillStyle = TRIM(); x.fillRect(.1 * s, .3 * s, 1.6 * s, .03 * s); x.fillStyle = GV_DK; x.fillRect(-.06 * s, -.32 * s, .1 * s, .64 * s);
+  x.restore();
+  gvLw(x, s, .06); x.strokeStyle = GV_LT; x.beginPath(); x.moveTo(.02 * s, -.55 * s); x.lineTo(-.08 * s, -1.28 * s); x.stroke(); gvLw(x, s, .03); x.strokeStyle = GV_DK; x.stroke();   // hydraulic ram
+}
+function gvRail(x, s, a) {   /* Lance: heavy tracked railgun carriage — capacitor stacks, glowing field coils, twin rails. Aim pivot (-.25,-.95). */
+  const ang = typeof a === 'number' ? Math.max(-1.0, Math.min(.05, a)) : -.2, px = -.25 * s, py = -.95 * s;
+  gvBelt(x, s, -1.46, 1.46);
+  gvPoly(x, INK, s, [-1.4, -.38, -1.4, -.62, .7, -.62, 1.4, -.44, 1.4, -.38]);
+  gvPoly(x, INK, s, [-.6, -.62, -.52, -1.08, .3, -1.08, .52, -.9, .55, -.62]);   // armoured mount
+  x.fillStyle = INK; rr(x, -1.34 * s, -1.0 * s, .58 * s, .4 * s, .06 * s); x.fill();   // capacitor housing
+  x.save(); x.translate(px, py); x.rotate(ang); x.fillRect(0, -.13 * s, 3.2 * s, .27 * s); x.fillRect(-.2 * s, -.22 * s, .5 * s, .44 * s); x.restore();
+  gvNS(x);
+  gvRun(x, s, -1.46, 1.46, 6, .16); gvSkirt(x, s, -1.22, 1.0, 4);
+  gvPoly(x, HI(), s, [-1.4, -.62, .7, -.62, .84, -.55, -1.4, -.55]);
+  x.fillStyle = LO(); x.fillRect(-1.4 * s, -.5 * s, 2.8 * s, .07 * s);
+  gvLw(x, s, .025); x.strokeStyle = GV_DK; x.globalAlpha = .55; x.beginPath(); for (const lx of [-.8, -.2, .5]) { x.moveTo(lx * s, -.6 * s); x.lineTo(lx * s, -.51 * s); } x.stroke(); x.globalAlpha = 1;
+  x.fillStyle = '#ffe9a8'; x.fillRect(1.3 * s, -.5 * s, .07 * s, .05 * s); x.fillStyle = TRIM(); x.fillRect(.6 * s, -.56 * s, .6 * s, .04 * s);
+  gvPoly(x, HI(), s, [-.52, -1.08, .3, -1.08, .38, -1.0, -.54, -1.0]);
+  x.globalAlpha = .4; gvPoly(x, HI(), s, [.3, -1.08, .52, -.9, .55, -.8, .3, -.8]); x.globalAlpha = 1;
+  x.globalAlpha = .5; gvPoly(x, LO(), s, [-.6, -.62, .55, -.62, .54, -.72, -.6, -.72]); x.globalAlpha = 1;
+  /* capacitor stacks — three glowing cells */
+  x.fillStyle = LO(); x.fillRect(-1.34 * s, -.66 * s, .58 * s, .06 * s); x.fillStyle = HI(); x.fillRect(-1.34 * s, -1.0 * s, .58 * s, .035 * s);
+  for (let k = 0; k < 3; k++) { const cx = (-1.27 + k * .18) * s; x.fillStyle = GV_DK; rr(x, cx, -.95 * s, .13 * s, .3 * s, .04 * s); x.fill(); x.fillStyle = GV_MD; x.fillRect(cx + .01 * s, -.95 * s, .035 * s, .3 * s); x.fillStyle = '#3fc8f0'; x.shadowColor = '#3fc8f0'; x.shadowBlur = Math.max(s * .25, 1); x.globalAlpha = pulseA(.006, k * .9); x.fillRect(cx + .02 * s, -.9 * s, .09 * s, .05 * s); x.fillRect(cx + .02 * s, -.78 * s, .09 * s, .05 * s); x.globalAlpha = 1; gvNS(x); }
+  x.fillStyle = '#4ea8ff'; x.globalAlpha = pulseA(.006); x.fillRect(-.4 * s, -.82 * s, .6 * s, .06 * s); x.globalAlpha = 1;   // charging indicator bar
+  gvLw(x, s, .03); x.strokeStyle = GV_DK; x.beginPath(); x.moveTo(-.76 * s, -.85 * s); x.quadraticCurveTo(-.65 * s, -.7 * s, -.5 * s, -.8 * s); x.stroke();   // power cable
+  gvCirc(x, .1 * s, -.98 * s, .06 * s, GV_DK); gvCirc(x, .1 * s, -.98 * s, .03 * s, TRIM());
+  x.fillStyle = GLASS; x.fillRect(.25 * s, -.96 * s, .15 * s, .07 * s);
+  gvLw(x, s, .02); x.strokeStyle = GV_LT; x.beginPath(); x.moveTo(-.4 * s, -1.06 * s); x.lineTo(-.46 * s, -1.6 * s); x.stroke(); gvCirc(x, -.46 * s, -1.6 * s, .03 * s, TRIM());
+  /* aimed rails */
+  x.save(); x.translate(px, py); x.rotate(ang);
+  x.fillStyle = INK; rr(x, -.2 * s, -.22 * s, .5 * s, .44 * s, .05 * s); x.fill(); x.fillStyle = HI(); x.fillRect(-.16 * s, -.22 * s, .42 * s, .05 * s); x.fillStyle = LO(); x.fillRect(-.2 * s, .1 * s, .5 * s, .12 * s);   // breech block
+  x.fillStyle = INK; x.fillRect(0, -.13 * s, 3.2 * s, .075 * s); x.fillStyle = LO(); x.fillRect(0, .055 * s, 3.2 * s, .075 * s); x.fillStyle = HI(); x.fillRect(0, -.13 * s, 3.2 * s, .02 * s);   // twin rails
+  x.fillStyle = '#4ea8ff'; x.globalAlpha = .55; x.fillRect(.3 * s, -.045 * s, 2.9 * s, .09 * s); x.globalAlpha = 1;   // armature channel
+  for (let k = 0; k < 4; k++) { const cx = (.5 + k * .7) * s; x.fillStyle = INK; rr(x, cx - .05 * s, -.22 * s, .26 * s, .44 * s, .04 * s); x.fill(); x.fillStyle = HI(); x.fillRect(cx - .03 * s, -.22 * s, .22 * s, .04 * s); x.fillStyle = '#4ea8ff'; x.shadowColor = '#4ea8ff'; x.shadowBlur = Math.max(s * .25, 1); for (let w = 0; w < 3; w++) x.fillRect(cx + w * .07 * s, -.17 * s, .035 * s, .34 * s); gvNS(x); }   // glowing field coils
+  x.fillStyle = INK; rr(x, 3.0 * s, -.18 * s, .24 * s, .36 * s, .04 * s); x.fill(); x.fillStyle = HI(); x.fillRect(3.0 * s, -.18 * s, .24 * s, .04 * s);
+  x.fillStyle = '#4ea8ff'; x.shadowColor = '#4ea8ff'; x.shadowBlur = Math.max(s * .3, 1.2); x.fillRect(3.2 * s, -.14 * s, .08 * s, .28 * s); gvNS(x); x.fillStyle = '#e8f6ff'; x.fillRect(3.24 * s, -.07 * s, .04 * s, .14 * s);   // charged muzzle
+  x.restore();
+}
+function gvInf(x, s, P) {   /* rifleman: helmet with NVG, plate carrier, pack + bedroll, rifle with optic. Faces +x. */
+  const sk = '#b98d6a';
+  /* silhouette underlay */
+  x.fillStyle = INK; x.fillRect(-.26 * s, -1.18 * s, .52 * s, .72 * s); x.fillRect(-.22 * s, -.52 * s, .17 * s, .52 * s); x.fillRect(.04 * s, -.52 * s, .19 * s, .52 * s); x.beginPath(); x.arc(0, -1.35 * s, .34 * s, Math.PI, 0); x.fill(); x.fillRect(-.36 * s, -1.14 * s, .14 * s, .5 * s);
+  x.save(); x.translate(.12 * s, -1.0 * s); x.rotate(-.08); x.fillRect(-.1 * s, -.05 * s, 1.05 * s, .1 * s); x.restore();
+  gvNS(x);
+  /* legs, boots, knee pads */
+  x.fillStyle = LO(); x.fillRect(-.22 * s, -.52 * s, .17 * s, .52 * s); x.fillStyle = INK; x.fillRect(.04 * s, -.52 * s, .19 * s, .52 * s); x.fillStyle = HI(); x.fillRect(.04 * s, -.52 * s, .045 * s, .46 * s);
+  x.fillStyle = GV_DK; x.fillRect(-.24 * s, -.07 * s, .22 * s, .07 * s); x.fillRect(.04 * s, -.07 * s, .25 * s, .07 * s);   // boots
+  x.fillStyle = GV_MD; x.fillRect(-.23 * s, -.28 * s, .17 * s, .09 * s); x.fillRect(.04 * s, -.28 * s, .2 * s, .09 * s);   // knee pads
+  /* torso, vest, pouches */
+  x.fillStyle = INK; x.fillRect(-.26 * s, -1.18 * s, .52 * s, .7 * s); x.fillStyle = HI(); x.fillRect(-.26 * s, -1.18 * s, .52 * s, .06 * s);
+  x.fillStyle = LO(); x.fillRect(-.26 * s, -.9 * s, .52 * s, .4 * s); x.fillStyle = GV_MD; x.fillRect(-.2 * s, -.82 * s, .12 * s, .12 * s); x.fillRect(-.04 * s, -.82 * s, .12 * s, .12 * s); x.fillRect(.12 * s, -.82 * s, .12 * s, .12 * s);   // mag pouches
+  x.fillStyle = TRIM(); x.fillRect(-.26 * s, -1.0 * s, .52 * s, .06 * s); x.fillStyle = GV_DK; x.fillRect(-.26 * s, -.52 * s, .52 * s, .06 * s);   // chest band + belt
+  /* pack + bedroll */
+  x.fillStyle = LO(); rr(x, -.38 * s, -1.14 * s, .16 * s, .56 * s, .04 * s); x.fill(); x.fillStyle = GV_MD; x.fillRect(-.38 * s, -1.14 * s, .16 * s, .04 * s); gvCirc(x, -.3 * s, -1.18 * s, .08 * s, INK);
+  /* head */
+  x.fillStyle = sk; x.fillRect(-.12 * s, -1.26 * s, .3 * s, .12 * s);
+  x.fillStyle = INK; x.beginPath(); x.arc(0, -1.35 * s, .34 * s, Math.PI, 0); x.fill(); x.fillRect(-.34 * s, -1.35 * s, .68 * s, .1 * s);
+  x.beginPath(); x.arc(-.05 * s, -1.38 * s, .26 * s, Math.PI * 1.1, Math.PI * 1.75); gvLw(x, s, .07); x.strokeStyle = HI(); x.stroke();
+  x.fillStyle = LO(); x.fillRect(-.34 * s, -1.28 * s, .68 * s, .04 * s);   // helmet rim
+  x.fillStyle = GLASS; x.fillRect(.08 * s, -1.34 * s, .24 * s, .08 * s); x.fillStyle = GV_DK; x.fillRect(.26 * s, -1.52 * s, .06 * s, .12 * s);   // goggles + NVG mount
+  /* arms + rifle */
+  x.fillStyle = INK; x.fillRect(-.06 * s, -1.08 * s, .42 * s, .13 * s); x.fillStyle = HI(); x.fillRect(-.06 * s, -1.08 * s, .42 * s, .03 * s);
+  x.save(); x.translate(.12 * s, -1.0 * s); x.rotate(-.08);
+  x.fillStyle = GV_MD; x.fillRect(-.1 * s, -.07 * s, .3 * s, .14 * s); x.fillStyle = '#2a323c'; x.fillRect(.1 * s, -.06 * s, .55 * s, .11 * s); x.fillStyle = GV_DK; x.fillRect(.6 * s, -.035 * s, .4 * s, .06 * s);   // stock, receiver/handguard, barrel
+  x.fillStyle = GV_DK; x.fillRect(.28 * s, .03 * s, .1 * s, .22 * s);   // magazine
+  x.fillStyle = GV_DK; x.fillRect(.2 * s, -.15 * s, .22 * s, .08 * s); x.fillStyle = GLASS; x.fillRect(.37 * s, -.14 * s, .04 * s, .06 * s);   // optic
+  x.fillStyle = sk; x.fillRect(.5 * s, -.06 * s, .1 * s, .08 * s);   // support hand
+  if (P) { gvGlow(x, s, true); x.fillStyle = GV_PL; x.fillRect(.7 * s, -.06 * s, .05 * s, .12 * s); x.fillRect(.82 * s, -.06 * s, .05 * s, .12 * s); gvCirc(x, 1.0 * s, 0, .06 * s, GV_PL); gvGlow(x, s, false); gvCirc(x, 1.0 * s, 0, .025 * s, '#fdeaff'); }
+  x.restore();
+}
+function gvScout(x, s, a) {   /* Lynx: 6x6 armoured scout car — wedge hull, raked windscreen, spare wheel, roof turret with autocannon. */
+  const wx = [-.72, -.05, .72], ang = Math.max(-1.1, Math.min(.05, typeof a === 'number' ? a : -.2)), R = .24;
+  gvPoly(x, INK, s, [-1.0, -.3, -.96, -.5, -.7, -.64, .5, -.64, 1.08, -.34, 1.08, -.28, -1.0, -.28]);   // wedge body
+  gvPoly(x, INK, s, [-.4, -.64, -.34, -.96, .22, -.96, .3, -.64]);   // turret
+  for (const w of wx) gvCirc(x, w * s, -R * s + .06 * s, R * s, '#090b0e');
+  x.save(); x.translate(0, -.8 * s); x.rotate(ang); x.fillStyle = INK; x.fillRect(0, -.05 * s, 1.1 * s, .1 * s); x.restore();
+  gvNS(x);
+  for (const w of wx) { gvTyre(x, s, w * s, R); }
+  x.fillStyle = INK; for (const w of wx) { x.beginPath(); x.arc(w * s, -R * s + .06 * s, (R + .05) * s, Math.PI * 1.02, Math.PI * 1.98); x.lineTo(w * s + (R + .05) * s, -.4 * s); x.lineTo(w * s - (R + .05) * s, -.4 * s); x.closePath(); x.fill(); }   // arches
+  for (const w of wx) { x.fillStyle = HI(); x.fillRect((w - R - .03) * s, -.43 * s, (2 * R + .06) * s, .03 * s); gvTyre(x, s, w * s, R * .95); }
+  gvPoly(x, HI(), s, [-.7, -.64, .5, -.64, .58, -.58, -.74, -.58]);   // lit hood line
+  x.fillStyle = LO(); x.fillRect(-1.0 * s, -.38 * s, 2.08 * s, .07 * s);
+  x.fillStyle = GLASS; gvPoly(x, GLASS, s, [-.02, -.6, .26, -.6, .46, -.46, 0.0, -.46]); x.fillStyle = '#d8f2ff'; x.globalAlpha = .5; x.fillRect(.04 * s, -.57 * s, .1 * s, .03 * s); x.globalAlpha = 1;   // raked windscreen
+  gvLw(x, s, .025); x.strokeStyle = GV_DK; x.globalAlpha = .55; x.beginPath(); x.moveTo(-.3 * s, -.62 * s); x.lineTo(-.3 * s, -.42 * s); x.moveTo(.0 * s, -.46 * s); x.lineTo(.0 * s, -.38 * s); x.stroke(); x.globalAlpha = 1;
+  gvCirc(x, -1.04 * s, -.5 * s, .2 * s, '#090b0e'); gvCirc(x, -1.04 * s, -.5 * s, .11 * s, '#475059');   // spare wheel
+  x.fillStyle = TRIM(); x.fillRect(-.92 * s, -.5 * s, .42 * s, .06 * s);   // recon flash
+  x.fillStyle = '#ffe9a8'; x.fillRect(1.0 * s, -.44 * s, .07 * s, .06 * s); x.fillStyle = GV_DK; x.fillRect(.98 * s, -.35 * s, .12 * s, .07 * s);   // headlight + bull bar
+  x.fillStyle = GV_DK; x.fillRect(-.36 * s, -.7 * s, .05 * s, .1 * s); x.fillStyle = GV_MD; x.fillRect(-.36 * s, -.7 * s, .05 * s, .025 * s);   // exhaust
+  /* turret */
+  gvPoly(x, HI(), s, [-.34, -.96, .22, -.96, .26, -.9, -.36, -.9]); x.globalAlpha = .5; gvPoly(x, LO(), s, [-.4, -.64, .3, -.64, .29, -.7, -.4, -.7]); x.globalAlpha = 1;
+  x.fillStyle = GLASS; x.fillRect(.1 * s, -.88 * s, .1 * s, .06 * s); x.fillStyle = LO(); rr(x, -.28 * s, -1.02 * s, .2 * s, .07 * s, .02 * s); x.fill();
+  gvLw(x, s, .02); x.strokeStyle = GV_LT; x.beginPath(); x.moveTo(-.3 * s, -.96 * s); x.lineTo(-.4 * s, -1.5 * s); x.stroke(); gvCirc(x, -.4 * s, -1.5 * s, .03 * s, TRIM());
+  x.save(); x.translate(0, -.8 * s); x.rotate(ang);
+  x.fillStyle = INK; rr(x, -.1 * s, -.12 * s, .3 * s, .24 * s, .04 * s); x.fill(); x.fillStyle = HI(); x.fillRect(-.06 * s, -.12 * s, .24 * s, .035 * s);
+  x.fillStyle = INK; x.fillRect(.18 * s, -.045 * s, .95 * s, .09 * s); x.fillStyle = HI(); x.fillRect(.18 * s, -.045 * s, .95 * s, .025 * s); x.fillStyle = LO(); x.fillRect(.3 * s, -.07 * s, .3 * s, .14 * s); x.fillStyle = GV_DK; x.fillRect(1.04 * s, -.065 * s, .12 * s, .13 * s); x.fillRect(1.14 * s, -.03 * s, .03 * s, .06 * s);   // autocannon + shroud + muzzle
+  x.restore();
+}
 const ART = {
   // ---- GROUND ----
-  tank(x, s, a) {
-    x.fillStyle = LO(); rr(x, -s * 1.3, -s * .35, s * 2.6, s * .42, s * .12); x.fill();          // track run (shaded)
-    wheels(x, s, -1.0, 1.0, .15);
-    x.fillStyle = INK; x.beginPath(); x.moveTo(-s * 1.25, -s * .35); x.lineTo(-s * 1.25, -s * .68); x.lineTo(s * .9, -s * .68); x.lineTo(s * 1.5, -s * .4); x.lineTo(s * 1.5, -s * .35); x.closePath(); x.fill();   // sloped hull
-    x.fillStyle = HI(); x.beginPath(); x.moveTo(-s * 1.25, -s * .68); x.lineTo(s * .9, -s * .68); x.lineTo(s * 1.04, -s * .61); x.lineTo(-s * 1.25, -s * .61); x.closePath(); x.fill();   // sunlit hull roof
-    x.fillStyle = LO(); x.fillRect(-s * 1.25, -s * .42, s * 2.62, s * .07);   // shaded skirt line
-    x.fillStyle = INK; x.beginPath(); x.moveTo(-s * .65, -s * .68); x.lineTo(-s * .45, -s * 1.12); x.lineTo(s * .5, -s * 1.12); x.lineTo(s * .7, -s * .68); x.closePath(); x.fill();   // turret
-    x.fillStyle = HI(); x.fillRect(-s * .4, -s * 1.12, s * .86, s * .07);   // turret roof glint
-    x.fillStyle = LO(); x.beginPath(); x.arc(s * .04, -s * 1.13, s * .15, Math.PI, 0); x.fill();   // commander cupola
-    x.fillStyle = TRIM(); x.fillRect(-s * .52, -s * .84, s * 1.1, s * .06);   // ID stripe
-    x.fillStyle = INK; x.save(); x.translate(s * .45, -s * .94); x.rotate(Math.max(-1.0, Math.min(.05, a)));
-    x.fillRect(0, -s * .06, s * 1.8, s * .12); x.fillStyle = LO(); x.fillRect(s * 1.0, -s * .1, s * .26, s * .2); x.fillStyle = '#14171c'; x.fillRect(s * 1.7, -s * .07, s * .12, s * .14); x.restore();   // gun + bore evacuator + muzzle
-  },
-  aa(x, s, a) {
-    x.fillStyle = LO(); rr(x, -s * 1.1, -s * .32, s * 2.2, s * .4, s * .12); x.fill(); wheels(x, s, -.85, .85, .15);
-    x.fillStyle = INK; x.fillRect(-s * .6, -s * .92, s * 1.2, s * .58);    // turret
-    x.fillStyle = HI(); x.fillRect(-s * .6, -s * .92, s * 1.2, s * .08);   // lit roof
-    x.fillStyle = TRIM(); x.fillRect(-s * .6, -s * .58, s * 1.2, s * .06);   // ID stripe
-    x.fillStyle = INK; x.fillRect(-s * .72, -s * 1.32, s * .12, s * .42);
-    x.save(); x.translate(-s * .66, -s * 1.34); x.rotate(animClock * .0035); x.fillStyle = LO(); x.fillRect(-s * .28, -s * .05, s * .56, s * .1); x.fillStyle = HI(); x.fillRect(-s * .28, -s * .05, s * .56, s * .03); x.restore();   // SPINNING search radar
-    x.fillStyle = INK; x.save(); x.translate(s * .25, -s * .85); x.rotate(Math.max(-1.5, Math.min(0, a))); x.fillRect(0, -s * .17, s * 1.4, s * .1); x.fillRect(0, -s * .02, s * 1.4, s * .1); x.fillStyle = '#14171c'; x.fillRect(s * 1.28, -s * .19, s * .14, s * .3); x.restore();   // twin barrels + flash hiders
-  },
-  artillery(x, s, a) {
-    x.fillStyle = LO(); rr(x, -s * 1.35, -s * .35, s * 2.7, s * .42, s * .1); x.fill(); wheels(x, s, -1.0, 1.0, .15);
-    x.fillStyle = INK; x.beginPath(); x.moveTo(-s * .85, -s * .35); x.lineTo(-s * .6, -s * 1.0); x.lineTo(s * .55, -s * 1.0); x.lineTo(s * .8, -s * .35); x.closePath(); x.fill();   // big casemate
-    x.fillStyle = HI(); x.beginPath(); x.moveTo(-s * .6, -s * 1.0); x.lineTo(s * .55, -s * 1.0); x.lineTo(s * .59, -s * .92); x.lineTo(-s * .64, -s * .92); x.closePath(); x.fill();   // lit casemate roof
-    x.fillStyle = TRIM(); x.fillRect(-s * .7, -s * .6, s * 1.44, s * .06);   // ID stripe
-    x.fillStyle = LO(); x.beginPath(); x.moveTo(s * 1.05, -s * .35); x.lineTo(s * 1.35, -s * .12); x.lineTo(s * 1.35, -s * .35); x.closePath(); x.fill();   // recoil spade
-    x.fillStyle = INK; x.save(); x.translate(-s * .35, -s * .82); x.rotate(-.62); x.fillRect(0, -s * .08, s * 2.7, s * .16); x.fillStyle = LO(); x.fillRect(s * 2.35, -s * .12, s * .35, s * .24); x.fillStyle = '#14171c'; x.fillRect(s * 2.62, -s * .09, s * .1, s * .18); x.restore();   // long barrel + muzzle brake
-  },
-  mlrs(x, s) {
-    x.fillStyle = LO(); rr(x, -s * 1.2, -s * .35, s * 2.4, s * .42, s * .1); x.fill(); wheels(x, s, -.95, .95, .15);
-    x.fillStyle = INK; x.fillRect(-s * .65, -s * .95, s * .55, s * .6);   // cab
-    x.fillStyle = GLASS; x.fillRect(-s * .6, -s * .9, s * .3, s * .2);   // cab glass
-    x.fillStyle = HI(); x.fillRect(-s * .65, -s * .95, s * .55, s * .07);   // cab roof
-    x.save(); x.translate(s * .05, -s * .62); x.rotate(-.42); x.fillStyle = INK; x.fillRect(0, -s * .38, s * 1.55, s * .76);   // launch box
-    x.fillStyle = HI(); x.fillRect(0, -s * .38, s * 1.55, s * .08); x.fillStyle = TRIM(); x.fillRect(0, s * .3, s * 1.55, s * .06);   // lit top + stripe
-    x.fillStyle = '#000'; for (let r = 0; r < 3; r++) for (let q = 0; q < 2; q++) x.fillRect(s * .12 + r * s * .46, -s * .3 + q * s * .34, s * .14, s * .14);
-    x.fillStyle = '#ffb24a'; for (let r = 0; r < 3; r++) x.fillRect(s * .15 + r * s * .46, -s * .27, s * .08, s * .08); x.restore();   // tubes + loaded rocket tips
-  },
-  sam(x, s) {
-    x.fillStyle = LO(); rr(x, -s * 1.1, -s * .35, s * 2.2, s * .42, s * .1); x.fill(); wheels(x, s, -.85, .85, .15);
-    x.fillStyle = INK; x.fillRect(-s * .75, -s * .82, s * .5, s * .47);   // cab
-    x.fillStyle = GLASS; x.fillRect(-s * .71, -s * .78, s * .26, s * .18);   // cab glass
-    x.fillStyle = HI(); x.fillRect(-s * .75, -s * .82, s * .5, s * .06);   // cab roof
-    x.fillStyle = INK; x.save(); x.translate(-s * .15, -s * .55); x.rotate(-1.05); for (let k = 0; k < 4; k++) x.fillRect(k * s * .16, -s * .2, s * 1.9, s * .1);
-    x.fillStyle = HI(); for (let k = 0; k < 4; k++) x.fillRect(k * s * .16 + s * 1.62, -s * .2, s * .28, s * .1);   // missile nose cones
-    x.restore();
-    x.fillStyle = TRIM(); x.fillRect(-s * .3, -s * .48, s * .5, s * .06);   // ID stripe
-  },
-  railgun(x, s, a) {
-    x.fillStyle = LO(); rr(x, -s * 1.4, -s * .38, s * 2.8, s * .46, s * .1); x.fill(); wheels(x, s, -1.1, 1.1, .16);
-    x.fillStyle = INK; x.fillRect(-s * .55, -s * 1.05, s * 1.0, s * .67);   // armoured mount
-    x.fillStyle = HI(); x.fillRect(-s * .55, -s * 1.05, s * 1.0, s * .08);   // lit roof
-    x.fillStyle = '#3fc8f0'; x.globalAlpha = pulseA(.006); x.fillRect(-s * .4, -s * .78, s * .7, s * .08); x.globalAlpha = 1;   // charging capacitor bank
-    x.fillStyle = INK; x.save(); x.translate(-s * .25, -s * .95); x.rotate(Math.max(-1.0, Math.min(.05, a))); x.fillRect(0, -s * .12, s * 3.2, s * .07); x.fillRect(0, s * .05, s * 3.2, s * .07); x.fillStyle = LO(); for (let k = 0; k < 4; k++) x.fillRect(s * (.5 + k * .7), -s * .12, s * .09, s * .24); x.fillStyle = '#4ea8ff'; x.shadowColor = '#4ea8ff'; x.shadowBlur = 6; x.fillRect(s * 3.1, -s * .12, s * .12, s * .24); x.shadowBlur = 0; x.restore();   // twin rails + spacers + charged muzzle
-  },
-  inf(x, s) {
-    x.fillStyle = INK; x.beginPath(); x.arc(0, -s * 1.35, s * .34, Math.PI, 0); x.fill(); x.fillRect(-s * .34, -s * 1.35, s * .68, s * .12);   // helmet
-    x.fillStyle = HI(); x.beginPath(); x.arc(-s * .06, -s * 1.38, s * .26, Math.PI * 1.15, Math.PI * 1.75); x.lineWidth = Math.max(.6, s * .07); x.strokeStyle = HI(); x.stroke();   // helmet glint
-    x.fillStyle = '#1a222c'; x.fillRect(-s * .26, -s * 1.28, s * .52, s * .1);   // visor slit
-    x.fillStyle = INK; x.fillRect(-s * .24, -s * 1.2, s * .48, s * .72);   // torso
-    x.fillStyle = LO(); x.fillRect(-s * .34, -s * 1.14, s * .12, s * .5);   // backpack
-    x.fillStyle = TRIM(); x.fillRect(-s * .24, -s * 1.06, s * .48, s * .07);   // chest strap
-    x.fillStyle = INK; x.fillRect(-s * .2, -s * .5, s * .16, s * .5); x.fillRect(s * .06, -s * .5, s * .16, s * .5);   // legs
-    x.fillStyle = LO(); x.fillRect(-s * .22, -s * .06, s * .2, s * .06); x.fillRect(s * .04, -s * .06, s * .2, s * .06);   // boots
-    x.fillStyle = '#2a323c'; x.save(); x.translate(s * .12, -s * 1.0); x.rotate(-.08); x.fillRect(0, -s * .045, s * .95, s * .09); x.fillRect(s * .3, -s * .13, s * .12, s * .1); x.restore();   // rifle + sight
-  },
+  tank(x, s, a) { gvTank(x, s, a, {}); },   // MBT "Aegis" — see gvTank
+  tank_p(x, s, a) { gvTank(x, s, a, { p: true }); },   // plasma-era re-arm: magenta coils + vents
+  goliath(x, s, a) { gvTank(x, s, a, { h: true }); },   // Heavy "Goliath" — reactive armour, 7 road wheels
+  goliath_p(x, s, a) { gvTank(x, s, a, { h: true, p: true }); },
+  mammoth(x, s, a) { gvTank(x, s, a, { m: true }); },   // Mammoth super-heavy — twin barrels, 8 road wheels
+  aa(x, s, a) { gvAA(x, s, a, false); },
+  aa_p(x, s, a) { gvAA(x, s, a, true); },
+  artillery(x, s) { gvSpg(x, s, false); },
+  artillery_p(x, s) { gvSpg(x, s, true); },
+  mlrs(x, s) { gvMlrs(x, s); },
+  sam(x, s) { gvSam(x, s); },
+  railgun(x, s, a) { gvRail(x, s, a); },
+  inf(x, s) { gvInf(x, s, false); },
+  inf_p(x, s) { gvInf(x, s, true); },
   constructor(x, s) { x.fillStyle = '#caa030'; rr(x, -s * 1.1, -s * .55, s * 2.2, s * .55, s * .15); x.fill(); x.fillStyle = INK; x.fillRect(-s * .5, -s * 1.1, s * .8, s * .55); x.save(); x.translate(s * .3, -s); x.rotate(-.6); x.fillStyle = '#caa030'; x.fillRect(0, -s * .06, s * 1.6, s * .12); x.restore(); },
-  scout(x, s, a) {   // light fast recon buggy — low slung body, big tyres, small turret
-    x.fillStyle = INK; x.beginPath(); x.moveTo(-s * 1.0, -s * .3); x.lineTo(-s * .7, -s * .62); x.lineTo(s * .5, -s * .62); x.lineTo(s * 1.05, -s * .3); x.closePath(); x.fill();
-    wheels(x, s, -.75, .75, .2);
-    x.fillStyle = HI(); x.beginPath(); x.moveTo(-s * .7, -s * .62); x.lineTo(s * .5, -s * .62); x.lineTo(s * .56, -s * .56); x.lineTo(-s * .74, -s * .56); x.closePath(); x.fill();   // lit hood line
-    x.fillStyle = GLASS; x.fillRect(-s * .1, -s * .58, s * .42, s * .2);   // windshield
-    x.fillStyle = TRIM(); x.fillRect(-s * .95, -s * .44, s * .5, s * .07);   // recon flash
-    x.fillStyle = INK; x.fillRect(-s * .35, -s * .92, s * .42, s * .32);   // small turret
-    x.fillStyle = HI(); x.fillRect(-s * .35, -s * .92, s * .42, s * .06);
-    x.fillStyle = INK; x.save(); x.translate(s * .0, -s * .8); x.rotate(Math.max(-1.1, Math.min(.05, a || -.2))); x.fillRect(0, -s * .05, s * 1.1, s * .1); x.fillStyle = '#14171c'; x.fillRect(s * 1.02, -s * .07, s * .1, s * .14); x.restore();   // autocannon
-  },
+  scout(x, s, a) { gvScout(x, s, a); },   // Lynx — 6x6 scout car, see gvScout
   // ---- AIR ----
   fighter(x, s) {   // INTERCEPTOR "FALCON" — exotic air-superiority dart: sharp cranked delta, glowing cheek intakes, teal burners
     s *= .78;
@@ -3184,7 +3448,7 @@ const COMP = {
 const UNIT_DEFS = {
   inf:      { name: 'Infantry', art: 'inf', domain: 'ground', ic: 100, mp: 28, build: 4.2, hp: 46, armor: 2, range: 260, dmg: 11, rate: 0.99, weapon: 'tracer', speed: 14, s: 9, grp: 1, ds: 'Rifle squad — one unit, one army-cap slot, several bodies: riflemen plus a dedicated AT/AA trooper. Entrenched, it raises its own gun emplacements over time.' },
   tank:     { name: 'MBT "Aegis"', art: 'tank', domain: 'ground', ic: 120, mp: 14, build: 6, hp: 110, armor: 8, range: 300, dmg: 40, rate: 4.84, weapon: 'shell', speed: 11, s: 4, grp: 3, ds: 'Main battle tank battery. Arcing cannon.' },
-  heavytank:{ name: 'Heavy "Goliath"', art: 'tank', domain: 'ground', ic: 230, mp: 24, build: 12, hp: 230, armor: 16, range: 320, dmg: 70, rate: 6.16, weapon: 'shell', speed: 6, s: 5, grp: 2, req: 'metals', comp: { alloy: 2 }, ds: 'Breakthrough tank with heavy armor, forged from Heavy Alloy poured by your Factories. (req Heavy Alloys)' },
+  heavytank:{ name: 'Heavy "Goliath"', art: 'goliath', domain: 'ground', ic: 230, mp: 24, build: 12, hp: 230, armor: 16, range: 320, dmg: 70, rate: 6.16, weapon: 'shell', speed: 6, s: 5, grp: 2, req: 'metals', comp: { alloy: 2 }, ds: 'Breakthrough tank with heavy armor, forged from Heavy Alloy poured by your Factories. (req Heavy Alloys)' },
   aa:       { name: 'AA "Hailstorm"', art: 'aa', domain: 'ground', ic: 100, mp: 10, build: 5, hp: 65, armor: 3, range: 440, dmg: 11, rate: 0.45, weapon: 'rotary', speed: 0, s: 4, grp: 2, ceil: .64, noGround: true, ds: 'Rapid flak — a rotary autocannon spraying tracer fire. Reaches up to the mesosphere. Can shoot down falling lances.' },
   arty:     { name: 'SPG "Thunder"', art: 'artillery', domain: 'ground', ic: 170, mp: 12, build: 9, hp: 55, armor: 2, range: 780, dmg: 44, rate: 4.2, weapon: 'shell', speed: 4, s: 4, grp: 2, ds: 'Long-range barrage. Slow.' },
   mlrs:     { name: 'MLRS "Tempest"', art: 'mlrs', domain: 'ground', ic: 190, mp: 12, build: 10, hp: 50, armor: 2, range: 720, dmg: 9, rate: 3, weapon: 'rocket', burstN: 4, burstGap: .08, speed: 4, s: 4, grp: 2, req: 'rocketry', ds: 'Rocket artillery firing a tight 4-round ripple of thin, fast rockets. (req Rocketry)' },   /* v4.1 D — MISSILE ARTILLERY REWORK: was dmg 30 / rate 3 (one fat rocket every 3s, DPS 10). Now the same 3s cadence fires a 4-round ripple of THIN, FAST rockets (burstN/burstGap, see the burst-fire tick in updUnits): 4×9 = 36 per salvo, DPS 12 — the salvo hits harder, the rockets are thinner and 1.8× faster, and the screen holds far fewer of them at once. Kept near DPS-neutral like the rest of the 4.1 projectile pass. */
@@ -3192,7 +3456,7 @@ const UNIT_DEFS = {
   railgun:  { name: 'Railgun "Lance"', art: 'railgun', domain: 'ground', ic: 290, mp: 16, build: 13, hp: 60, armor: 4, range: 1000, dmg: 70, rate: 4.5, weapon: 'rail', speed: 0, s: 4.5, grp: 1, req: 'kinetics', ceil: 0, srReq: 'steel', ds: 'Hypervelocity kinetic gun. Reaches any altitude. Needs a Steel deposit. (req Kinetic Weapons)' },
   // ── PRODUCTION-LINE GROUND UNITS — no research, unlocked by a home-front INFRA line building (unit bReq). A parallel path to the tech tree, like the Veteran Guard. ──
   hydra:    { name: 'Hydra Rocket Battery', art: 'mlrs', domain: 'ground', ic: 210, mp: 14, build: 10, hp: 70, armor: 3, range: 820, dmg: 8, rate: 1.8, weapon: 'rocket', burstN: 4, burstGap: .08, speed: 4, s: 4.2, grp: 2, bReq: 'missileworks', ds: 'Saturation rocket battery firing a tight, fast 4-round ripple. Built at any Factory. (build a Missile Works)' },   /* v4.1 D — MISSILE ARTILLERY REWORK, same shape as mlrs: was dmg 28 / rate 1.8 (DPS 15.6). Same 1.8s cadence, 4-round ripple of 8 = 32 per salvo, DPS 17.8 — thin, fast, harder-hitting salvos, near DPS-neutral. */
-  mammoth:  { name: 'Mammoth Super-Heavy', art: 'tank', domain: 'ground', ic: 340, mp: 30, build: 15, hp: 340, armor: 22, range: 360, dmg: 48, rate: 3.0, weapon: 'shell', speed: 5, s: 6, grp: 1, bReq: 'heavyfoundry', comp: { alloy: 3 }, ds: 'Super-heavy breakthrough tank, roughly +48% HP, +38% armor and +40% DPS over the Goliath. Forged from Heavy Alloy. (build a Heavy Foundry)' },
+  mammoth:  { name: 'Mammoth Super-Heavy', art: 'mammoth', domain: 'ground', ic: 340, mp: 30, build: 15, hp: 340, armor: 22, range: 360, dmg: 48, rate: 3.0, weapon: 'shell', speed: 5, s: 6, grp: 1, bReq: 'heavyfoundry', comp: { alloy: 3 }, ds: 'Super-heavy breakthrough tank, roughly +48% HP, +38% armor and +40% DPS over the Goliath. Forged from Heavy Alloy. (build a Heavy Foundry)' },
   // NAVAL WARSHIPS are MULTI-TURRETED (Phase 2a) — every hull mounts a main battery PLUS a dedicated secondary AA/PD turret
   // (weapon2/dmg2/rate2/range2, air-only via wpn2Air, ceil2 = its firing ceiling), fired on an independent cooldown just like
   // the Land Leviathan's second gun — so a warship can duel surface/main targets with its main battery while its AA turret
@@ -3314,16 +3578,16 @@ const AMPH_DS = 'Past the FUSION AGE: advanced hover-assisted tracks make this A
 const UPGRADES = {
   cdrone:    { era: 'fusion', name: 'Heavy Drone "Hornet"', art: 'cdrone', weapon: 'rocket', dmg: 31, rate: 2.64, range: 540, hp: 60, s: 3.4, grp: 1, kamikaze: false, ds: 'Fusion-era heavy combat drone squadron — car-sized, missile-armed bodies.' },
   // ALL plasma re-arms are gated behind PLASMA WEAPONS research now (not the Fusion Age) — ground AND aircraft
-  inf:       { era: 'plasma', name: 'Plasma Infantry', art: 'inf', weapon: 'plasball', dmg: 20, rate: 0.92, range: 280, hp: 64, ds: 'Riflemen re-armed with plasma carbines. (Plasma Weapons)' },
+  inf:       { era: 'plasma', name: 'Plasma Infantry', art: 'inf_p', weapon: 'plasball', dmg: 20, rate: 0.92, range: 280, hp: 64, ds: 'Riflemen re-armed with plasma carbines. (Plasma Weapons)' },
   // tank/heavytank/arty stack TWO independent tiers — FUSION (amphibious + speed, this fix) then PLASMA (re-arm, unchanged) —
   // via the modifier-stack array form effDef() already supports (see the naval capital ladder further below for precedent).
   tank:      [ { era: 'fusion', amphibious: true, speed: AMPH_SPEED.tank, ds: AMPH_DS },
-               { era: 'plasma', name: 'Plasma Pelter "Aegis-P"', art: 'tank', weapon: 'plasball', dmg: 66, rate: 5.28, range: 560, hp: 150, ds: 'MBT re-armed with fast plasma bolts that airburst next to the target, out-ranging guns. (Plasma Weapons)' + AMPH_DS } ],
+               { era: 'plasma', name: 'Plasma Pelter "Aegis-P"', art: 'tank_p', weapon: 'plasball', dmg: 66, rate: 5.28, range: 560, hp: 150, ds: 'MBT re-armed with fast plasma bolts that airburst next to the target, out-ranging guns. (Plasma Weapons)' + AMPH_DS } ],
   heavytank: [ { era: 'fusion', amphibious: true, speed: AMPH_SPEED.heavytank, ds: AMPH_DS },
-               { era: 'plasma', name: 'Plasma Goliath', art: 'tank', weapon: 'plasball', dmg: 114, rate: 6.16, range: 600, hp: 300, ds: 'Breakthrough plasma battery. Walks through fleets. (Plasma Weapons)' + AMPH_DS } ],
-  aa:        { era: 'plasma', name: 'Plasma Rotator', art: 'aa', weapon: 'plasball', dmg: 26, rate: 0.48, range: 500, ceil: .60, hp: 80, ds: 'Flak rotator re-armed with plasma, a storm of bolts reaching into the mesosphere. (Plasma Weapons)' },
+               { era: 'plasma', name: 'Plasma Goliath', art: 'goliath_p', weapon: 'plasball', dmg: 114, rate: 6.16, range: 600, hp: 300, ds: 'Breakthrough plasma battery. Walks through fleets. (Plasma Weapons)' + AMPH_DS } ],
+  aa:        { era: 'plasma', name: 'Plasma Rotator', art: 'aa_p', weapon: 'plasball', dmg: 26, rate: 0.48, range: 500, ceil: .60, hp: 80, ds: 'Flak rotator re-armed with plasma, a storm of bolts reaching into the mesosphere. (Plasma Weapons)' },
   arty:      [ { era: 'fusion', amphibious: true, speed: AMPH_SPEED.arty, ds: AMPH_DS },
-               { era: 'plasma', name: 'Plasma Pelter "Thunder-P"', art: 'artillery', weapon: 'plasarc', dmg: 66, rate: 4.0, range: 860, hp: 70, ds: 'Long-range plasma artillery that saturates a position in deforming plasma. (Plasma Weapons)' + AMPH_DS } ],
+               { era: 'plasma', name: 'Plasma Pelter "Thunder-P"', art: 'artillery_p', weapon: 'plasarc', dmg: 66, rate: 4.0, range: 860, hp: 70, ds: 'Long-range plasma artillery that saturates a position in deforming plasma. (Plasma Weapons)' + AMPH_DS } ],
   mlrs:      { era: 'fusion', amphibious: true, speed: AMPH_SPEED.mlrs, ds: AMPH_DS },
   mammoth:   { era: 'fusion', amphibious: true, speed: AMPH_SPEED.mammoth, ds: AMPH_DS },
   hydra:     { era: 'fusion', amphibious: true, speed: AMPH_SPEED.hydra, ds: AMPH_DS },

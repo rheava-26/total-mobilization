@@ -8,6 +8,8 @@
 !README.md
 !CLAUDE.md
 !ROADMAP.md
+# design/perf review write-ups (dev docs, like ROADMAP)
+!reviews/
 # PWA app files — installable/offline support (see title.html head + sw.js)
 !manifest.webmanifest
 !sw.js

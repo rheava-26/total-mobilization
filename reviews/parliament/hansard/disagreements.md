@@ -1,6 +1,6 @@
 # The Great Disagreements
 
-Twenty-three councils sat for three rounds, and they agreed on a great deal. Most of what looks like a quarrel in the record turned out to be councils discovering that they had written the same bill. But a few fights were real. Here are eleven of them, told as scenes. Each one ends the way it ended in the record. Some yielded. Some merged. Some were ruled on by the Speaker. Three are still open, and they are waiting for you, Mr President.
+Twenty-three councils sat for three rounds, and they agreed on a great deal. Most of what looks like a quarrel in the record turned out to be councils discovering that they had written the same bill. But a few fights were real. Here are eleven of them, told as scenes. Each one ends the way it ended in the record. Some yielded. Some merged. Some were ruled on by the Speaker. Four are still open, and they are waiting for you.
 
 ## One. The Clock That Ran Faster
 
@@ -38,7 +38,7 @@ Four councils drew a railway, and none of them knew the others had. Industry dre
 
 Industry's floor speech was triumphant. "I note with joy that four councils independently discovered the railway." Command was less gracious. "They discovered the Rail Hub two rounds after we did. We forgive them, since forgiveness costs nothing under a planned economy." Planet took the kindest line. "Three councils drew the same tunnel, which means it is a good tunnel and a crowded one."
 
-A rejection in the middle of it. The Command Commission opposed a bill from the Bio Council, a living net of fungal threads. "A second, living infrastructure net competes with the rail net for the same Spine job." Its remedy was to fold the repair into the rail.
+A rejection in the middle of it. The Command Commission opposed a bill from the Bio Council, a living infrastructure net. "A second, living infrastructure net competes with the rail net for the same Spine job." Its remedy was to fold the repair into the rail.
 
 Round three was funny, because nearly everyone backed someone else's railway. Industry backed Planet's text as the cleanest. Planet backed Industry's as the most complete. Command backed Industry. Railgun backed Planet. They haggled over whether upkeep should be charged per hub or per thousand pixels of track. Industry took Command's number. Railgun withdrew its Meridian Spine into the shared graph, to become a later doctrine.
 
@@ -48,13 +48,13 @@ How it ended. Merged. One network, one graph, one name. The Trunk. Bio's fungal 
 
 ## Four. The Immortal Swarm
 
-The Psionic Conclave arrived with a complaint against its own side. In the seventh report, Shapeshifters were most of the army, and none died. "That is not a demigod. That is a carpet." They asked to be rare.
+The Psionic Conclave arrived with a complaint against its own side. In the sixth report, Shapeshifters were most of the army, and none died. "That is not a demigod. That is a carpet." They asked to be rare.
 
 The Energy Institute offered a heat mechanic. Heated targets take more damage. The Conclave welcomed it, and then went further. Its draft said that above a certain heat, Shapeshifters would deal half damage and take forty percent more. The Conclave defended this in round three, saying it was the whole point. "Immortality is the thing report six broke, so this is the point of the bill." And in answer to the charge of nerfing, it replied that the penalty is not a nerf, but "a vulnerability the enemy exploits."
 
 The Energy Institute refused. "Halving a player toy's output and softening it is a nerf." Its lever was the enemy. The enemy's beams add the heat, and the penalty is mobility. The Bureau of Physics agreed, with a memorable image. Shapeshifters should slow down when cooked, and "they do not become glass."
 
-Both sides gave ground. Energy accepted that regeneration switches off above sixty heat. Psi accepted that friendly guns never heat friendly swarms.
+Both sides gave ground. Physics already carried the rule that regeneration switches off above sixty heat, and Energy did not object. Psi accepted that friendly guns never heat friendly swarms.
 
 How it ended. Ruled, with a flag. The Speaker replaced immortality with heat. Above sixty they stop regenerating. Above ninety they slow by thirty percent. The damage slump was struck as an Article Three nerf. But the Conclave wants it back, and the Speaker has passed the question to you.
 
@@ -86,9 +86,9 @@ The Stability Ministry proposed a Maskirovka Bureau. It lets the player feed the
 
 The cube rose on a constitutional point. "A deception that works half as well the second time is a diminishing return." In its paper, it asked for a different remedy. "That is the enemy getting smarter, not the player's tool getting weaker." After three identical lies, the fleet itself would grow suspicious, and fire blind for a while.
 
-The same cube made a second challenge in the same breath. A Psi bill had defenders of the Mind-Forge absorb a quarter of the beam. The cube called this a flat damage tax on an existing strike, and asked that the nodes be hostile cover instead. In its words, "The enemy adds bodies; the toy is not taxed."
+The same cube made a second challenge in the same breath. A Psi bill let a lattice of nodes absorb a quarter of the Mind-Forge beam. The cube called this a flat damage tax on an existing strike, and asked that the nodes be hostile cover instead. In its words, "The enemy adds bodies; the toy is not taxed."
 
-There is a fine irony here. The enemy was defending the player's toys against the player's own ministries. And the Stability Ministry, a few lines before it was challenged, had boasted that it would not cap a single toy. It had only priced them.
+There is a fine irony here. The enemy was defending the player's toys against the player's own ministries. And at the close of the session, the Stability Ministry boasted, "We did not cap a single toy; we priced them."
 
 How it ended. Ruled. The Speaker struck both clauses. The fleet doubts after three identical lies. The Mind-Forge's lattice nodes become killable cover.
 
@@ -98,7 +98,7 @@ The Planet Council made a point of order that surprised the whole House, because
 
 Planet put it plainly in round one. "A player who pours a mountain range into the map has it quietly un-poured." It asked the House to rule the thing void. The Industry Ministry agreed, and said the cap should be lifted, not defended. The Navy moved the same. The Science Academy asked for a ruling.
 
-No council defended the cap. But the Speaker went further than anyone had asked. It was worse than a cap, said the ruling, because the earlier work reverted without notice.
+The papers that touched it all pushed the same way. But the Speaker went further than anyone had asked. It was worse than a cap, said the ruling, because the earlier work reverted without notice.
 
 How it ended. Ruled. The Speaker struck it as unconstitutional. The remedy is to bake old edits into the base landscape, so the player keeps the mountain and the performance saving stays. A second, smaller limit on ruins got the same ruling. Both are on the quick fix list.
 
@@ -116,7 +116,7 @@ How it ended. Still open. The Speaker ruled that this was not the same as the so
 
 The Market Council also proposed a commercial orbit. The player could launch cheap commercial satellites and pay a tax. Now and then a flash crash would hit.
 
-Four councils said no. The Megaprojects council was sharp. "A commercial orbit that only exists to be crashed sells the player's own toys for a tax." The Pacing Secretariat called the crash "a hidden clock we cannot tune." The Rocket Forces called it "a pure IC sink with no missile fantasy." The Bureau of Spectacle objected to its noise, saying a flash crash would spam the banner.
+Four councils said no. The Megaprojects council was sharp. "A commercial orbit that only exists to be crashed sells the player's own toys for a tax." The Pacing Secretariat called the crash "a hidden clock we cannot tune." The Rocket Forces called it a pure sink for industrial points with no missile fantasy. The Bureau of Spectacle objected to its noise, saying a flash crash would spam the banner.
 
 One council spoke for it. The Space Fleet said cheap satellites are mass in orbit. "The debris tax and crash window are real costs."
 
@@ -130,6 +130,6 @@ This is the last dispute, and it is the one the Speaker would not settle. The Pa
 
 The cube made the logic of the plan with a cold line in round two. "A fleet which leaves once, exactly when you say, is not afraid. It is polite."
 
-The House voted it eleven votes, one of the top bills on the order paper. But the Speaker held it back. It turns a victory into an intermission, and it lengthens every match. That is a decision about what a win means. "That is a decision about what a win means, so it's yours, not the House's."
+The House gave it eleven votes. But the Speaker held it back. It turns a victory into an intermission, and it lengthens every match. That is a decision about what a win means. "That is a decision about what a win means, so it's yours, not the House's."
 
 How it ended. Still open. The bill sits on your desk, with a simple question. Should a victory be an ending, or an intermission?

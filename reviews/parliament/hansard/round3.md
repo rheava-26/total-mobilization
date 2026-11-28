@@ -449,14 +449,14 @@ We co-sign the merge of Rethink or Despair, the Second Siege, Gambits and Three 
 Ship three gambits first (Net, FOBS, Wedge) as a data table owned by intent. The other three (Hammer is the default, Rod Storm, Trojan) follow in a later slice.
 Rethink and Despair gate on the withdrawal door expires after 90 seconds, so a stalled branch can never deny a win.
 Interbellum is 45 percent of the prep timer. Flagship death at any cycle makes the next withdrawal final.
-Stability resets to each cycle: no death spiral across cycles.
+Stability resets to the lower of the cap and stability plus 15 each cycle: no death spiral across cycles.
 Orbital Denial door is gated on orbital command plus space age and needs fewer than 4 live enemy hulls in the space band for 40 continuous game-seconds. Space-fleet may tune the numbers; it gets the only door that rewards its fleet.
 
 The Fleet's Mind (lore, to autofleet plus pacing), Accept, with one amendment.
 This is the best statement of the doors: Attrition, Rout (flagship dead and Resolve below 60), Orbital Denial, Truce. Amendment: the Truce transmission is offered only in the final cycle or at Desperate, never during an early Interbellum, so a cheap draw cannot cut Motion 2's campaign short. Truce stays voluntary.
 
 The Tape (market, to pacing plus lore), Amend.
-The confidence formula, with weights Radar 0.5, Data Center 0.5, Tape Room 1, Tracking Array 1.5 is accepted as the one formula. Amendment: the intent label never lies, and neither does the fleet's arrival time at T-60 or later; below that, bands are with a plus or minus 5 percent floor. The five prep beats (70/45/25/8/4 percent) are a renderer of this value, not a second model. Positions (staking influence) ship after the forecast.
+The confidence formula, with weights Radar 0.5, Data Center 0.5, Tape Room 1, Tracking Array 1.5 is accepted as the one formula. Amendment: the intent label never lies, and neither does the fleet's arrival time at T-60 or later; below that, bands are plus or minus 40 percent times (1 minus confidence) with a plus or minus 5 percent floor. The five prep beats (70/45/25/8/4 percent) are a renderer of this value, not a second model. Positions (staking influence) ship after the forecast.
 
 One Dial, Five Faces (new-player, to market plus pacing), Accept.
 One shared forecast object with five renderers is the right architecture. The Secretariat's prep beats are renderer four. We ask only that the signals node and the Tracking Array share a single research path (signals, then the Tracking Array building), so there is one node, not two.
@@ -474,7 +474,7 @@ Only one motion in the register names this council.
 The Fleet Will Return (pacing, Motion 3, to Autofleet and Game-Feel), Amend. The Bureau co-signs with three exact amendments:
 First, the Director gets two tiers, not one. On every Calculated Retreat it plays a short beat: time scale 0.35 for 1.2 seconds, a one-note sting on the music bus, no letterbox. On the final withdrawal it plays the full sequence the motion describes (letterbox and caption), so the first retreat does not spend the final one's impact.
 Second, all time dilation goes through one multiplier. It multiplies the player's chosen speed and never overrides it. Reduced motion forces 1.0 and skips the letterbox.
-Third, the Interbellum return arc and the arrival of the second fleet get a sound cue (a low rising tone while the HUD Eta ticks down, the existing charge pattern), because the dread of waiting is the best thing the original had. This stays in the Bureau's lane and adds no mechanic.
+Third, the Interbellum return arc and the arrival of the second fleet get a sound cue (a low rising tone while the HUD ETA ticks down, the existing charge pattern), because the dread of waiting is the best thing the original had. This stays in the Bureau's lane and adds no mechanic.
 Tenet: nothing is capped or nerfed; the sim step is uniform, so the enemy loses no time.
 
 Speaker, the House has built a fleet that fears, a fleet that returns, a gun that takes twenty seconds to speak, and a forecast that arrives in five beats. Every one of them is a moment. A moment needs a sound, a pause and a light. The Bureau asks for no new toys and takes none away; it asks only that when the Autofleet finally turns tail, the player hears it go. We will not make the war louder. We will make it legible to the heart.

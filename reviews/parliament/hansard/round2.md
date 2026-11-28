@@ -174,7 +174,7 @@ The council raised the following constitutional challenges.
 
 The Fleet Watches You Build (the more you build, the sooner the fleet arrives): Oppose as an Article Three violation. It punishes the player for building toys. Its sponsor concedes it is a knife-edge. The tenet's lever is a scarier enemy; a shorter clock per toy built is denial by another name. It would be legal as the Fear Index's fear scaling the enemy's strength, not the player's time.
 
-The edit cap at 220 edits. Is a silent cap on a player toy (terrain). Planet's point of order stands; Delta Works and the Great Canal should exempt it outright, and the Admiralty so moves.
+The edit cap at 220 edits is a silent cap on a player toy (terrain). Planet's point of order stands; Delta Works and the Great Canal should exempt it outright, and the Admiralty so moves.
 
 ## The Realistic Physics Council
 
@@ -226,7 +226,7 @@ Article Three against the existing code, and against myself. The edit cap silent
 
 Article Three against the Fleet Watches You Build. A clock that arrives sooner the more you build punishes the core fantasy (cover the ground in factories). I challenge it unless it is recast as a scarier fleet (the fleet gets stronger), not a shorter prep.
 
-Article Three watch on the ruins cap of 60.. Evicting wrecks is a destruction-fantasy cap. Not a challenge to any bill, but a ruling is requested.
+Article Three watch on the ruins cap of 60. Evicting wrecks is a destruction-fantasy cap. Not a challenge to any bill, but a ruling is requested.
 
 ## The Ministry of Megaprojects
 
@@ -294,7 +294,7 @@ The Fleet Watches You Build, Article Three. A shorter prep removes build time, w
 
 The Clearing House, Article Four, point 4. As drafted the reserve charges a command-leaning player a penalty. Our amendment removes it, and without it the bill pushes the player toward one road, which breaks the "several roads into each side" instruction.
 
-We raise no challenge against cap levels or danger cap. danger cap is a real cost, but we hold that the Charter is the right answer to it.
+We raise no challenge against cap levels or danger cap. The danger cap is a real cost, but we hold that the Charter is the right answer to it.
 
 ## The Market Council
 
@@ -418,7 +418,7 @@ To our allies. Lore, your Fleet Resolve is the other half of our gauge: fear goi
 
 To our rivals: Game-Feel, you have asked for a camera on the withdrawal. We have asked for a reason to watch it. Let us share the ending.
 
-Pacing's ballot named the Fear Index, Rethink or Despair, Fleet Resolve, Theatres and the Order of Battle, and it also backed the Weakest Axis, the Wire and the Chronicle and the Maskirovka Bureau. It opposed Privatise the Sky and withdrew its own the Fleet Watches You Build.
+Pacing's ballot named the Fear Index, Rethink or Despair, Fleet Resolve, Theatres and the Order of Battle, and it also backed the Weakest Axis, the Wire and the Chronicle and the Maskirovka Bureau. It opposed Privatise the Sky and withdrew its own Fleet Watches You Build.
 
 The council raised the following constitutional challenges.
 

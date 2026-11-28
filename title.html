@@ -657,6 +657,7 @@
   <div class="row"><label>Edge Scroll</label><div class="toggle on" id="tEdge"><div class="knob"></div></div></div>
   <div class="row"><label>Adaptive Effects <span style="opacity:.55;font-size:10px">— Effects quality scales down when frames run long and back up when they recover. Off pins it at full</span></label><div class="toggle on" id="tFxAuto"><div class="knob"></div></div></div>
   <div class="row"><label>Full Effects <span style="opacity:.55;font-size:10px">— every explosion flourish, unit shadow/glow &amp; lingering smoke. Turn off on low-end devices</span></label><div class="toggle on" id="tFullFx"><div class="knob"></div></div></div>
+  <div class="row"><label>Cached Unit Art <span style="opacity:.55;font-size:10px">— Draws each unit from a cached picture. Much faster with large armies. Off redraws every unit live. F9 flips it during a match</span></label><div class="toggle on" id="tSpr"><div class="knob"></div></div></div>
   <div style="margin:10px 0 2px;color:var(--term);letter-spacing:2px;font-size:11px"><b>ACCESSIBILITY</b></div>
   <div class="row"><label>Reduced Motion <span style="opacity:.55;font-size:10px">— stills the aurora, meteors &amp; planet spin</span></label><div class="toggle" id="tMotion"><div class="knob"></div></div></div>
   <div class="row"><label>Screen Shake</label><div class="toggle on" id="tShake"><div class="knob"></div></div></div>
@@ -906,7 +907,7 @@ addEventListener('resize', resize);
 
 let mode = 'title', zoomStart = 0, reducedMotion = false, edgeScroll = true;
 let shakeOn = true, flashRed = false, cbMode = false, grainOn = true;   // accessibility: screen shake · flash reduction (photosensitivity) · colorblind-safe bar colors · film grain+vignette
-let fullFx = true;   // PERF/VISUALS — default ON: the sim is what's ever actually slow (render is cheap by comparison), so the old count-based visual cutbacks bought ~nothing and cost the game's whole appeal. ON keeps every per-unit shadow/glow/berm/shield-ring, the full explosion death-flourish set (fxHeavy()), and lets smoke linger; OFF restores the old aggressive low-end cutbacks. Toggle in OPTIONS for low-end devices.
+let fullFx = true;   // PERF/VISUALS — default ON: profiling shows the live canvas raster of unit art is most of a big-army frame (the simulation is about 7%), and per-unit shadowBlur is about half of that raster cost. With SPRITES_ON the bodies and their shadows are baked once, so this stays ON; the count-based cutbacks it gates only drop shadows and effects. ON keeps every per-unit shadow/glow/berm/shield-ring, the full explosion death-flourish set (fxHeavy()), and lets smoke linger; OFF restores the old aggressive low-end cutbacks. Toggle in OPTIONS for low-end devices.
 let FX_Q = 1, fxAuto = true;   /* ADAPTIVE EFFECTS — FX_Q in [.25,1] scales visual-only knobs (particle budget, glow budget, trail length, smoke life, explosion debris counts, shadow blur, terrain re-bake and minimap cadence) down when frames run long and back up when they recover; it never touches the simulation. Driven by fxTick() from syncHUD(). */
 let _fxPartCap = 2400, _fxLife = 1, _fxNoBlur = false, _fxTerrMul = 1, _fxMMms = 100, _fxT = 0, _fxHi = 0, _fxLo = 0, _fxChipQ = -1;
 const TRC = n => Math.max(Math.min(n, 4), Math.round(n * FX_Q));   /* trail cap scaled by FX_Q, never below 4 points */
@@ -1968,7 +1969,7 @@ const TRIM = () => INK === ENEMY_INK ? '#d2643e' : INK === ALLY_INK ? '#a9f0bd' 
 const pulseA = (sp, ph) => .55 + .45 * Math.sin(animClock * sp + (ph || 0));   // slow glow pulse for hot cores & beacons
 function jetflame(x, nx, ny, len, w2) {   // flickering engine exhaust pointing -x (call inside the sprite's local space)
   const f = len * (.7 + .55 * (.5 + .5 * Math.sin(animClock * .043 + nx * 7)));
-  x.save(); x.globalCompositeOperation = 'lighter';
+  x.save(); x.globalCompositeOperation = 'lighter'; x.shadowColor = 'rgba(0,0,0,0)'; x.shadowBlur = 0; x.shadowOffsetY = 0;   /* additive glow must not inherit the unit's drop shadow (a black additive shadow adds nothing but is blurred per op) */
   x.fillStyle = 'rgba(255,178,80,.8)'; x.beginPath(); x.moveTo(nx, ny - w2); x.lineTo(nx - f, ny); x.lineTo(nx, ny + w2); x.closePath(); x.fill();
   x.fillStyle = 'rgba(255,244,214,.9)'; x.beginPath(); x.moveTo(nx, ny - w2 * .5); x.lineTo(nx - f * .55, ny); x.lineTo(nx, ny + w2 * .5); x.closePath(); x.fill();
   x.restore();
@@ -3000,6 +3001,73 @@ const ART = {
     for (const gx of [-1.3, 0, 1.3]) { x.fillStyle = '#5a8cff'; x.globalAlpha = .55 + .35 * Math.sin(animClock * .01 + gx); x.beginPath(); x.arc(gx * s, s * .1, s * .09, 0, 6.28); x.fill(); } x.globalAlpha = 1;   // ring emitter nodes
   },
 };
+
+/* =====================================================================
+   UNIT SPRITE CACHE — bakes ART[k](ctx, s, aim) once into an offscreen canvas (drop shadow included) and stamps it with drawImage.
+   Why: every unit is ~100-130 canvas ops, each blurred separately by the unit shadow, and the browser rasterises them AFTER our JS returns; stamping one bitmap replaces all of it.
+   What ART reads: INK/GLASS (palette: 0 player, 1 ally, 2 enemy), animClock (+EMP_PULSE), _fxNoBlur (via FXB), the size and the aim. Nothing else (verified), so that is the whole key, plus a zoom bucket for resolution.
+   Per art a one-time probe (sprMeta) renders it at several aims and clocks to learn: does the aim change the picture, does the clock, and how far it reaches. Facing is NOT in the key: callers flip with c.scale(facing, 1) exactly as the live path does.
+   Animated arts keep ONE entry per key and repaint it in place when the 33 ms clock bin changes (all units of a type share it). A per-frame bake budget stops a cold cache from costing more than the live path: unbaked art simply draws live that frame.
+   Overlays (bars, selection and shield rings, berms, contact shadows, badges) stay live in the callers. Option "Cached Unit Art" / F9 flips SPRITES_ON; OFF is exactly the old live path.
+   ===================================================================== */
+let SPRITES_ON = true;
+const SPR = { m: new Map(), meta: new Map(), bytes: 0, cap: 96e6, frame: 0, zb: 0, bs: 1, fms: 0, pn: 0, budget: 6, bakes: 0, rebakes: 0, hits: 0, live: 0, stale: 0, bakeMs: 0, logAt: 0 };
+const SPR_DT = 33, SPR_PAL = [[INK_DEF, GLASS_DEF], [ALLY_INK, ALLY_GLASS], [ENEMY_INK, ENEMY_GLASS]], SPR_SHADOW = [null, 'rgba(0,0,0,.55)', 'rgba(0,0,0,.5)'];
+function sprStat() { return '[sprites] ' + SPR.m.size + ' entries, ' + (SPR.bytes / 1048576).toFixed(1) + ' MB, bakes ' + SPR.bakes + ', repaints ' + SPR.rebakes + ', stamps ' + SPR.hits + ', live ' + SPR.live + ', bake ms ' + SPR.bakeMs.toFixed(0); }
+function sprFrame() {   /* once per renderGame: new frame budget, zoom bucket (1.5% steps so a stamp is within 0.75% of true scale), LRU trim, periodic size log */
+  SPR.frame++; SPR.fms = 0; SPR.pn = 0; SPR.zb = Math.round(Math.log(cam.z || 1) / 0.0148886); SPR.bs = Math.exp(SPR.zb * 0.0148886);
+  if (SPR.bytes > SPR.cap) sprTrim(); if (SPR.bakes - SPR.logAt >= 300) { SPR.logAt = SPR.bakes; console.log(sprStat()); }
+}
+function sprTrim() {   /* least-recently-stamped entries go first until the cache is back under 70% of its cap */
+  const all = [...SPR.m.entries()].sort((p, q) => p[1].last - q[1].last), goal = SPR.cap * .7;
+  for (const [key, e] of all) { if (SPR.bytes <= goal || e.last === SPR.frame) break; SPR.m.delete(key); SPR.bytes -= e.bytes; if (e.cv) e.cv.width = e.cv.height = 0; }
+}
+function sprMeta(k) {   /* one-time probe of ART[k] at size 8 with the unit shadow on: aimed? animated? how far does it reach? */
+  const m = { ok: false, aimed: false, anim: false, l: 0, r: 0, t: 0, b: 0 }; SPR.meta.set(k, m); const fn = ART[k]; if (!fn) return m;
+  const S = 8, R = 24 * S, N = R * 2, cv = document.createElement('canvas'); cv.width = cv.height = N; const x = cv.getContext('2d', { willReadFrequently: true });
+  const i0 = INK, g0 = GLASS, ac = animClock, ep = EMP_PULSE; INK = INK_DEF; GLASS = GLASS_DEF;
+  const snap = (a, clk) => { animClock = clk; x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, N, N); x.save(); x.translate(R, R); x.shadowColor = SPR_SHADOW[1]; x.shadowBlur = 2.4; x.shadowOffsetY = 1.4; fn(x, S, a); x.restore(); return x.getImageData(0, 0, N, N).data; };
+  const same = (p, q) => { for (let i = 0; i < p.length; i++) if (p[i] !== q[i]) return false; return true; };
+  let x0 = N, x1 = -1, y0 = N, y1 = -1;
+  const box = d => { for (let j = 0; j < N; j++) { const row = j * N * 4; for (let i = 0; i < N; i++) if (d[row + i * 4 + 3] > 1) { if (i < x0) x0 = i; if (i > x1) x1 = i; if (j < y0) y0 = j; if (j > y1) y1 = j; } } };
+  try {
+    const base = snap(-.1, 1000); box(base); if (!same(base, snap(-.1, 1000))) m.anim = true;
+    for (const clk of [1233, 1571, 1777]) { const d = snap(-.1, clk); box(d); if (!same(base, d)) m.anim = true; }
+    for (const a of [-1.3, -.6, .4, 1, 2, 3]) { const d = snap(a, 1000); box(d); if (!same(base, d)) m.aimed = true; }
+    m.ok = x1 >= 0 && x0 > 1 && y0 > 1 && x1 < N - 2 && y1 < N - 2;   /* an art that touches the probe edge is left live */
+    if (m.ok) { const pd = (m.anim || m.aimed) ? 1.12 : 1; m.l = (R - x0) / S * pd; m.r = (x1 + 1 - R) / S * pd; m.t = (R - y0) / S * pd; m.b = (y1 + 1 - R) / S * pd; }
+  } catch (e) { m.ok = false; }
+  INK = i0; GLASS = g0; animClock = ac; EMP_PULSE = ep; cv.width = cv.height = 0; return m;
+}
+function sprPaint(e) {   /* (re)draw an entry's art onto its canvas at the entry's zoom-bucket resolution, shadow state identical to the live path */
+  const t0 = performance.now(), x = e.cv.getContext('2d'), i0 = INK, g0 = GLASS, p = SPR_PAL[e.pal];
+  e.cv.width = e.w;   /* assigning width wipes the bitmap and resets transform/shadow/clip, so an in-place repaint starts clean */
+  x.setTransform(e.bs, 0, 0, e.bs, e.ox, e.oy); if (e.sh) { x.shadowColor = SPR_SHADOW[e.sh]; x.shadowBlur = 2.4; x.shadowOffsetY = 1.4; }
+  INK = p[0]; GLASS = p[1]; try { ART[e.k](x, e.sq, e.a); } finally { INK = i0; GLASS = g0; }
+  e.tb = e.m.anim ? (animClock / SPR_DT) | 0 : 0; const dt = performance.now() - t0; SPR.fms += dt; SPR.bakeMs += dt;
+}
+function sprMake(key, k, m, sq, pal, sh, a) {
+  const bs = SPR.bs, ox = Math.ceil((m.l * sq + 4) * bs), oy = Math.ceil((m.t * sq + 4) * bs), w = ox + Math.ceil((m.r * sq + 4) * bs), h = oy + Math.ceil((m.b * sq + 4) * bs);
+  if (!(w > 0 && h > 0) || w > 700 || h > 700) { const dead = { dead: true, last: SPR.frame, bytes: 0 }; SPR.m.set(key, dead); return dead; }   /* too big to be worth baking at this zoom: stays live */
+  const e = { cv: document.createElement('canvas'), k, sq, pal, sh, a, m, ox, oy, w, h, bs, x0: -ox / bs, y0: -oy / bs, dw: w / bs, dh: h / bs, tb: -1, last: SPR.frame, bytes: w * h * 4, dead: false };
+  e.cv.width = w; e.cv.height = h; SPR.bytes += e.bytes; SPR.m.set(key, e); sprPaint(e); SPR.bakes++; return e;
+}
+/* cachedArt(k, s, a, pal, sh): stamp ART[k] at the current transform origin. pal 0/1/2 = player/ally/enemy ink, sh 0/1/2 = no shadow / player shadow / enemy shadow. Returns false if the caller must draw it live (budget, probe backlog, oversize). Caller has already applied c.scale(facing, 1) and has no shadow active. */
+function cachedArt(k, s, a, pal, sh) {
+  let m = SPR.meta.get(k); if (!m) { if (SPR.pn >= 2) { SPR.live++; return false; } SPR.pn++; m = sprMeta(k); }
+  if (!m.ok) { SPR.live++; return false; }
+  const sq = Math.round(s * 100) / 100; let aq = '', av = a;
+  if (m.aimed) { if (a === undefined) aq = 'u'; else { const AQ = Math.min(200, Math.max(16, Math.ceil(5.2 * sq * SPR.bs))); aq = Math.round(a * AQ); av = aq / AQ; } }   /* aim buckets sized so the barrel tip moves about half a pixel per step */
+  const key = k + '|' + sq + '|' + SPR.zb + '|' + pal + sh + (_fxNoBlur ? 'n' : '') + '|' + aq + (m.anim ? '|' + ((EMP_PULSE * 4) | 0) : '');
+  let e = SPR.m.get(key);
+  if (!e) { if (SPR.fms > SPR.budget) { SPR.live++; return false; } e = sprMake(key, k, m, sq, pal, sh, av); }
+  if (e.dead) { SPR.live++; return false; }
+  e.last = SPR.frame;
+  if (m.anim) { const tb = (animClock / SPR_DT) | 0; if (e.tb !== tb) { if (SPR.fms <= SPR.budget) { sprPaint(e); SPR.rebakes++; } else SPR.stale++; } }
+  let dx = 0, dy = 0; const mt = c.getTransform();   /* snap the stamp to whole device pixels so the baked edges stay crisp instead of being bilinear-smeared at fractional positions */
+  if (mt.b === 0 && mt.c === 0 && mt.a !== 0 && mt.d !== 0) { dx = (Math.round(mt.e) - mt.e) / mt.a; dy = (Math.round(mt.f) - mt.f) / mt.d; }
+  c.drawImage(e.cv, e.x0 + dx, e.y0 + dy, e.dw, e.dh); SPR.hits++; return true;
+}
 
 /* =====================================================================
    BUILDING ART (ctx, w, h) — baseline at y=0, grows upward
@@ -9165,6 +9233,7 @@ function drawOrbitalStation(px, gy) {   // a Space Station puts an actual platfo
 const RSTAT = { culled: 0, drawn: 0 };   // PERF instrumentation — off-screen entities skipped vs drawn this frame (read by the headless bench / a live overlay); pure counters, no gameplay effect
 let _dt2 = false, _dt3 = false;   /* v4.8 E zoom-ladder flags, set once per renderGame pass */
 function renderGame() {
+  sprFrame();   /* unit sprite cache: per-frame bake budget + zoom bucket */
   _glowFrameCount = 0;   // WHITE-OUT CLAMP — fresh budget of additive glow draws every frame, see glow()
   // PERF — visible world-Y band (mirrors the existing horizontal sx()-cull): the world is 1.9× the viewport and the
   // camera pans it vertically, so at any moment most sky/space/underground entities are off-screen. Compute the band
@@ -9275,9 +9344,11 @@ function renderGame() {
     if (d.domain === 'ground' && (u.entr || 0) > .25 && !_extremeLOD) { const gy = u.y + d.s; c.save(); c.globalAlpha = Math.min(.85, .3 + u.entr * .6); c.fillStyle = u.fort >= 2 ? '#5b6b3a' : '#6b5a3e'; c.beginPath(); c.ellipse(px - d.s * 1.4, gy - 1, d.s * .9, d.s * .5, 0, Math.PI, 0); c.ellipse(px + d.s * 1.4, gy - 1, d.s * .9, d.s * .5, 0, Math.PI, 0); c.fill(); if (u.fort && u.entr > .5) { c.globalAlpha = .2 + .12 * Math.sin(animClock * .01); c.strokeStyle = '#8ad0ff'; c.lineWidth = 1; c.beginPath(); c.arc(px, u.y, d.s * 2.4, Math.PI, 0); c.stroke(); } c.globalAlpha = 1; c.restore(); }   // dug-in sandbag berm (+ a faint garrison shield arc when fortified in a building) — RENDER LOD: skipped at mega-army scale/far zoom-out, see _extremeLOD
     const gdy = d.domain === 'ground' ? u.y + d.s * GROUND_SEAT_FRAC : u.y;   // draw-only ground seat (see GROUND_SEAT_FRAC above) — u.y itself is unchanged
     if ((d.domain === 'ground' || d.domain === 'naval') && !_extremeLOD) { c.save(); c.globalAlpha = .28; c.fillStyle = '#000'; c.beginPath(); c.ellipse(px, d.domain === 'ground' ? gdy : u.y + d.s * .9, d.s * 1.8, d.s * .5, 0, 0, 6.28); c.fill(); c.globalAlpha = 1; c.restore(); }   // ground contact shadow — GROUND shares the sprite's own seated anchor (gdy) so the shadow never floats above/below the feet it belongs to; naval keeps its own hull-relative offset (a boat's shadow sits below the WATERLINE, not d.s away from a lifted y)
-    c.save(); c.translate(px, gdy); if (!_heavyLOD) { c.shadowColor = 'rgba(0,0,0,.55)'; c.shadowBlur = _dt2 ? 0 : (2.4); c.shadowOffsetY = 1.4; } if (u.ally) { INK = ALLY_INK; GLASS = ALLY_GLASS; } if (d.domain === 'air' || d.domain === 'naval') { c.scale(u.facing, 1); ART[d.art](c, d.s, 0); } else if (d.domain === 'space') ART[d.art](c, d.s, 0); else { c.scale(u.facing, 1); ART[d.art](c, d.s, u.facing > 0 ? u.aim : Math.PI - u.aim); } if (u.ally) { INK = INK_DEF; GLASS = GLASS_DEF; } c.restore(); if (u.shield > 0 && !_extremeLOD) { c.globalAlpha = .3 + .2 * Math.sin(animClock * .02); c.strokeStyle = '#9ad0ff'; c.lineWidth = 1.4; c.beginPath(); c.arc(px, gdy - d.s * .4, d.s * 2.2, 0, 6.28); c.stroke(); c.globalAlpha = 1; } if (G.sel === u) { c.strokeStyle = '#6dffb0'; c.lineWidth = 1.2; c.strokeRect(px - d.s * 2, gdy - d.s * 2, d.s * 4, d.s * 3.4); if (d.range) ring(px, gdy, d.range * radarBoost(u.x)); } if (u.hp < u.maxHp) bar(px, gdy - d.s * 2 - 5, d.s * 2.4, u.hp / u.maxHp); let barStack = u.hp < u.maxHp ? 9 : 5; if (u.maxAmmo) { bar(px, gdy - d.s * 2 - barStack, d.s * 2.4, (u.ammo || 0) / u.maxAmmo, false, (u.rtb || u.docked) ? '#ff7a4a' : '#ffd24a'); barStack += 4; } if (u.maxFuel) { bar(px, gdy - d.s * 2 - barStack, d.s * 2.4, Math.max(0, (u.fuel || 0) / u.maxFuel), false, u.rtb ? '#ff5a3a' : u.docked ? '#5fd0ff' : '#6dffb0'); } if (u.bg && u.bg.members.length > 1 && !_extremeLOD) drawBgBadge(px, gdy - d.s * 2 - 9, u.bg.members.length); }   // BATTLEGROUPS — non-squad leader (kdrone/clone) group-size badge
+    c.save(); c.translate(px, gdy); let _spd = false; if (SPRITES_ON) { const _pl = u.ally ? 1 : 0, _shk = _heavyLOD ? 0 : 1; if (d.domain === 'air' || d.domain === 'naval') { c.scale(u.facing, 1); _spd = cachedArt(d.art, d.s, 0, _pl, _shk); } else if (d.domain === 'space') _spd = cachedArt(d.art, d.s, 0, _pl, _shk); else { c.scale(u.facing, 1); _spd = cachedArt(d.art, d.s, u.facing > 0 ? u.aim : Math.PI - u.aim, _pl, _shk); } if (!_spd) { c.restore(); c.save(); c.translate(px, gdy); } }   /* CACHED ART — stamped bitmap with the shadow baked in; false = this frame draws live below */
+    if (!_spd) { if (!_heavyLOD) { c.shadowColor = 'rgba(0,0,0,.55)'; c.shadowBlur = _dt2 ? 0 : (2.4); c.shadowOffsetY = 1.4; } if (u.ally) { INK = ALLY_INK; GLASS = ALLY_GLASS; } if (d.domain === 'air' || d.domain === 'naval') { c.scale(u.facing, 1); ART[d.art](c, d.s, 0); } else if (d.domain === 'space') ART[d.art](c, d.s, 0); else { c.scale(u.facing, 1); ART[d.art](c, d.s, u.facing > 0 ? u.aim : Math.PI - u.aim); } if (u.ally) { INK = INK_DEF; GLASS = GLASS_DEF; } } c.restore(); if (u.shield > 0 && !_extremeLOD) { c.globalAlpha = .3 + .2 * Math.sin(animClock * .02); c.strokeStyle = '#9ad0ff'; c.lineWidth = 1.4; c.beginPath(); c.arc(px, gdy - d.s * .4, d.s * 2.2, 0, 6.28); c.stroke(); c.globalAlpha = 1; } if (G.sel === u) { c.strokeStyle = '#6dffb0'; c.lineWidth = 1.2; c.strokeRect(px - d.s * 2, gdy - d.s * 2, d.s * 4, d.s * 3.4); if (d.range) ring(px, gdy, d.range * radarBoost(u.x)); } if (u.hp < u.maxHp) bar(px, gdy - d.s * 2 - 5, d.s * 2.4, u.hp / u.maxHp); let barStack = u.hp < u.maxHp ? 9 : 5; if (u.maxAmmo) { bar(px, gdy - d.s * 2 - barStack, d.s * 2.4, (u.ammo || 0) / u.maxAmmo, false, (u.rtb || u.docked) ? '#ff7a4a' : '#ffd24a'); barStack += 4; } if (u.maxFuel) { bar(px, gdy - d.s * 2 - barStack, d.s * 2.4, Math.max(0, (u.fuel || 0) / u.maxFuel), false, u.rtb ? '#ff5a3a' : u.docked ? '#5fd0ff' : '#6dffb0'); } if (u.bg && u.bg.members.length > 1 && !_extremeLOD) drawBgBadge(px, gdy - d.s * 2 - 9, u.bg.members.length); }   // BATTLEGROUPS — non-squad leader (kdrone/clone) group-size badge
   // enemies
-  for (const e of G.enemies) { const px = sx(e.x); if (px < -30 - PX || px > W + 30 + PX || e.y < VY0 || e.y > VY1) { RSTAT.culled++; continue; } RSTAT.drawn++; if (_blipLOD) { if (e.boss) { c.strokeStyle = '#ff4d4d'; c.lineWidth = 1.4 * _blipS; c.beginPath(); c.arc(px, e.y, 5 * _blipS, 0, 6.28); c.stroke(); } else { c.fillStyle = '#ff4d4d'; c.fillRect(px - _blipS, e.y - _blipS, _blipS * 2, _blipS * 2); } continue; } if (e.reentry) glow(px, e.y, e.s * 3.2, 'rgba(255,150,60,1)', .7); if (e.ground && !_extremeLOD) { c.save(); c.globalAlpha = .28; c.fillStyle = '#000'; c.beginPath(); c.ellipse(px, e.y + e.s * .9, e.s * 1.8, e.s * .5, 0, 0, 6.28); c.fill(); c.globalAlpha = 1; c.restore(); } c.save(); c.translate(px, e.y); if (!e.reentry && !_heavyLOD) { c.shadowColor = 'rgba(0,0,0,.5)'; c.shadowBlur = _dt2 ? 0 : (2.4); c.shadowOffsetY = 1.4; } if (e.ground) { INK = ENEMY_INK; GLASS = ENEMY_GLASS; if (e.vx < 0) c.scale(-1, 1); (ART[e.art || e.kind] || ART.drone)(c, e.s, e.vx < 0 ? Math.PI - (e.aim || 0) : (e.aim || 0)); INK = INK_DEF; GLASS = GLASS_DEF; } else { if (e.empburst) EMP_PULSE = 1 + Math.max(0, 1 - Math.max(0, e.hold - e.y) / (e.hold + 50)) * 3;   /* v4.0.1 — spin the warhead's containment ring faster the closer it gets to e.hold (detonation) */ (ART[e.art || e.kind] || ART.drone)(c, e.s); } c.restore(); if (e.shield > 0 && !e.reentry && !_extremeLOD) { c.globalAlpha = .35 + .2 * Math.sin(animClock * .02); c.strokeStyle = '#8ac8ff'; c.lineWidth = 1.4; c.beginPath(); c.arc(px, e.y, e.s * 1.55, 0, 6.28); c.stroke(); c.globalAlpha = 1; } if (e.pdBudget != null && e.pdBudget < 1 && !e.reentry && !_extremeLOD) { c.globalAlpha = .3 + .3 * Math.sin(animClock * .09); c.strokeStyle = '#ff3b3b'; c.lineWidth = 1.6; c.beginPath(); c.arc(px, e.y, e.s * 1.35, 0, 6.28); c.stroke(); c.globalAlpha = 1; }   /* v4.4 — PD SATURATED: a flickering red ring reads "its point-defence pool is empty, fire through it now" */ if (e._lockT > 0 && !e.reentry) { const rr = e.s * 1.7 + 4, rot = animClock * .05; c.save(); c.globalAlpha = .45 + .35 * Math.min(1, e._lockT / .2); c.strokeStyle = e.boss ? '#ffd27a' : '#7dffc0'; c.lineWidth = 1.4; for (let q = 0; q < 4; q++) { const ba = rot + q * 1.5708; c.beginPath(); c.arc(px, e.y, rr, ba - .34, ba + .34); c.stroke(); } c.globalAlpha = 1; c.restore(); } if (!e.reentry) { if (e.boss) { c.fillStyle = '#ffcf7a'; c.font = 'bold 9px Consolas'; c.textAlign = 'center'; c.fillText(e.bossName || 'SUPERWEAPON', px, e.y - e.s - 16); c.textAlign = 'left'; bar(px, e.y - e.s - 12, e.s * 3.4, e.hp / e.maxHp, true); if (e.orbital) glow(px, e.y, e.s * 2.2, 'rgba(255,90,90,1)', .28); } else bar(px, e.y - e.s - 5, e.s * 2, e.hp / e.maxHp, true); } }
+  for (const e of G.enemies) { const px = sx(e.x); if (px < -30 - PX || px > W + 30 + PX || e.y < VY0 || e.y > VY1) { RSTAT.culled++; continue; } RSTAT.drawn++; if (_blipLOD) { if (e.boss) { c.strokeStyle = '#ff4d4d'; c.lineWidth = 1.4 * _blipS; c.beginPath(); c.arc(px, e.y, 5 * _blipS, 0, 6.28); c.stroke(); } else { c.fillStyle = '#ff4d4d'; c.fillRect(px - _blipS, e.y - _blipS, _blipS * 2, _blipS * 2); } continue; } if (e.reentry) glow(px, e.y, e.s * 3.2, 'rgba(255,150,60,1)', .7); if (e.ground && !_extremeLOD) { c.save(); c.globalAlpha = .28; c.fillStyle = '#000'; c.beginPath(); c.ellipse(px, e.y + e.s * .9, e.s * 1.8, e.s * .5, 0, 0, 6.28); c.fill(); c.globalAlpha = 1; c.restore(); } c.save(); c.translate(px, e.y); let _spd = false; if (SPRITES_ON) { const _ek = ART[e.art || e.kind] ? (e.art || e.kind) : 'drone', _shk = (!e.reentry && !_heavyLOD) ? 2 : 0; if (e.ground) { if (e.vx < 0) c.scale(-1, 1); _spd = cachedArt(_ek, e.s, e.vx < 0 ? Math.PI - (e.aim || 0) : (e.aim || 0), 2, _shk); } else { if (e.empburst) EMP_PULSE = 1 + Math.max(0, 1 - Math.max(0, e.hold - e.y) / (e.hold + 50)) * 3; _spd = cachedArt(_ek, e.s, undefined, 0, _shk); } if (!_spd) { c.restore(); c.save(); c.translate(px, e.y); } }   /* CACHED ART — see the unit loop */
+    if (!_spd) { if (!e.reentry && !_heavyLOD) { c.shadowColor = 'rgba(0,0,0,.5)'; c.shadowBlur = _dt2 ? 0 : (2.4); c.shadowOffsetY = 1.4; } if (e.ground) { INK = ENEMY_INK; GLASS = ENEMY_GLASS; if (e.vx < 0) c.scale(-1, 1); (ART[e.art || e.kind] || ART.drone)(c, e.s, e.vx < 0 ? Math.PI - (e.aim || 0) : (e.aim || 0)); INK = INK_DEF; GLASS = GLASS_DEF; } else { if (e.empburst) EMP_PULSE = 1 + Math.max(0, 1 - Math.max(0, e.hold - e.y) / (e.hold + 50)) * 3;   /* v4.0.1 — spin the warhead's containment ring faster the closer it gets to e.hold (detonation) */ (ART[e.art || e.kind] || ART.drone)(c, e.s); } } c.restore(); if (e.shield > 0 && !e.reentry && !_extremeLOD) { c.globalAlpha = .35 + .2 * Math.sin(animClock * .02); c.strokeStyle = '#8ac8ff'; c.lineWidth = 1.4; c.beginPath(); c.arc(px, e.y, e.s * 1.55, 0, 6.28); c.stroke(); c.globalAlpha = 1; } if (e.pdBudget != null && e.pdBudget < 1 && !e.reentry && !_extremeLOD) { c.globalAlpha = .3 + .3 * Math.sin(animClock * .09); c.strokeStyle = '#ff3b3b'; c.lineWidth = 1.6; c.beginPath(); c.arc(px, e.y, e.s * 1.35, 0, 6.28); c.stroke(); c.globalAlpha = 1; }   /* v4.4 — PD SATURATED: a flickering red ring reads "its point-defence pool is empty, fire through it now" */ if (e._lockT > 0 && !e.reentry) { const rr = e.s * 1.7 + 4, rot = animClock * .05; c.save(); c.globalAlpha = .45 + .35 * Math.min(1, e._lockT / .2); c.strokeStyle = e.boss ? '#ffd27a' : '#7dffc0'; c.lineWidth = 1.4; for (let q = 0; q < 4; q++) { const ba = rot + q * 1.5708; c.beginPath(); c.arc(px, e.y, rr, ba - .34, ba + .34); c.stroke(); } c.globalAlpha = 1; c.restore(); } if (!e.reentry) { if (e.boss) { c.fillStyle = '#ffcf7a'; c.font = 'bold 9px Consolas'; c.textAlign = 'center'; c.fillText(e.bossName || 'SUPERWEAPON', px, e.y - e.s - 16); c.textAlign = 'left'; bar(px, e.y - e.s - 12, e.s * 3.4, e.hp / e.maxHp, true); if (e.orbital) glow(px, e.y, e.s * 2.2, 'rgba(255,90,90,1)', .28); } else bar(px, e.y - e.s - 5, e.s * 2, e.hp / e.maxHp, true); } }
   if (_blipLOD) {   // HUD-LESS FULL-MAP VIEW — ATTACK ARROWS: a faint shooter→target line for every 3rd entity that's currently on a fire-cooldown (i.e. just fired — see u.cd/e.cd, reset by the fire code right after a shot) with a real live target still standing; capped at 300/frame
     let _arrowN = 0, _arrowI = 0; c.lineWidth = _blipS;
     for (const u of G.units) { if (u.carried || !u.cd || u.cd <= 0) continue; const t = u.lastTgt || u._lodTgt; if (!t || t.hp == null || t.hp <= 0) continue; _arrowI++; if (_arrowI % 3 !== 0) continue; if (_arrowN >= 300) break; _arrowN++; const px = sx(u.x); if (px < -30 - PX || px > W + 30 + PX) continue; c.globalAlpha = .25; c.strokeStyle = u.ally ? '#5be0ff' : '#4dff88'; c.beginPath(); c.moveTo(px, u.y); c.lineTo(sx(t.x), t.y); c.stroke(); }
@@ -9365,9 +9436,11 @@ function drawSquadUnit(u, px, lod) {
     c.save(); c.translate(mpx, myD);
     const facing = m.facing || u.facing || 1; c.scale(facing, 1);
     const art = m.art || d.art;
-    if (u.ally) { INK = ALLY_INK; GLASS = ALLY_GLASS; }
-    ART[art](c, s, ground ? (facing > 0 ? (m.aim || 0) : Math.PI - (m.aim || 0)) : 0);
-    if (u.ally) { INK = INK_DEF; GLASS = GLASS_DEF; }
+    const _qa = ground ? (facing > 0 ? (m.aim || 0) : Math.PI - (m.aim || 0)) : 0;
+    if (!(SPRITES_ON && cachedArt(art, s, _qa, u.ally ? 1 : 0, 0))) {   /* flat body, no shadow, same as the live path below */
+      if (u.ally) { INK = ALLY_INK; GLASS = ALLY_GLASS; }
+      ART[art](c, s, _qa);
+      if (u.ally) { INK = INK_DEF; GLASS = GLASS_DEF; } }
     c.restore();
     if (m.isAt) { c.fillStyle = '#5fd0ff'; c.beginPath(); c.arc(mpx, myD - s * 2.7, 1.6, 0, 6.28); c.fill(); }   // marks the AA/AT specialist / escort apart from the leader
     if (m.hp < m.maxHp) bar(mpx, myD - s * 2.2, s * 2, Math.max(0, m.hp) / m.maxHp);
@@ -9396,9 +9469,11 @@ function drawSquadCluster(u, px, d, ground) {
   const facing = u.facing || 1;
   for (let i = 0; i < pipN; i++) {
     c.save(); c.translate(px + OFF_X[i] * s, myD + OFF_Y[i]); c.scale(facing, 1);
-    if (u.ally) { INK = ALLY_INK; GLASS = ALLY_GLASS; }
-    ART[d.art](c, s * .95, ground ? (facing > 0 ? (u.aim || 0) : Math.PI - (u.aim || 0)) : 0);   // shared aim/facing across the whole cluster — no per-body recompute
-    if (u.ally) { INK = INK_DEF; GLASS = GLASS_DEF; }
+    const _qa = ground ? (facing > 0 ? (u.aim || 0) : Math.PI - (u.aim || 0)) : 0;   // shared aim/facing across the whole cluster — no per-body recompute
+    if (!(SPRITES_ON && cachedArt(d.art, s * .95, _qa, u.ally ? 1 : 0, 0))) {
+      if (u.ally) { INK = ALLY_INK; GLASS = ALLY_GLASS; }
+      ART[d.art](c, s * .95, _qa);
+      if (u.ally) { INK = INK_DEF; GLASS = GLASS_DEF; } }
     c.restore();
   }
   if (G.sel === u) { c.strokeStyle = '#6dffb0'; c.lineWidth = 1.2; c.strokeRect(px - d.s * 1.6, myD - d.s * 1.6, d.s * 3.2, d.s * 2.6); if (d.range) ring(px, myD, d.range * radarBoost(u.x)); }
@@ -9413,9 +9488,10 @@ function drawSwarmCluster(u, px, d, n) {
   for (let i = 0; i < pipN; i++) {
     const [ox, oy] = swarmSlotOffset(Math.floor(i * n / pipN), cfg.spread * .55, isAir);
     c.save(); c.translate(px + ox, my + oy); c.scale(facing, 1);
-    if (u.ally) { INK = ALLY_INK; GLASS = ALLY_GLASS; }
-    ART[d.art](c, s * .95, 0);
-    if (u.ally) { INK = INK_DEF; GLASS = GLASS_DEF; }
+    if (!(SPRITES_ON && cachedArt(d.art, s * .95, 0, u.ally ? 1 : 0, 0))) {
+      if (u.ally) { INK = ALLY_INK; GLASS = ALLY_GLASS; }
+      ART[d.art](c, s * .95, 0);
+      if (u.ally) { INK = INK_DEF; GLASS = GLASS_DEF; } }
     c.restore();
   }
   if (G.sel === u) { c.strokeStyle = '#6dffb0'; c.lineWidth = 1.2; c.strokeRect(px - blobR, my - blobR, blobR * 2, blobR * 1.625); if (d.range) ring(px, my, d.range * radarBoost(u.x)); }
@@ -11091,7 +11167,7 @@ const starDen = document.getElementById('starDen'), starDenV = document.getEleme
 /* ===== OPTIONS PERSISTENCE — every setting (incl. accessibility) is remembered on this device ===== */
 const IS_TOUCH = !!(window.matchMedia && matchMedia('(pointer: coarse)').matches);
 function applyGrain() { const g = document.querySelector('.grain'); if (g) g.style.display = grainOn ? '' : 'none'; }
-function saveOpts() { try { localStorage.setItem('tm_opts', JSON.stringify({ ui: +uiScale.value, star: +starDen.value, edge: edgeScroll, motion: reducedMotion, shake: shakeOn, flash: flashRed, cb: cbMode, grain: grainOn, fx: fullFx, fxAuto: fxAuto, recTab: REC.mode === 'tab' })); } catch (e) {} }
+function saveOpts() { try { localStorage.setItem('tm_opts', JSON.stringify({ ui: +uiScale.value, star: +starDen.value, edge: edgeScroll, motion: reducedMotion, shake: shakeOn, flash: flashRed, cb: cbMode, grain: grainOn, fx: fullFx, fxAuto: fxAuto, recTab: REC.mode === 'tab', spr: SPRITES_ON })); } catch (e) {} }
 function loadOpts() {
   let o = null; try { o = JSON.parse(localStorage.getItem('tm_opts') || 'null'); } catch (e) {}
   if (!o) {   // first run — respect the system's reduced-motion preference; touch devices get edge-scroll off (it fights drag-panning)
@@ -11100,10 +11176,10 @@ function loadOpts() {
   } else {
     if (o.ui) { uiScale.value = o.ui; root.style.setProperty('--ui-scale', o.ui / 100); uiScaleV.textContent = o.ui + '%'; }
     if (o.star) { starDen.value = o.star; starTarget = o.star; }
-    edgeScroll = o.edge !== false; reducedMotion = !!o.motion; shakeOn = o.shake !== false; flashRed = !!o.flash; cbMode = !!o.cb; grainOn = o.grain !== false; fullFx = o.fx !== false; fxAuto = o.fxAuto !== false; REC.mode = o.recTab ? 'tab' : 'game';
+    edgeScroll = o.edge !== false; reducedMotion = !!o.motion; shakeOn = o.shake !== false; flashRed = !!o.flash; cbMode = !!o.cb; grainOn = o.grain !== false; fullFx = o.fx !== false; fxAuto = o.fxAuto !== false; REC.mode = o.recTab ? 'tab' : 'game'; SPRITES_ON = o.spr !== false;
   }
   const st = (id, on) => { const el = document.getElementById(id); if (el) el.classList.toggle('on', on); };
-  st('tEdge', edgeScroll); st('tMotion', reducedMotion); st('tShake', shakeOn); st('tFlash', flashRed); st('tCb', cbMode); st('tGrain', grainOn); st('tFullFx', fullFx); st('tFxAuto', fxAuto); st('tRecTab', REC.mode === 'tab');
+  st('tEdge', edgeScroll); st('tMotion', reducedMotion); st('tShake', shakeOn); st('tFlash', flashRed); st('tCb', cbMode); st('tGrain', grainOn); st('tFullFx', fullFx); st('tFxAuto', fxAuto); st('tRecTab', REC.mode === 'tab'); st('tSpr', SPRITES_ON);
   applyGrain();
 }
 const bindToggle = (id, set) => { const el = document.getElementById(id); if (el) el.addEventListener('click', function () { this.classList.toggle('on'); set(this.classList.contains('on')); saveOpts(); }); };
@@ -11127,6 +11203,9 @@ bindToggle('tFlash', v => flashRed = v);
 bindToggle('tCb', v => cbMode = v);
 bindToggle('tGrain', v => { grainOn = v; applyGrain(); });
 bindToggle('tFullFx', v => fullFx = v);
+bindToggle('tSpr', v => SPRITES_ON = v);
+function sprToggle() { SPRITES_ON = !SPRITES_ON; const el = document.getElementById('tSpr'); if (el) el.classList.toggle('on', SPRITES_ON); saveOpts(); try { toast('Cached unit art ' + (SPRITES_ON ? 'on' : 'off')); } catch (e) {} }
+addEventListener('keydown', e => { if (e.key === 'F9' && !e.repeat) { e.preventDefault(); sprToggle(); } });   /* F9 — A/B the unit sprite cache live */
 bindToggle('tFxAuto', v => { fxAuto = v; if (!v) { FX_Q = 1; fxDerive(); } });
 bindToggle('tRecTab', v => { REC.mode = v ? 'tab' : 'game'; });
 loadOpts();

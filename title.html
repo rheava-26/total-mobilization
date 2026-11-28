@@ -665,6 +665,7 @@
   <div class="row"><label>Colorblind-Friendly Bars <span style="opacity:.55;font-size:10px">— blue/orange instead of green/red</span></label><div class="toggle" id="tCb"><div class="knob"></div></div></div>
   <div class="row"><label>Film Grain &amp; Vignette</label><div class="toggle on" id="tGrain"><div class="knob"></div></div></div>
   <div class="row"><label>Classic Tracers <span style="opacity:.55;font-size:10px">— Draws gun rounds as long thin tracers. Off draws them as bright heads with short tails.</span></label><div class="toggle" id="tClassicProj"><div class="knob"></div></div></div>
+  <div class="row"><label>Classic Explosions <span style="opacity:.55;font-size:10px">— Draws explosions in the original style. Off draws staged cinematic explosions.</span></label><div class="toggle" id="tClassicBoom"><div class="knob"></div></div></div>
   <div class="row"><label>Recording mode <span style="opacity:.55;font-size:10px">— off: game only, no HUD, no prompt · on: whole tab with HUD, one browser picker</span></label><div class="toggle" id="tRecTab"><div class="knob"></div></div></div>
   <div style="font-size:10px;color:#7c90ac;margin-top:8px;line-height:1.5">Settings are saved on this device. UI SCALE also enlarges all HUD text. On touch devices, edge scroll is off by default — drag to scroll, pinch to zoom.</div>
   <div class="row"><label>Photosensitive Safe Mode <span style="opacity:.55;font-size:10px">— one tap: reduced motion, no screen shake, flash reduction &amp; no film grain</span></label><button class="pill" onclick="applySafeMode()">APPLY</button></div>
@@ -5079,7 +5080,305 @@ function emitArc(x, y, p, count, col) { const n = Math.round(2 + count); for (le
 function emitSpray(x, y, p) { const n = Math.max(1, Math.round((6 + p * .8) * FX_Q)); for (let i = 0; i < n; i++) { const a = -Math.PI / 2 + (Math.random() - .5) * 1.1, sp = 50 + Math.random() * p * 12; G.parts.push({ k: 'spray', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: 1 + Math.random() * 1.8, life: .5 + Math.random() * .5 }); } }   // a plume of droplets kicked up by a WATER impact — falls under updParts' generic gravity fallback
 function emitMotes(x, y, p) { const n = Math.round(6 + p * .5); for (let i = 0; i < n; i++) { const a = Math.random() * 6.28, sp = 40 + Math.random() * 90, rr = p * 1.6; G.parts.push({ k: 'plasma', x: x + Math.cos(a) * rr, y: y + Math.sin(a) * rr, vx: -Math.cos(a) * sp, vy: -Math.sin(a) * sp, r: 1.5 + Math.random() * 2.2, life: .16 + Math.random() * .18 }); } }   // ANTIMATTER — the same inward-sucking-implosion look annihilate() already uses (reuses the 'plasma' particle kind), just parameterised off the boom() power instead of a unit's size
 function emitDust(x, y, p) { for (let i = 0; i < Math.round(4 + p * .3); i++) { const a = -Math.PI / 2 + (Math.random() - .5) * 2.4, sp = 20 + Math.random() * p * 4; G.parts.push({ k: 'clod', x: x + (Math.random() - .5) * p, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 10, r: 1 + Math.random() * 2.4, rot: Math.random() * 6, vr: (Math.random() - .5) * 6, grav: 90, gy: y + Math.random() * 4, dom: 'ground', settled: false, life: .6 + Math.random() * .6, col: '#787e88' }); } }   // COLLAPSE — grey rubble chunks (reuses 'clod', tinted concrete-grey instead of dirt-brown) settling out of a demolished structure
-function boom(x, y, p, style) {   // THE universal explosion — style (default 'he') picks a BOOM_STYLES family + a random variant of it; every non-'he' family is additive on top of the same ring/flash/deb/ember/smoke skeleton the original single-look boom() always used
+/* ===================================================================================================
+   STAGED EXPLOSIONS (v4.11) — PUNCHY REAL, cinematic, layer-aware, BAKED.
+   Every shape here is a cached flipbook (one canvas sheet per palette x medium x tier x variant), stamped with drawImage; nothing is drawn
+   live with blur or per-frame gradients. A medium/large blast is (a) a compression flash + bright point + ring, (b) a primary fireball
+   that cools white > yellow > orange > red with a dark rim, (c) 2-6 secondary lobes that balloon outward on extruded fire/smoke tendrils,
+   (d) a long rolling smoke sheet (mushroom column on the ground). Live extras are cheap: debris that arcs with a baked trail and may pop
+   into a small secondary blast, a terrain-riding dust ring, a bounded scorch decal. All of it is COSMETIC. CLASSIC_BOOM=true keeps the old path.
+   Variation is derived from a hash of position + a cosmetic counter, never from extra Math.random calls. */
+let CLASSIC_BOOM = false;
+const XM = { sheets: new Map(), px: 0, cap: 40e6, rn: 0, ck: 0, seq: 0, fr: 0, gFr: -9, gx: -1e9, scorch: [], warm: null };
+const XT = [   /* size tiers: R = nominal fireball radius (world px), T/n = body life + frame count, K = bake scale, sT/sn/sK = the smoke sheet's */
+  { R: 10, T: .45, n: 8, K: 2, sT: .9, sn: 8, sK: 1.4 },
+  { R: 22, T: .9, n: 12, K: 1.4, sT: 1.9, sn: 10, sK: 1 },
+  { R: 44, T: 1.6, n: 16, K: 1, sT: 3.4, sn: 12, sK: .6 },
+  { R: 88, T: 2.4, n: 20, K: .6, sT: 4.6, sn: 14, sK: .4 }
+];
+const XV = [3, 3, 2, 2];   /* shape variants baked per tier */
+const XPAL = {   /* f = temperature ramp cold > hot (dark, red, orange, yellow, white) · sm/dk = smoke lit/shadow · smk = smoke density · ft = dirt fountain size · dirt = fountain colour */
+  he:         { f: [[44, 14, 8], [158, 42, 12], [244, 118, 26], [255, 208, 96], [255, 252, 232]], sm: [132, 136, 144], dk: [22, 24, 28], smk: 1, ft: 1, dirt: [88, 64, 40], rm: 1, tone: 0 },
+  kinetic:    { f: [[30, 24, 24], [140, 70, 26], [240, 150, 56], [255, 226, 150], [236, 248, 255]], sm: [156, 158, 156], dk: [30, 30, 32], smk: .7, ft: 1.5, dirt: [96, 74, 50], rm: 1.05, tone: 0 },
+  fire:       { f: [[38, 10, 6], [146, 26, 8], [240, 84, 16], [255, 176, 44], [255, 242, 196]], sm: [74, 60, 54], dk: [14, 12, 12], smk: 1.2, ft: .5, dirt: [70, 50, 34], rm: 1.1, tone: 1 },
+  cluster:    { f: [[52, 26, 10], [176, 76, 22], [255, 154, 42], [255, 224, 116], [255, 250, 222]], sm: [142, 140, 136], dk: [32, 32, 34], smk: .6, ft: .6, dirt: [92, 68, 44], rm: .85, tone: 0 },
+  nuke:       { f: [[60, 22, 12], [196, 64, 18], [255, 146, 44], [255, 228, 146], [255, 255, 242]], sm: [126, 104, 92], dk: [32, 24, 22], smk: 1.2, ft: 1.3, dirt: [96, 72, 48], rm: 1.7, tone: 1 },
+  plasma:     { f: [[40, 10, 72], [132, 32, 172], [222, 72, 232], [255, 172, 252], [255, 246, 255]], sm: [128, 84, 160], dk: [34, 12, 52], smk: .3, ft: .3, dirt: [70, 50, 80], rm: .95, tone: 1 },
+  antimatter: { f: [[10, 6, 42], [62, 42, 172], [142, 102, 242], [206, 192, 255], [246, 249, 255]], sm: [96, 90, 170], dk: [10, 8, 40], smk: .18, ft: .2, dirt: [50, 44, 90], rm: 1.45, tone: 1 },
+  emp:        { f: [[14, 12, 62], [62, 62, 192], [112, 132, 255], [192, 212, 255], [246, 250, 255]], sm: [100, 120, 190], dk: [14, 18, 56], smk: 0, ft: 0, dirt: [50, 60, 90], rm: .9, tone: 1 },
+  seismic:    { f: [[52, 36, 20], [152, 98, 44], [222, 152, 72], [250, 212, 142], [255, 244, 216]], sm: [124, 100, 72], dk: [46, 36, 26], smk: 1, ft: 1.8, dirt: [104, 78, 50], rm: 1.1, tone: 2 }
+};
+function xh(n) { n = Math.imul((n | 0) ^ (n >>> 15), 0x2c1b3c6d); n = Math.imul(n ^ (n >>> 12), 0x297a2d39); return ((n ^ (n >>> 15)) >>> 0) / 4294967296; }   /* cheap hash > [0,1) */
+function xrng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = (t + Math.imul(t ^ t >>> 7, 61 | t)) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const xclamp = (v, a, b) => v < a ? a : v > b ? b : v, xease = v => { v = v < 0 ? 0 : v > 1 ? 1 : v; return 1 - (1 - v) * (1 - v) * (1 - v); };
+function xRamp(P, t, a) { t = xclamp(t, 0, 1) * 4; const i = Math.min(3, t | 0), f = t - i, A = P.f[i], B = P.f[i + 1]; return 'rgba(' + ((A[0] + (B[0] - A[0]) * f) | 0) + ',' + ((A[1] + (B[1] - A[1]) * f) | 0) + ',' + ((A[2] + (B[2] - A[2]) * f) | 0) + ',' + a + ')'; }
+function xFire(x, P, cx, cy, r, heat, a) {   /* a gradient fireball: white-hot centre, yellow, orange, red, dark rim — cooling by `heat` */
+  if (r < .6 || a <= .01) return;
+  const g = x.createRadialGradient(cx, cy, 0, cx, cy, r);
+  g.addColorStop(0, xRamp(P, heat, a)); g.addColorStop(.3, xRamp(P, heat * .88, a)); g.addColorStop(.58, xRamp(P, heat * .62, a)); g.addColorStop(.8, xRamp(P, heat * .36, a)); g.addColorStop(.93, xRamp(P, heat * .14, a * .95)); g.addColorStop(1, xRamp(P, 0, 0));
+  x.fillStyle = g; x.beginPath(); x.arc(cx, cy, r, 0, 6.2832); x.fill();
+}
+function xPuff(x, P, cx, cy, r, a, warm) {   /* a shaded smoke ball: lit crown, dark body, optional fire-lit underside */
+  if (r < 1 || a <= .01) return; const s = P.sm, d = P.dk, k = P.smk > 1 ? 1 : P.smk;
+  const g = x.createRadialGradient(cx - r * .3, cy - r * .34, r * .05, cx, cy, r);
+  g.addColorStop(0, 'rgba(' + s[0] + ',' + s[1] + ',' + s[2] + ',' + a + ')'); g.addColorStop(.5, 'rgba(' + ((s[0] + d[0] * 2) / 3 | 0) + ',' + ((s[1] + d[1] * 2) / 3 | 0) + ',' + ((s[2] + d[2] * 2) / 3 | 0) + ',' + a + ')'); g.addColorStop(.8, 'rgba(' + d[0] + ',' + d[1] + ',' + d[2] + ',' + a * .8 + ')'); g.addColorStop(1, 'rgba(' + d[0] + ',' + d[1] + ',' + d[2] + ',0)');
+  x.fillStyle = g; x.beginPath(); x.arc(cx, cy, r, 0, 6.2832); x.fill();
+  if (warm > .03) { const w = x.createRadialGradient(cx, cy + r * .25, 0, cx, cy + r * .25, r * .95); w.addColorStop(0, xRamp(P, .7, warm * a)); w.addColorStop(1, xRamp(P, .3, 0)); x.fillStyle = w; x.beginPath(); x.arc(cx, cy, r, 0, 6.2832); x.fill(); }
+}
+function xLayout(med, tier, vi, lite) {   /* the seeded element lists a sheet is drawn from — shared by a medium's body and smoke sheets so puffs follow lobes */
+  const r = xrng(1009 + tier * 131 + vi * 977 + med.charCodeAt(0) * 31), gnd = med === 'g' || med === 'w', half = v => lite ? Math.max(1, Math.ceil(v / 2)) : v;
+  const ang = (k, nk) => gnd ? -3.1416 + .2 + (k + .5) / nk * (3.1416 - .4) + (r() - .5) * .5 / nk * 2 : k / nk * 6.2832 + r() * .7;
+  const L = { lumps: [], lobes: [], st: [], sp: [], cl: [], sh: [], puff: [], cap: [] };
+  const nlump = [2, 4, 5, 6][tier], nlobe = half([0, 2, 4, 6][tier]), nst = half([0, 4, 8, 12][tier]), nsp = half([8, 14, 26, 40][tier]);
+  for (let i = 0; i < nlump; i++) L.lumps.push({ a: r() * 6.2832, d: .18 + .36 * r(), s: .5 + .3 * r() });
+  for (let i = 0; i < nlobe; i++) { const lb = { a: ang(i, nlobe), d: .78 + .6 * r(), r: .42 + .22 * r(), delay: .07 + .2 * r() }; L.lobes.push(lb); L.st.push({ a: lb.a, len: lb.d * 1.08, w: .13 + .05 * r(), delay: lb.delay * .6, curl: (r() - .5) * 1.1, root: 1 }); }
+  for (let i = 0; i < nst; i++) L.st.push({ a: ang(i, nst) + (r() - .5) * .35, len: 1.7 + 1.5 * r(), w: .06 + .06 * r(), delay: .02 + .14 * r(), curl: (r() - .5) * 1.5, root: 0 });
+  for (let i = 0; i < nsp; i++) L.sp.push({ a: gnd ? -1.5708 + (r() - .5) * 3 : r() * 6.2832, sp: 5 + 7 * r(), len: .55 + r() * .7 });
+  for (let i = 0; i < [0, 6, 12, 18][tier]; i++) L.cl.push({ a: -1.5708 + (r() - .5) * 1.3, sp: 4 + 4 * r(), sz: .05 + .05 * r(), ph: r() * 6 });
+  for (let i = 0; i < [14, 28, 52, 84][tier]; i++) L.sh.push({ a: r() * 6.2832, k: .55 + .45 * Math.sqrt(r()), sz: .7 + 1.3 * r(), ph: r() * 6.2832 });
+  const ns = [3, 7, 14, 22][tier], nc = [0, 0, 9, 14][tier];
+  for (let i = 0; i < ns; i++) L.puff.push({ h: (i + .5) / ns, ph: r() * 6.2832, r0: .3 + .16 * r(), dl: .05 * r(), a: r() * 6.2832, d: .2 + .8 * r() });
+  for (let i = 0; i < nc; i++) L.cap.push({ a: i / nc * 6.2832 + r() * .5, r0: .5 + .2 * r(), dl: .05 * r() });
+  return L;
+}
+function xBake(pal, med, tier, vi, lite, kind) {   /* one sheet: pal x medium x tier x variant, kind 'b' body or 's' smoke. Returns {cv,fw,fh,cols,K,ox,oy,n,T} or 0 when that combo has no such layer */
+  const P = XPAL[pal], D = XT[tier], R = D.R, isS = kind === 's';
+  if (isS && (med === 'v' || !(P.smk > 0))) return 0;
+  let T = isS ? D.sT : D.T; const n = isS ? D.sn : D.n, K = isS ? D.sK : D.K;
+  if (med === 'h') T *= isS ? .55 : .72; else if (med === 'v') T *= .8; else if (med === 'w') T *= 1.1;
+  let rx, up, dn;
+  if (!isS) { if (med === 'g') { rx = 3.1 * R; up = 3.5 * R; dn = .3 * R; } else if (med === 'w') { rx = 2.9 * R; up = 3.6 * R; dn = .3 * R; } else { rx = up = dn = 3.2 * R; } }
+  else { if (med === 'g') { rx = (tier >= 2 ? 2.7 : 2.2) * R; up = tier >= 3 ? 8 * R : tier === 2 ? 6.4 * R : 3.8 * R; dn = .3 * R; } else if (med === 'w') { rx = 2 * R; up = 4.2 * R; dn = .3 * R; } else { rx = 2.8 * R; up = 4.4 * R; dn = 2.2 * R; } }
+  const fw = Math.ceil(rx * 2 * K), fh = Math.ceil((up + dn) * K), cols = Math.max(1, Math.min(n, (8192 / fw) | 0)), rows = Math.ceil(n / cols);
+  const cv = document.createElement('canvas'); cv.width = fw * cols; cv.height = fh * rows; const x2 = cv.getContext('2d'), L = xLayout(med, tier, vi, lite);
+  const ts = []; for (let i = 0; i <= n; i++) ts.push(T * Math.pow(i / n, 1.45));
+  const sc = document.createElement('canvas'); sc.width = fw; sc.height = fh; const sx0 = sc.getContext('2d', { willReadFrequently: true }), bb = [];   /* CPU scratch: each frame is drawn here first so its tight alpha bounding box can be measured, then copied into the sheet — playback blits only that box */
+  for (let i = 0; i < n; i++) {
+    const s = (ts[i] + ts[i + 1]) * .5, col = i % cols, row = (i / cols) | 0, x = sx0;
+    x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, fw, fh);
+    x.save(); x.setTransform(K, 0, 0, K, rx * K, up * K); x.beginPath(); x.rect(-rx, -up, rx * 2, up + ((med === 'g' || med === 'w') ? 1.5 : dn)); x.clip();
+    x.lineCap = 'round'; x.lineJoin = 'round';
+    if (isS) xDrawSmoke(x, P, med, tier, L, s, T, R); else if (med === 'v') xDrawSpace(x, P, tier, L, s, T, R); else if (med === 'w') xDrawWater(x, P, tier, L, s, T, R); else xDrawBody(x, P, med, tier, L, s, T, R);
+    x.restore();
+    const d = x.getImageData(0, 0, fw, fh).data; let x0 = fw, y0 = fh, x1 = -1, y1 = -1;
+    for (let yy = 0; yy < fh; yy++) { const ro = yy * fw * 4; for (let xx = 0; xx < fw; xx++) if (d[ro + xx * 4 + 3] > 6) { if (xx < x0) x0 = xx; if (xx > x1) x1 = xx; if (yy < y0) y0 = yy; if (yy > y1) y1 = yy; } }
+    if (x1 < 0) { x0 = y0 = 0; x1 = y1 = 0; } bb.push([x0, y0, x1 - x0 + 1, y1 - y0 + 1]);
+    x2.drawImage(sc, col * fw, row * fh);
+  }
+  return { cv, fw, fh, cols, K, ox: rx, oy: up, n, T, kind, bb };
+}
+function xDrawBody(x, P, med, tier, L, s, T, R) {   /* ground / low air / high air fire body */
+  const u = s / T, g = med === 'g', hi = med === 'h', ex = hi ? 1.3 : 1, thin = hi ? .62 : 1, cy = g ? -R * .42 : 0, dk = 'rgba(' + P.dk[0] + ',' + P.dk[1] + ',' + P.dk[2] + ',';
+  /* DIRT FOUNTAIN (ground) — a brown column thrown up under the fireball, rim-lit clods arcing out of it */
+  if (g && tier >= 1 && P.ft > 0) {
+    const fk = xease(s / (T * .3)), fa = 1 - xease((u - .38) / .5), dr = P.dirt;
+    if (fa > .01) {
+      const H = R * (1.4 + tier * .3) * P.ft * fk * .8, wb = R * .3 * (.7 + P.ft * .3), wt = wb * (1.5 + fk * .7);
+      x.fillStyle = 'rgba(' + dr[0] + ',' + dr[1] + ',' + dr[2] + ',' + (.9 * fa) + ')'; x.beginPath(); x.moveTo(-wb, 0); x.lineTo(-wt, -H); x.lineTo(wt, -H); x.lineTo(wb, 0); x.closePath(); x.fill();
+      x.fillStyle = 'rgba(' + Math.min(255, dr[0] + 60) + ',' + Math.min(255, dr[1] + 54) + ',' + Math.min(255, dr[2] + 44) + ',' + (.5 * fa) + ')'; x.beginPath(); x.moveTo(wb * .1, 0); x.lineTo(wt * .1, -H); x.lineTo(wt, -H); x.lineTo(wb, 0); x.closePath(); x.fill();
+      for (let j = 0; j < 4; j++) { const bx = (j - 1.5) * wt * .62, by = -H + Math.sin(j * 2.1) * H * .06; x.fillStyle = 'rgba(' + (dr[0] + 22) + ',' + (dr[1] + 18) + ',' + (dr[2] + 12) + ',' + (.9 * fa) + ')'; x.beginPath(); x.arc(bx, by, wt * .5, 0, 6.2832); x.fill(); }
+    }
+    for (const c of L.cl) { const vx = Math.cos(c.a) * c.sp * R, vy = Math.sin(c.a) * c.sp * R, px = vx * s * .8, py = vy * s + .5 * R * 9 * s * s * 1.3; if (py > 0) continue; const la = xclamp(1 - (u - .5) / .5, 0, 1), sz = c.sz * R * (.6 + .4 * la), hot = xclamp(1 - s / (T * .35), 0, 1);
+      x.save(); x.translate(px, py); x.rotate(c.ph + s * 7); x.fillStyle = 'rgba(28,20,14,' + la + ')'; x.fillRect(-sz, -sz * .7, sz * 2, sz * 1.4); if (hot > .05) { x.strokeStyle = xRamp(P, .55, hot * la); x.lineWidth = Math.max(.6, sz * .3); x.strokeRect(-sz, -sz * .7, sz * 2, sz * 1.4); } x.restore(); }
+  }
+  /* EXTRUDED TENDRILS — fire fading into smoke, thrown outward from the core on arcs; the root lets go so they read as flung, not drawn */
+  for (const st of L.st) {
+    const sa = s - st.delay * T; if (sa <= 0) continue; const k = sa / (T * .66); if (k >= 1) continue;
+    const len = st.len * R, head = xease(sa / (T * .38) * ex), tail = xclamp((sa - T * .16) / (T * .5), 0, 1) * .85, ca = Math.cos(st.a), sn = Math.sin(st.a), droop = hi ? .3 : 1, dp = droop * (sa / T), NN = 8;
+    let px0 = 0, py0 = 0;
+    for (let j = 0; j <= NN; j++) {
+      const t = tail + (head - tail) * (j / NN), d = R * .25 + len * t, off = Math.sin(t * 3.1416) * st.curl * len * .3, X = ca * d - sn * off, Y = cy + sn * d + ca * off + dp * d * d / (R * 7);
+      if (j) { const temp = (1 - k * .85) * (1 - t * .8), lw = Math.max(.5, st.w * R * (1 - t * .7) * (1 - k * .3)), al = (1 - k * k) * thin;
+        x.strokeStyle = temp > .3 ? xRamp(P, temp, al) : dk + (al * .6) + ')'; x.lineWidth = lw; x.beginPath(); x.moveTo(px0, py0); x.lineTo(X, Y); x.stroke();
+        if (temp > .42) { x.strokeStyle = xRamp(P, Math.min(1, temp + .25), al * .9); x.lineWidth = lw * .42; x.beginPath(); x.moveTo(px0, py0); x.lineTo(X, Y); x.stroke(); } }
+      px0 = X; py0 = Y;
+    }
+  }
+  /* SECONDARY LOBES — smaller fireballs that inflate at the ends of the tendrils and splay outward */
+  for (const lb of L.lobes) {
+    const la = s - lb.delay * T; if (la <= 0) continue; const k = xease(la / (T * .4) * ex), fa = (1 - xease((u - .6) / .4)) * thin; if (fa <= .01) continue;
+    const dd = lb.d * R * k, lx = Math.cos(lb.a) * dd, ly = cy + Math.sin(lb.a) * dd - (g ? R * .3 : R * .12) * k, lr = lb.r * R * (.3 + .7 * k) * (1 - .35 * xease((u - .5) / .5)), heat = Math.pow(xclamp(1 - la / (T * .6), 0, 1), .8);
+    x.fillStyle = dk + (.55 * fa) + ')'; x.beginPath(); x.arc(lx, ly, lr * 1.1, 0, 6.2832); x.fill();
+    xFire(x, P, lx, ly, lr, heat, fa); xFire(x, P, lx + Math.cos(lb.a + 1.1) * lr * .5, ly + Math.sin(lb.a + 1.1) * lr * .5, lr * .55, heat * .92, fa * .9);
+  }
+  /* PRIMARY FIREBALL — lumpy so it is never a perfect sphere */
+  const fs = s - T * .025;
+  if (fs > 0) {
+    const fr = R * xease(fs / (T * .2) * ex) * (1 - .22 * xease((u - .45) / .55)), heat = Math.pow(xclamp(1 - u / .6, 0, 1), .8), fa = (1 - xease((u - .5) / .4)) * thin;
+    if (fa > .01) {
+      x.fillStyle = dk + (.5 * fa) + ')'; x.beginPath(); x.arc(0, cy, fr * 1.06, 0, 6.2832); x.fill();
+      let i = 0; for (const lm of L.lumps) { xFire(x, P, Math.cos(lm.a) * fr * lm.d, cy + Math.sin(lm.a) * fr * lm.d - fr * .12 * xease(u * 2), fr * lm.s, heat * (.94 - .05 * i++), fa); }
+      xFire(x, P, 0, cy, fr * .88, heat, fa);
+    }
+  }
+  /* STAGE A: compression flash, tight white-hot core, bright point and ring */
+  const cu = s / (T * .22);
+  if (cu < 1) { const cr = R * (.28 + .5 * xease(s / (T * .06))) * (1 - .55 * cu), al = Math.pow(1 - cu, .7), gr = x.createRadialGradient(0, cy, 0, 0, cy, cr * 1.5);
+    gr.addColorStop(0, 'rgba(255,255,255,' + al + ')'); gr.addColorStop(.4, xRamp(P, .95, al)); gr.addColorStop(.75, xRamp(P, .6, al * .7)); gr.addColorStop(1, xRamp(P, .3, 0)); x.fillStyle = gr; x.beginPath(); x.arc(0, cy, cr * 1.5, 0, 6.2832); x.fill();
+    x.fillStyle = 'rgba(255,255,255,' + al + ')'; x.beginPath(); x.arc(0, cy, cr * .62, 0, 6.2832); x.fill(); }
+  if (s < T * .09) { const k = 1 - s / (T * .09), gl = R * 1.9 * k; x.fillStyle = 'rgba(255,255,255,' + (.85 * k) + ')'; for (let q = 0; q < 4; q++) { const a = q * 1.5708 + .4; x.beginPath(); x.moveTo(Math.cos(a - 1.5708) * R * .07, cy + Math.sin(a - 1.5708) * R * .07); x.lineTo(Math.cos(a) * gl, cy + Math.sin(a) * gl); x.lineTo(Math.cos(a + 1.5708) * R * .07, cy + Math.sin(a + 1.5708) * R * .07); x.closePath(); x.fill(); } }
+  /* SHOCK RING — thin, sharp; on the ground it also races flat along the surface */
+  const ru = s / (T * (hi ? .3 : .22));
+  if (ru < 1) { const rr = R * (.4 + 1.9 * xease(ru)) * ex; x.strokeStyle = 'rgba(255,246,225,' + ((1 - ru) * thin) + ')'; x.lineWidth = Math.max(1, R * .04); x.beginPath(); if (g) x.arc(0, cy, rr, 3.1416, 6.2832); else x.arc(0, cy, rr, 0, 6.2832); x.stroke();
+    if (g) { x.strokeStyle = 'rgba(255,232,196,' + (.7 * (1 - ru)) + ')'; x.lineWidth = Math.max(.8, R * .03); x.beginPath(); x.ellipse(0, 0, rr * 1.5, rr * .13, 0, 3.1416, 6.2832); x.stroke(); } }
+  /* SPARK STREAKS */
+  for (const p of L.sp) { const life = xclamp(1 - s / (T * .55), 0, 1); if (life <= .02) continue; const t0 = Math.max(0, s - .035 * p.len), sp = p.sp * R * .55 * ex, d1 = sp * s / (1 + s * 3), d0 = sp * t0 / (1 + t0 * 3), gv = R * 10 * (hi ? .3 : 1);
+    const x1 = Math.cos(p.a) * d1, y1 = cy + Math.sin(p.a) * d1 + .5 * gv * s * s, x0 = Math.cos(p.a) * d0, y0 = cy + Math.sin(p.a) * d0 + .5 * gv * t0 * t0;
+    x.strokeStyle = xRamp(P, .62, life * thin); x.lineWidth = (R * .05 + .6) * life + .4; x.beginPath(); x.moveTo(x0, y0); x.lineTo(x1, y1); x.stroke(); x.strokeStyle = xRamp(P, 1, life * thin); x.lineWidth = ((R * .05 + .6) * life + .4) * .45; x.beginPath(); x.moveTo(x0 * .6 + x1 * .4, y0 * .6 + y1 * .4); x.lineTo(x1, y1); x.stroke(); }
+}
+function xDrawSmoke(x, P, med, tier, L, s, T, R) {   /* the long dark roll: a rising column + mushroom cap on the ground, drifting billows in the air, white steam over water */
+  const u = s / T, fadeA = 1 - xease((u - .5) / .5), inA = xease((s - T * .1) / (T * .18)), A = fadeA * inA * (P.smk > 1 ? 1 : P.smk) * (med === 'h' ? .45 : 1); if (A <= .01) return;
+  const warmK = xclamp(1 - s / (T * .3), 0, 1), g = med === 'g';
+  if (med === 'w') { const Pw = { f: P.f, sm: [232, 238, 244], dk: [150, 166, 182], smk: 1 }; let i = 0; for (const p of L.puff) { const sa = Math.max(0, s - p.dl * T), k = xease(sa / (T * .6)), rr = R * (.4 + .5 * k) * (.8 + p.r0), px = Math.cos(p.a) * R * .6 * p.d * k, py = -R * (.5 + 1.2 * k * (.4 + p.h)); xPuff(x, Pw, px, py, rr, A * .75, 0); i++; } return; }
+  if (g && tier >= 2) {   /* MUSHROOM — stem puffs stacked up a rising column, a rolling cap on top, fire-lit from beneath while young */
+    const Hm = R * (tier >= 3 ? 5.4 : 4.1) * xease(s / (T * .45)), sw = R * .12, warm = warmK * (tier >= 3 ? 1 : .75);
+    for (const p of L.puff) { const sa = Math.max(0, s - p.dl * T), gr = .5 + .8 * xease(sa / (T * .5)), h = Hm * p.h, rr = R * (p.r0 + .12 * (1 - p.h)) * gr, px = Math.sin(p.ph + s * 1.3) * sw + Math.cos(p.a) * rr * .35; xPuff(x, P, px, -h - R * .3, rr, A * (.75 + .25 * p.h), warm * (1 - p.h)); }
+    const cap = Hm + R * .3; for (const p of L.cap) { const gr = xease(s / (T * .5)), rc = R * (.8 + .9 * gr), a = p.a + s * .35, px = Math.cos(a) * rc, py = -cap + Math.sin(a) * rc * .5, rr = R * p.r0 * (.5 + .7 * gr) * (.8 + .3 * Math.sin(a));
+      xPuff(x, P, px, py, rr, A * (Math.sin(a) > 0 ? .8 : 1), warm * .7 * (Math.sin(a) > 0 ? 1 : .3)); }
+    xPuff(x, P, 0, -cap, R * (.7 + .5 * xease(s / (T * .5))), A, warm * .5);
+    for (let j = 0; j < 5; j++) { const sa = Math.max(0, s - T * .03 * j), gr = xease(sa / (T * .4)), side = j % 2 ? 1 : -1, px = side * R * (.3 + .55 * gr + j * .15), rr = R * (.4 + .1 * j) * (.5 + .7 * gr); xPuff(x, P, px, -rr * .5, rr, A * .55, 0); }   /* low billow along the ground */
+    return;
+  }
+  const rise = R * (g ? 2.4 : med === 'h' ? 1.4 : 2.2) * xease(s / (T * .7)), wm = warmK * (g ? .8 : 1);
+  for (const p of L.puff) { const sa = Math.max(0, s - p.dl * T), gr = xease(sa / (T * .5)), rr = R * (.28 + p.r0 * .9) * (.35 + .9 * gr) * (tier === 0 ? .8 : 1), dd = R * p.d * .9 * xease(sa / (T * .35));
+    const px = g ? Math.cos(p.a * .5) * dd * .7 : Math.cos(p.a) * dd, py = g ? -R * .35 - rise * (.3 + .7 * p.h) - rr * .25 : Math.sin(p.a) * dd - rise * (.2 + .6 * p.h);
+    xPuff(x, P, px, py, rr, A * .9, wm * (1 - p.h * .6)); }
+}
+function xDrawSpace(x, P, tier, L, s, T, R) {   /* vacuum: a bright sphere, a thin shock sphere, an expanding glittering debris shell — no smoke, no gravity */
+  const u = s / T, fa = 1 - xease((u - .08) / .3);
+  if (fa > .01) { const fr = R * (.35 + 1.15 * xease(s / (T * .22))), g = x.createRadialGradient(0, 0, 0, 0, 0, fr); g.addColorStop(0, 'rgba(255,255,255,' + fa + ')'); g.addColorStop(.35, xRamp(P, .9, fa * .95)); g.addColorStop(.75, xRamp(P, .55, fa * .5)); g.addColorStop(1, xRamp(P, .3, 0)); x.fillStyle = g; x.beginPath(); x.arc(0, 0, fr, 0, 6.2832); x.fill(); }
+  if (s < T * .14) { const k = 1 - s / (T * .14), gl = R * 3.2 * k; x.fillStyle = 'rgba(255,255,255,' + (.9 * k) + ')'; for (let q = 0; q < 4; q++) { const a = q * 1.5708 + .2; x.beginPath(); x.moveTo(Math.cos(a - 1.5708) * R * .06, Math.sin(a - 1.5708) * R * .06); x.lineTo(Math.cos(a) * gl, Math.sin(a) * gl); x.lineTo(Math.cos(a + 1.5708) * R * .06, Math.sin(a + 1.5708) * R * .06); x.closePath(); x.fill(); } }
+  const ru = s / (T * .7); if (ru < 1) { const rr = R * (.5 + 2.5 * xease(ru)); x.strokeStyle = xRamp(P, .9, (1 - ru) * .8); x.lineWidth = Math.max(1, R * .035); x.beginPath(); x.arc(0, 0, rr, 0, 6.2832); x.stroke(); x.strokeStyle = xRamp(P, .55, (1 - ru) * .25); x.lineWidth = Math.max(2, R * .12); x.beginPath(); x.arc(0, 0, rr * .94, 0, 6.2832); x.stroke(); }
+  const sk = xease(s / (T * .85)), sa = 1 - xease((u - .55) / .45);
+  if (sa > .01) for (const q of L.sh) { const d = R * (.5 + 2.7 * sk) * q.k, X = Math.cos(q.a) * d, Y = Math.sin(q.a) * d, tw = .5 + .5 * Math.sin(q.ph + s * 38), sz = q.sz * (R > 30 ? 1.3 : 1) * (.7 + tw * .6);
+    x.fillStyle = xRamp(P, tw > .6 ? 1 : .75, sa * (.5 + tw * .5)); x.beginPath(); x.arc(X, Y, sz, 0, 6.2832); x.fill();
+    if (tw > .78) { x.strokeStyle = 'rgba(255,255,255,' + (sa * .8) + ')'; x.lineWidth = .6; x.beginPath(); x.moveTo(X - sz * 2.6, Y); x.lineTo(X + sz * 2.6, Y); x.moveTo(X, Y - sz * 2.6); x.lineTo(X, Y + sz * 2.6); x.stroke(); } }
+  for (const p of L.sp) { const life = xclamp(1 - s / (T * .6), 0, 1); if (life <= .02) continue; const t0 = Math.max(0, s - .04 * p.len), sp = p.sp * R * .6, d1 = sp * s / (1 + s * 2.2), d0 = sp * t0 / (1 + t0 * 2.2), ca = Math.cos(p.a), sn = Math.sin(p.a);
+    x.strokeStyle = xRamp(P, .85, life * .9); x.lineWidth = (R * .03 + .5) * life + .3; x.beginPath(); x.moveTo(ca * d0, sn * d0); x.lineTo(ca * d1, sn * d1); x.stroke(); }
+}
+function xDrawWater(x, P, tier, L, s, T, R) {   /* water: a flash above the surface for explosive hits, a spray column with a cauliflower top, droplets, a foam ring */
+  const u = s / T;
+  if (tier >= 1 && s < T * .2) { const k = 1 - s / (T * .2); xFire(x, P, 0, -R * .4, R * .55 * (.6 + .4 * xease(s / (T * .08))), k, k); }
+  const fk = xease(s / (T * .3)), fa = 1 - xease((u - .45) / .5);
+  if (fa > .01) { const H = R * 2.3 * fk * (1 - .25 * xease((u - .35) / .5)), wb = R * .3, wt = wb * (1.3 + .5 * fk), gr = x.createLinearGradient(-wt, 0, wt, 0);
+    gr.addColorStop(0, 'rgba(150,190,216,' + (.9 * fa) + ')'); gr.addColorStop(.55, 'rgba(236,246,255,' + (.95 * fa) + ')'); gr.addColorStop(1, 'rgba(252,254,255,' + (.95 * fa) + ')'); x.fillStyle = gr; x.beginPath(); x.moveTo(-wb, 0); x.lineTo(-wt, -H); x.lineTo(wt, -H); x.lineTo(wb, 0); x.closePath(); x.fill();
+    for (let j = 0; j < 5; j++) { const bx = (j - 2) * wt * .52, by = -H + Math.sin(j * 1.9) * H * .05; x.fillStyle = 'rgba(' + (236 + j * 3) + ',' + (246 + j) + ',255,' + (.95 * fa) + ')'; x.beginPath(); x.arc(bx, by, wt * .46, 0, 6.2832); x.fill(); } }
+  for (const c of L.cl.length ? L.cl : L.sp.slice(0, 8)) { const a = -1.5708 + (c.a + 1.5708) * .5, vx = Math.cos(a) * (c.sp || 5) * R * .7, vy = Math.sin(a) * (c.sp || 5) * R * .8, px = vx * s, py = vy * s + .5 * R * 8 * s * s; if (py > 0) continue; const la = xclamp(1 - (u - .4) / .6, 0, 1); x.fillStyle = 'rgba(236,246,255,' + la + ')'; x.beginPath(); x.arc(px, py, Math.max(.8, R * .045), 0, 6.2832); x.fill(); }
+  const ru = xease(u / .8), fa2 = 1 - xease((u - .3) / .7); if (fa2 > .01) { const rx = R * (.6 + 2.2 * ru); x.strokeStyle = 'rgba(244,250,255,' + (.9 * fa2) + ')'; x.lineWidth = Math.max(1, R * .05); x.beginPath(); x.ellipse(0, 0, rx, rx * .16, 0, 0, 6.2832); x.stroke(); x.strokeStyle = 'rgba(214,236,252,' + (.5 * fa2) + ')'; x.lineWidth = Math.max(1.5, R * .12); x.beginPath(); x.ellipse(0, 0, rx * .86, rx * .13, 0, 0, 6.2832); x.stroke(); }
+}
+function xSheet(pal, med, tier, vi, lite, kind) {   /* lazy bake + LRU: sheets are keyed, stamped with a use counter, and the oldest dropped past a pixel budget */
+  const key = pal + med + tier + vi + (lite ? 'l' : '') + kind; let sh = XM.sheets.get(key);
+  if (sh !== undefined) { if (sh) sh.t = ++XM.ck; return sh; }
+  sh = xBake(pal, med, tier, vi, lite, kind); XM.sheets.set(key, sh);
+  if (sh) { sh.t = ++XM.ck; sh.key = key; XM.px += sh.cv.width * sh.cv.height; if (XM.px > XM.cap) { let old = null; for (const o of XM.sheets.values()) if (o && o !== sh && (!old || o.t < old.t)) old = o; while (old && XM.px > XM.cap) { XM.sheets.delete(old.key); XM.px -= old.cv.width * old.cv.height; old = null; for (const o of XM.sheets.values()) if (o && o !== sh && (!old || o.t < old.t)) old = o; } } }
+  return sh;
+}
+const XS = {};   /* small cached sprites: dust puffs, debris trails, chunks, scorch */
+function xSpr(name) { return XS[name] || (XS[name] = xSprBake(name)); }
+function xSprBake(name) {
+  const cv = document.createElement('canvas'); let x;
+  if (name.indexOf('dust') === 0) { cv.width = cv.height = 64; x = cv.getContext('2d'); const tn = +name[4], c = [[176, 152, 118], [150, 148, 144], [128, 104, 76]][tn], d = [[104, 86, 62], [84, 84, 86], [76, 58, 40]][tn], g = x.createRadialGradient(24, 22, 3, 32, 32, 31); g.addColorStop(0, 'rgba(' + c + ',.95)'); g.addColorStop(.6, 'rgba(' + d + ',.8)'); g.addColorStop(1, 'rgba(' + d + ',0)'); x.fillStyle = g; x.fillRect(0, 0, 64, 64); }
+  else if (name === 'trailH') { cv.width = 64; cv.height = 8; x = cv.getContext('2d'); const g = x.createLinearGradient(0, 0, 64, 0); g.addColorStop(0, 'rgba(255,236,180,1)'); g.addColorStop(.22, 'rgba(255,140,44,.9)'); g.addColorStop(.6, 'rgba(110,92,84,.55)'); g.addColorStop(1, 'rgba(90,90,92,0)'); x.fillStyle = g; x.beginPath(); x.moveTo(0, 0); x.lineTo(0, 8); x.lineTo(64, 5); x.lineTo(64, 3); x.closePath(); x.fill(); }
+  else if (name === 'trailS') { cv.width = 64; cv.height = 8; x = cv.getContext('2d'); const g = x.createLinearGradient(0, 0, 64, 0); g.addColorStop(0, 'rgba(150,150,154,.65)'); g.addColorStop(1, 'rgba(120,120,124,0)'); x.fillStyle = g; x.beginPath(); x.moveTo(0, 2.6); x.lineTo(0, 5.4); x.lineTo(64, 8); x.lineTo(64, 0); x.closePath(); x.fill(); }
+  else if (name === 'trailV') { cv.width = 64; cv.height = 4; x = cv.getContext('2d'); const g = x.createLinearGradient(0, 0, 64, 0); g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(.3, 'rgba(210,230,255,.7)'); g.addColorStop(1, 'rgba(180,210,255,0)'); x.fillStyle = g; x.beginPath(); x.moveTo(0, 0); x.lineTo(0, 4); x.lineTo(64, 2.6); x.lineTo(64, 1.4); x.closePath(); x.fill(); }
+  else if (name === 'glow') { cv.width = cv.height = 32; x = cv.getContext('2d'); const g = x.createRadialGradient(16, 16, 0, 16, 16, 16); g.addColorStop(0, 'rgba(255,240,190,1)'); g.addColorStop(.35, 'rgba(255,150,50,.7)'); g.addColorStop(1, 'rgba(255,90,20,0)'); x.fillStyle = g; x.fillRect(0, 0, 32, 32); }
+  else if (name[0] === 'c' && name[1] === 'h') { cv.width = cv.height = 16; x = cv.getContext('2d'); const v = +name[2], r = xrng(77 + v * 31); x.translate(8, 8); x.fillStyle = '#1e1c1e'; x.beginPath(); const nn = 5 + v; for (let i = 0; i < nn; i++) { const a = i / nn * 6.2832, k = 4.4 + 2.6 * r(); x[i ? 'lineTo' : 'moveTo'](Math.cos(a) * k, Math.sin(a) * k); } x.closePath(); x.fill(); x.strokeStyle = 'rgba(255,150,60,.85)'; x.lineWidth = 1; x.stroke(); x.fillStyle = 'rgba(150,156,170,.7)'; x.fillRect(-3, -4.4, 3, 1.3); }
+  else { cv.width = 128; cv.height = 40; x = cv.getContext('2d'); const r = xrng(5); x.translate(64, 20); x.scale(1, .3); const g = x.createRadialGradient(0, 0, 4, 0, 0, 60); g.addColorStop(0, 'rgba(10,8,8,.95)'); g.addColorStop(.55, 'rgba(18,14,12,.75)'); g.addColorStop(1, 'rgba(24,18,14,0)'); x.fillStyle = g; x.beginPath(); for (let i = 0; i < 28; i++) { const a = i / 28 * 6.2832, k = 46 + 14 * r(); x[i ? 'lineTo' : 'moveTo'](Math.cos(a) * k, Math.sin(a) * k * 1.0); } x.closePath(); x.fill(); }
+  return cv;
+}
+function xpush(pt) { pt.xk = 1; G.parts.push(pt); return pt; }
+function xspawn(x, y, R, tier, pal, med, vi, delay, fl, noSmoke) {   /* push one body (+ smoke) flipbook pair at (x,y); delay > 0 starts it later (a negative age is simply not drawn yet) */
+  const lite = FX_Q < .6, bs = xSheet(pal, med, tier, vi % XV[tier], lite, 'b'); if (!bs) return;
+  const sc = xclamp(R / XT[tier].R, .3, 1.7), cm = bs.ox * sc + 8;
+  if (!noSmoke && tier > 0 && G.parts.length < _fxPartCap * .96) { const ss = xSheet(pal, med, tier, vi % XV[tier], lite, 's'); if (ss) xpush({ k: 'xs', x, y, sh: ss, sc, fl, life: ss.T + delay, ml: ss.T, r: R, cm: ss.ox * sc + 8 }); }   /* smoke is pushed FIRST so the fire draws over it */
+  xpush({ k: 'xb', x, y, sh: bs, sc, fl, life: bs.T + delay, ml: bs.T, r: R, cm });
+}
+function xmedium(x, y, style, R) {   /* the WORLD picks the layer: vacuum (thermosphere and up) · water surface · ground-hugging · high thin air (stratosphere and up) · low air */
+  if (style === 'vacuum' || y < THERMO_Y()) return { m: 'v', y };
+  const sea = seaLevelY(x); if (style === 'water' || (isWater(x) && y >= sea - 40)) return { m: 'w', y: sea };
+  const gy = groundY(x); if (gy - y < Math.max(18, R * .8)) return { m: 'g', y: gy };
+  return { m: y < STRATO_Y() ? 'h' : 'a', y };
+}
+function xPop(pt, landed) { pt.popped = 1; pt.life = 0; if (G.parts.length < _fxPartCap * .92) xspawn(pt.x, pt.y, pt.pp * 2.4, 0, pt.pal, pt.med === 'v' ? 'v' : landed ? 'g' : 'a', (pt.seed & 3) % 3, 0, (pt.seed & 8) ? -1 : 1, true); }   /* a burning chunk bursts into a small secondary blast — COSMETIC only */
+function xdebris(x, y, p, tier, pal, med, sd, R) {   /* burning chunks on arcs with baked trails; some (FX_Q-scaled) burst again in flight or on landing */
+  const q = FX_Q, base = [p >= 4 ? 2 : 1, 3, 6, 10][tier], n = Math.max(Math.ceil(base * .35), Math.round(base * q)), gv = med === 'v' ? 0 : med === 'h' ? 110 : 190, popP = tier === 0 ? 0 : tier === 1 ? .28 : .42;
+  for (let i = 0; i < n; i++) {
+    const h0 = xh(sd + i * 7919 + 1), h1 = xh(sd + i * 104729 + 2), h2 = xh(sd + i * 15485863 + 3), h3 = xh(sd + i * 32452843 + 4), h4 = xh(sd + i * 49979687 + 5);
+    const a = med === 'g' || med === 'w' ? -1.5708 + (h0 - .5) * 2.5 : h0 * 6.2832 - .3, sp = 55 + h1 * R * 3.3, life = 1.3 + h2 * 1.3, pops = tier > 0 && h3 < popP * Math.max(q, .5) && med !== 'w';
+    xpush({ k: 'xdb', x: x + (h4 - .5) * R * .4, y: y - (med === 'g' ? R * .25 : 0), vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - (med === 'g' ? 36 : 0), g: gv, rot: h0 * 6, vr: (h1 - .5) * 14, r: 1.5 + h2 * (1.5 + tier * .35), life, ml: life, burn: 1, bd: .32 + .3 * h3, med, pal, pop: pops, popAt: life - (.4 + .6 * h4), pp: tier >= 2 ? 4.5 : 3, seed: (sd + i * 977) | 0, v: i % 3, popped: 0 });
+  }
+}
+function xdust(x, gy, R, tier, tone) { if (tier < 1) return; const ml = .5 + tier * .26; xpush({ k: 'xdust', x, y: gy, R, tone, n: [0, 5, 8, 11][tier], life: ml, ml, r: R }); }
+function xscorch(x, gy, R) {   /* a scorch decal on the terrain: bounded list, fading */
+  const sc = XM.scorch; let w = 0; for (let i = 0; i < sc.length; i++) if (sc[i].life > 0) sc[w++] = sc[i]; sc.length = w;
+  const cap = Math.max(8, Math.round(22 * FX_Q)); while (sc.length >= cap) { const o = sc.shift(); o.life = Math.min(o.life, .8); }
+  const sl = Math.atan2(groundY(x + R) - groundY(x - R), R * 2), ml = 13; sc.push(xpush({ k: 'xscorch', x, y: gy, w: R * 1.5, sl, life: ml, ml, r: R }));
+}
+function xUpd(pt, dt) {   /* particle update for the staged-explosion kinds (called from updParts) */
+  if (pt.k !== 'xdb') { pt.life -= dt; return; }
+  pt.vy += pt.g * dt; pt.x += pt.vx * dt; pt.y += pt.vy * dt; pt.vx *= pt.g ? .992 : 1; pt.rot += pt.vr * dt; pt.burn = Math.max(0, pt.burn - dt * pt.bd); pt.life -= dt;
+  if (pt.pop && !pt.popped && pt.life < pt.popAt) { xPop(pt); return; }
+  if (pt.g > 0 && pt.vy > 0) { const gy = isWater(pt.x) ? seaLevelY(pt.x) : groundY(pt.x); if (pt.y >= gy) { pt.y = gy; if (pt.pop && !pt.popped) xPop(pt, 1); pt.life = 0; } }
+}
+function xRenderPart(pt, px) {   /* renderPart hook for the staged-explosion kinds */
+  const k = pt.k;
+  if (k === 'xb' || k === 'xs') {
+    const sh = pt.sh, age = pt.ml - pt.life; if (age < 0) return; const u = age / sh.T; if (u >= 1) return;
+    if (k === 'xs' && (_dt3 || XM.rn > 70)) return;
+    const f = Math.pow(u, .69) * sh.n, fi = Math.min(sh.n - 1, f | 0), fr = f - fi, fw = sh.fw, fh = sh.fh, sc = pt.sc, dw = fw / sh.K * sc, dh = fh / sh.K * sc, dx = -sh.ox * sc, dy = -sh.oy * sc;
+    const nb = XM.rn++, blend = !_dt2 && nb < 16 && fi + 1 < sh.n && fr > .06 && (k === 'xs' || u > .1);   /* crossfade only while few blasts are on screen */
+    c.save(); c.translate(px, pt.y); if (pt.fl < 0) c.scale(-1, 1);
+    if (flashRed && k === 'xb' && fi < 3) c.globalAlpha = .4;
+    const k1 = sc / sh.K, b1 = sh.bb[fi];
+    c.drawImage(sh.cv, (fi % sh.cols) * fw + b1[0], ((fi / sh.cols) | 0) * fh + b1[1], b1[2], b1[3], dx + b1[0] * k1, dy + b1[1] * k1, b1[2] * k1, b1[3] * k1);
+    if (blend) { const a2 = flashRed && k === 'xb' && fi < 3 ? .4 * fr : fr, f2 = fi + 1, b2 = sh.bb[f2]; c.globalAlpha = a2; c.drawImage(sh.cv, (f2 % sh.cols) * fw + b2[0], ((f2 / sh.cols) | 0) * fh + b2[1], b2[2], b2[3], dx + b2[0] * k1, dy + b2[1] * k1, b2[2] * k1, b2[3] * k1); }
+    c.restore(); return;
+  }
+  if (k === 'xdb') {
+    if (_dt3) return; const vx = pt.vx, vy = pt.vy, sp = Math.hypot(vx, vy), a = Math.min(1, pt.life * 2.2), vac = pt.med === 'v';
+    if (!_dt2) { const hot = pt.burn > .3, Lt = Math.min(vac ? 90 : 64, 8 + sp * (vac ? .16 : .1)) * (hot || vac ? 1 : 1.5), hh = (pt.r * 1.6 + 1) * (hot || vac ? 1 : 2.2);
+      c.save(); c.translate(px, pt.y); c.rotate(Math.atan2(vy, vx) + 3.1416); c.globalAlpha = a * (vac ? .9 : hot ? .95 : Math.min(1, pt.life) * .8); c.drawImage(xSpr(vac ? 'trailV' : hot ? 'trailH' : 'trailS'), 0, -hh / 2, Lt, hh); c.restore(); }
+    c.save(); c.translate(px, pt.y); if (pt.burn > .3 && !_dt2) { c.globalAlpha = a * pt.burn; c.drawImage(xSpr('glow'), -pt.r * 3, -pt.r * 3, pt.r * 6, pt.r * 6); } c.rotate(pt.rot); c.globalAlpha = a; c.drawImage(xSpr('ch' + pt.v), -pt.r * 1.3, -pt.r * 1.3, pt.r * 2.6, pt.r * 2.6); c.restore(); return;
+  }
+  if (k === 'xdust') {
+    if (_dt3) return; const age = pt.ml - pt.life, u = age / pt.ml, spr = xSpr('dust' + pt.tone), N = _dt2 ? Math.ceil(pt.n / 2) : pt.n, R = pt.R, ea = Math.pow(1 - u, 1.3);
+    for (let sd = -1; sd <= 1; sd += 2) for (let i = 0; i < N; i++) { const ag = Math.max(0, age - i * .04), dist = R * 3.4 * (1 - Math.exp(-ag * 4.2)) * (1 - i * .03), wx = pt.x + sd * dist, sxp = sx(wx), al = ea * (.62 - i * .035); if (al < .04 || sxp < -60 || sxp > W + 60) continue; const sr = R * (.17 + i * .012) * (.5 + 1.1 * xease(age / .7)), yy = groundY(wx) - sr * .45; c.globalAlpha = al; c.drawImage(spr, sxp - sr, yy - sr, sr * 2, sr * 2); }
+    c.globalAlpha = 1; return;
+  }
+  if (k === 'xscorch') { const a = Math.min(1, pt.life / (pt.ml * .45)) * .6, w = pt.w; c.save(); c.translate(px, pt.y + 1); c.rotate(pt.sl); c.globalAlpha = a; c.drawImage(xSpr('scorch'), -w, -w * .17, w * 2, w * .34); c.restore(); }
+}
+function boom(x, y, p, style) {   /* THE universal explosion. CLASSIC_BOOM (and the melt/collapse families) keep the original path; everything else is staged, baked, layer-aware */
+  if (CLASSIC_BOOM || style === 'melt' || style === 'collapse') return boomClassic(x, y, p, style);
+  const fam = BOOM_STYLES[style] || BOOM_STYLES.he, vi = (Math.random() * fam.variants.length) | 0, vr = fam.variants[vi], heavy = fxHeavy();   /* the SAME single Math.random draw the classic path makes */
+  const pal = XPAL[style] ? style : 'he', P = XPAL[pal], bump = (style === 'nuke' ? 1 : 0) + (style === 'antimatter' ? 1 : 0);
+  const tier = Math.min(3, (p < 6 ? 0 : p < 13 ? 1 : p < 22 ? 2 : 3) + bump), R = Math.max(6, p * (tier === 0 ? 3.4 : 2.8) * P.rm * vr.r), md = xmedium(x, y, style, R), med = md.m;
+  const sd = (Math.imul(++XM.seq, 2654435761) ^ Math.imul((x * 7.31) | 0, 73856093) ^ Math.imul((y * 3.17) | 0, 19349663)) | 0, fl = xh(sd) < .5 ? -1 : 1;
+  XM.gFr = XM.fr; XM.gx = x;
+  if (G.parts.length < _fxPartCap * .985) {
+    xspawn(x, md.y, R, tier, pal, med, vi, 0, fl, false);
+    if (!heavy && G.parts.length < _fxPartCap * .94) {
+      xdebris(x, md.y, p, tier, pal, med, sd, R);
+      if (med === 'g') { if (tier >= 1) xdust(x, md.y, R, tier, P.tone); if (p >= 7) xscorch(x, md.y, R * .9); }
+      if (tier >= 2) { const nsec = tier - 1; for (let i = 0; i < nsec; i++) { const h = xh(sd + 31 * i + 9), h2 = xh(sd + 57 * i + 11), off = (h - .5) * R * 1.7, up = med === 'g' ? R * (.1 + .5 * h2) : (h2 - .5) * R * 1.3; xspawn(x + off, md.y - up, R * (.5 + .22 * h2), tier - 1, pal, med === 'g' && up > R * .3 ? 'a' : med, (sd >>> 4) & 3, .16 + .3 * h2 + i * .12, h < .5 ? 1 : -1, false); } }
+    }
+  }
+  if (!heavy) {
+    if (fam.arc) emitArc(x, y, p, fam.arc, fam.ring);
+    if (fam.motes) emitMotes(x, y, p);
+    if (fam.fires && p >= 14) G.fires.push({ x, r: 40 + p * 2, life: 3 + p * .15 });   /* gameplay-visible ground flame stays exactly as before */
+  }
+  if (p >= 10) shake(Math.min(8, p * .4) * (fam.shock != null ? fam.shock : 1));
+  if (fam.sfx === 'boom') { if (p >= 5 && Math.random() < .7) SFX.boom(); else if (p >= 3 && Math.random() < .3) noise(.16, .4); }
+  else if (fam.sfx === 'split') { if (p >= 5 && Math.random() < .6) SFX.split(); else if (p >= 3 && Math.random() < .3) noise(.12, .3); }
+  else if (fam.sfx === 'blip') { if (p >= 3 && Math.random() < .5) blip(180 + Math.random() * 120, .1, 'square', .18); }
+}
+function xWarm() {   /* idle-time prebake of the common sheets so the first big blast does not hitch */
+  if (CLASSIC_BOOM) return; const q = XM.warm || (XM.warm = [['he', 'g', 0], ['he', 'a', 0], ['he', 'g', 1], ['he', 'a', 1], ['he', 'g', 2], ['he', 'a', 2], ['kinetic', 'g', 1], ['cluster', 'a', 0], ['he', 'v', 1], ['he', 'h', 2], ['nuke', 'g', 3]]);
+  const w = q.shift(); if (!w) return; try { xSheet(w[0], w[1], w[2], 0, false, 'b'); xSheet(w[0], w[1], w[2], 0, false, 's'); } catch (e) {}
+  setTimeout(xWarm, 120);
+}
+
+function boomClassic(x, y, p, style) {   // THE universal explosion — style (default 'he') picks a BOOM_STYLES family + a random variant of it; every non-'he' family is additive on top of the same ring/flash/deb/ember/smoke skeleton the original single-look boom() always used
   const fam = BOOM_STYLES[style] || BOOM_STYLES.he, bare = fam === BOOM_STYLES.he, vr = fam.variants[(Math.random() * fam.variants.length) | 0], heavy = fxHeavy();
   const RCOL = bare ? undefined : fam.ring, RCOL2 = bare ? undefined : fam.ring2, ECOL = bare ? undefined : fam.ember, SCOL = bare ? undefined : fam.smoke;
   if (fam.ring) G.parts.push({ k: 'ring', x, y, r: 2, max: p * 6 * vr.r, life: .5, col: RCOL, col2: RCOL2 });
@@ -6792,7 +7091,20 @@ function annihilate(x, y, s, big, heavy) {
   for (let i = 0; i < n; i++) { const a = Math.random() * 6.28, sp = 40 + Math.random() * 90; G.parts.push({ k: 'plasma', x: x + Math.cos(a) * s * 2.4, y: y + Math.sin(a) * s * 2.4, vx: -Math.cos(a) * sp, vy: -Math.sin(a) * sp, r: 1.5 + Math.random() * 2.4, life: .18 + Math.random() * .16 }); }   // IMPLOSION — motes sucked INWARD, the opposite of a blast
   for (let i = 0; i < (big ? 6 : 3); i++) { const a = Math.random() * 6.28, sp = 60 + Math.random() * 120; G.parts.push({ k: 'spark', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: 1.2, life: .2 }); }   // a handful of stray white-hot embers — that's ALL that's left
 }
-function groundBurst(x, power, style) {   // shockwave kicks terrain into the air — TERRAIN-AWARE: a water impact sprays instead of throwing dirt, and dirt clods are tinted by the local elevation (sandy/brown low, rocky grey up high). `style` (optional) also decides whether a big-enough burst leaves a WAVEFRONT — a bright line hugging the ground that expands outward along the terrain, scaled by that family's craterMul
+function groundBurst(x, power, style) {   /* staged-explosion path: boom() already drew the ring/dust/scorch/spray when it fired in the same frame at the same spot, so this only adds what boom does not: terrain scar, thrown clods, the wavefront; called alone (beams, quakes) it also draws its own ring, dust and scorch */
+  if (CLASSIC_BOOM) return groundBurstClassic(x, power, style);
+  if (power >= 10) SFX.rumble();
+  charAdd(x, .08);
+  const water = isWater(x), gy = water ? seaLevelY(x) : groundY(x), cov = XM.gFr === XM.fr && Math.abs(XM.gx - x) < 90;
+  if (!cov) { G.parts.push({ k: 'shock', x, y: gy, r: 4, max: power * 8, life: .45 }); if (!water) { const tier = power < 6 ? 0 : power < 13 ? 1 : power < 22 ? 2 : 3, R = power * 2.4, fam = XPAL[style] || XPAL.he; if (G.parts.length < _fxPartCap * .94) { xdust(x, gy, R, tier, fam.tone); if (power >= 7) xscorch(x, gy, R * .9); } } }
+  if (water) { if (!cov) emitSpray(x, gy, power); }
+  else {
+    const elev = elevAt(x), tint = elev > .65 ? '#5a5a5a' : elev > SEA_E + .12 ? '#6b4a2e' : '#8a7a4a', nc = Math.ceil(power * (.45 + .4 * FX_Q));
+    for (let i = 0; i < nc; i++) { const a = -Math.PI / 2 + (Math.random() - .5) * 1.7, sp = 40 + Math.random() * power * 9; G.parts.push({ k: 'clod', x: x + (Math.random() - .5) * power, y: gy, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: 1 + Math.random() * 2.3, rot: Math.random() * 6, vr: (Math.random() - .5) * 10, life: .8 + Math.random(), grav: 150, gy, dom: 'ground', settled: false, col: tint }); }
+  }
+  if (power >= 12 && !water) { const fam = BOOM_STYLES[style] || BOOM_STYLES.he, cm = fam.crater != null ? fam.crater : 1; if (cm > 0) G.parts.push({ k: 'wavefront', x, y: gy, life: .6, maxLife: .6, spread: 40 + power * cm * 3, col: fam.ring || '#d8c090' }); }
+}
+function groundBurstClassic(x, power, style) {   // shockwave kicks terrain into the air — TERRAIN-AWARE: a water impact sprays instead of throwing dirt, and dirt clods are tinted by the local elevation (sandy/brown low, rocky grey up high). `style` (optional) also decides whether a big-enough burst leaves a WAVEFRONT — a bright line hugging the ground that expands outward along the terrain, scaled by that family's craterMul
   if (power >= 10) SFX.rumble();   // a big ground blast is felt as a deep rumble (throttled internally)
   charAdd(x, .08);   // DESTRUCTION LAYER — every ground burst scars the ground a little (see charAdd)
   const water = isWater(x), gy = water ? seaLevelY(x) : groundY(x);
@@ -9169,7 +9481,7 @@ function updProj(dt) {
   filterInPlace(G.proj, p => p.life > 0 && (p.strat || p.k === 'beam' || p.k === 'pbeam' || p.k === 'particlebeam' || p.y > -240));   // PERF: in-place compaction, see filterInPlace() — keep projectiles ANYWHERE in the world (off-screen battles resolve too) — only drop them once they expire or fly off the top of the world. beams have no x/y (use x1..y2)
   if (G.proj.length > 3000) G.proj.splice(0, G.proj.length - 3000);   // hard safety cap so a map-wide barrage can't grow projectiles without bound
 }
-const HERO_PARTS = { fire: 1, ember: 1, ring: 1, flash: 1, molten: 1, chunk: 1, deb: 1, wreck: 1, plasma: 1, text: 1, shard: 1, plume: 1 };   /* the expensive "hero" explosion particle kinds — preserved over the cheap cosmetic ones (smoke/muzzle/spark/tracer/clod/etc.) when G.parts is over budget, see the priority cull at the end of updParts() */
+const HERO_PARTS = { fire: 1, ember: 1, ring: 1, flash: 1, molten: 1, chunk: 1, deb: 1, wreck: 1, plasma: 1, text: 1, shard: 1, plume: 1, xb: 1 };   /* the expensive "hero" explosion particle kinds — preserved over the cheap cosmetic ones (smoke/muzzle/spark/tracer/clod/etc.) when G.parts is over budget, see the priority cull at the end of updParts() */
 function updShrap(dt) {   /* shrapnel deals damage so it steps inside the fixed sim; updParts leaves it alone */
   for (const pt of G.parts) {
     if (pt.k !== 'shrap' || pt.life <= 0) continue;
@@ -9177,7 +9489,9 @@ function updShrap(dt) {   /* shrapnel deals damage so it steps inside the fixed 
   }
 }
 function updParts(dt) {
+  XM.fr++;
   for (const pt of G.parts) {
+    if (pt.xk) { xUpd(pt, dt); continue; }
     if (pt.k === 'ring' || pt.k === 'shock') { pt.r += (pt.max - pt.r) * (pt.k === 'shock' ? 8 : 9) * dt; pt.life -= dt; continue; }
     if (pt.k === 'flash' || pt.k === 'muzzle') { pt.life -= dt; continue; }
     if (pt.k === 'text') { pt.y += pt.vy * dt; pt.vy *= .9; pt.life -= dt; continue; }
@@ -9244,7 +9558,7 @@ const RSTAT = { culled: 0, drawn: 0 };   // PERF instrumentation — off-screen 
 let _dt2 = false, _dt3 = false;   /* v4.8 E zoom-ladder flags, set once per renderGame pass */
 function renderGame() {
   sprFrame();   /* unit sprite cache: per-frame bake budget + zoom bucket */
-  _glowFrameCount = 0;   // WHITE-OUT CLAMP — fresh budget of additive glow draws every frame, see glow()
+  _glowFrameCount = 0; XM.rn = 0;   // WHITE-OUT CLAMP — fresh budget of additive glow draws every frame, see glow()
   // PERF — visible world-Y band (mirrors the existing horizontal sx()-cull): the world is 1.9× the viewport and the
   // camera pans it vertically, so at any moment most sky/space/underground entities are off-screen. Compute the band
   // ONCE per frame from the camera + zoom and early-continue anything outside it (+ a generous margin for tall art,
@@ -9387,7 +9701,7 @@ function renderGame() {
   // as the charge fills, with a pulsing dot on the aim itself — "a gun you SEE coming"
   for (const tl of G.teleLines) { const px1 = sx(tl.x1), px2 = sx(tl.ax); if (Math.max(px1, px2) < -PX || Math.min(px1, px2) > W + PX) continue; const prog = 1 - Math.max(0, tl.t) / tl.total, ta = .35 + .35 * prog; c.save(); c.globalAlpha = ta; c.strokeStyle = '#ff6a5a'; c.lineWidth = 2; c.setLineDash([7, 6]); c.beginPath(); c.moveTo(px1, tl.y1); c.lineTo(px2, tl.ay); c.stroke(); c.setLineDash([]); const pr = 3 + 2.4 * (.5 + .5 * Math.sin(animClock * .05)); c.fillStyle = '#ff8a6a'; c.shadowColor = '#ff5a3a'; c.shadowBlur = _dt2 ? 0 : (8); c.beginPath(); c.arc(px2, tl.ay, pr, 0, 6.28); c.fill(); c.shadowBlur = 0; c.restore(); }
   // particles
-  for (const pt of G.parts) { const px = sx(pt.x); if (px < -40 - PX || px > W + 40 + PX || pt.y < VY0 || pt.y > VY1) { RSTAT.culled++; continue; } if (_dt2 && !HERO_PARTS[pt.k] && pt.k !== 'flash' && pt.k !== 'ring' && (_dt3 || (pt.k === 'shrap' ? Math.abs(pt.vx) + Math.abs(pt.vy) < 100 : pt.r * _cz < 1))) { RSTAT.culled++; continue; } RSTAT.drawn++; _glowHero = !!HERO_PARTS[pt.k]; renderPart(pt, px); } _glowHero = true;
+  for (const pt of G.parts) { const px = sx(pt.x), cm = pt.cm || 40; if (px < -cm - PX || px > W + cm + PX || pt.y < VY0 || pt.y > VY1) { RSTAT.culled++; continue; } if (_dt2 && !HERO_PARTS[pt.k] && pt.k !== 'flash' && pt.k !== 'ring' && (_dt3 || (pt.k === 'shrap' ? Math.abs(pt.vx) + Math.abs(pt.vy) < 100 : pt.r * _cz < 1))) { RSTAT.culled++; continue; } RSTAT.drawn++; _glowHero = !!HERO_PARTS[pt.k]; renderPart(pt, px); } _glowHero = true;
   // placement ghost
   if (G.place) { const d = BUILD_DEFS[G.place], wx = mwx(), px = sx(wx), ug = placeUg(G.place), oy = ug ? UG_DEPTH * digLevel(G.place) : 0, gy = (d.needWater ? seaLevelY(wx) : groundY(wx)) + oy; const ok = canPlace(G.place, wx, ug) && G.ic >= d.ic && G.mp >= d.mp; c.globalAlpha = .55; if (ug) { c.strokeStyle = 'rgba(202,160,48,.5)'; c.lineWidth = 3; c.beginPath(); c.moveTo(px, groundY(wx)); c.lineTo(px, gy - d.h * .5); c.stroke(); } if (!ug && !d.needWater) drawFoundation(wx, px, gy, d.w * .55); c.save(); c.translate(px, gy); (BART[G.place] || BART.factory)(c, d.w, d.h); c.restore(); c.strokeStyle = ok ? '#6dffb0' : '#ff5a5a'; c.lineWidth = 1.5; c.strokeRect(px - d.w / 2, gy - d.h, d.w, d.h); c.globalAlpha = 1; }
   // land-fill cursor
@@ -9738,6 +10052,7 @@ function mzBake(fam) {
   return cv;
 }
 function renderPart(pt, px) {
+  if (pt.xk) { xRenderPart(pt, px); return; }   /* staged-explosion flipbooks, debris, dust, scorch (see xRenderPart) */
   if (pt.r < 0) pt.r = 0;   // a shrinking particle whose radius briefly undershoots 0 (seen in the orbital-barrage VFX) would throw IndexSizeError on the canvas arc() calls below — clamp it (glow() already self-guards r<=0)
   if (pt.k === 'ring') { const la = Math.max(0, pt.life / .35); c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = la * .85; c.strokeStyle = pt.col || '#ffd9a0'; c.lineWidth = 2; c.beginPath(); c.arc(px, pt.y, pt.r, 0, 6.28); c.stroke(); c.globalAlpha = la * .4; c.strokeStyle = pt.col2 || '#fff3da'; c.lineWidth = 4.5; c.beginPath(); c.arc(px, pt.y, pt.r * .82, 0, 6.28); c.stroke(); c.restore(); c.globalAlpha = 1; }
   else if (pt.k === 'flash') {   // life0 (set by a styled boom() family) makes the fade proportional to THAT flash's own declared duration instead of the fixed .26/.12 divisor a plain he/legacy flash (life0 undefined) still falls back to — same pixel-identical he look as before, but a kinetic flash (life .09) now visibly snaps out fast instead of fading on the he timescale. col/col2 (outer glow / core) likewise fall back to the original hardcoded amber-white pair when absent.
@@ -11258,7 +11573,7 @@ const starDen = document.getElementById('starDen'), starDenV = document.getEleme
 /* ===== OPTIONS PERSISTENCE — every setting (incl. accessibility) is remembered on this device ===== */
 const IS_TOUCH = !!(window.matchMedia && matchMedia('(pointer: coarse)').matches);
 function applyGrain() { const g = document.querySelector('.grain'); if (g) g.style.display = grainOn ? '' : 'none'; }
-function saveOpts() { try { localStorage.setItem('tm_opts', JSON.stringify({ ui: +uiScale.value, star: +starDen.value, edge: edgeScroll, motion: reducedMotion, shake: shakeOn, flash: flashRed, cb: cbMode, grain: grainOn, fx: fullFx, fxAuto: fxAuto, recTab: REC.mode === 'tab', spr: SPRITES_ON, cproj: CLASSIC_PROJ })); } catch (e) {} }
+function saveOpts() { try { localStorage.setItem('tm_opts', JSON.stringify({ ui: +uiScale.value, star: +starDen.value, edge: edgeScroll, motion: reducedMotion, shake: shakeOn, flash: flashRed, cb: cbMode, grain: grainOn, fx: fullFx, fxAuto: fxAuto, recTab: REC.mode === 'tab', spr: SPRITES_ON, cproj: CLASSIC_PROJ, cboom: CLASSIC_BOOM })); } catch (e) {} }
 function loadOpts() {
   let o = null; try { o = JSON.parse(localStorage.getItem('tm_opts') || 'null'); } catch (e) {}
   if (!o) {   // first run — respect the system's reduced-motion preference; touch devices get edge-scroll off (it fights drag-panning)
@@ -11267,10 +11582,10 @@ function loadOpts() {
   } else {
     if (o.ui) { uiScale.value = o.ui; root.style.setProperty('--ui-scale', o.ui / 100); uiScaleV.textContent = o.ui + '%'; }
     if (o.star) { starDen.value = o.star; starTarget = o.star; }
-    edgeScroll = o.edge !== false; reducedMotion = !!o.motion; shakeOn = o.shake !== false; flashRed = !!o.flash; cbMode = !!o.cb; grainOn = o.grain !== false; fullFx = o.fx !== false; fxAuto = o.fxAuto !== false; REC.mode = o.recTab ? 'tab' : 'game'; SPRITES_ON = o.spr !== false; CLASSIC_PROJ = !!o.cproj;
+    edgeScroll = o.edge !== false; reducedMotion = !!o.motion; shakeOn = o.shake !== false; flashRed = !!o.flash; cbMode = !!o.cb; grainOn = o.grain !== false; fullFx = o.fx !== false; fxAuto = o.fxAuto !== false; REC.mode = o.recTab ? 'tab' : 'game'; SPRITES_ON = o.spr !== false; CLASSIC_PROJ = !!o.cproj; CLASSIC_BOOM = !!o.cboom;
   }
   const st = (id, on) => { const el = document.getElementById(id); if (el) el.classList.toggle('on', on); };
-  st('tEdge', edgeScroll); st('tMotion', reducedMotion); st('tShake', shakeOn); st('tFlash', flashRed); st('tCb', cbMode); st('tGrain', grainOn); st('tFullFx', fullFx); st('tFxAuto', fxAuto); st('tRecTab', REC.mode === 'tab'); st('tSpr', SPRITES_ON); st('tClassicProj', CLASSIC_PROJ);
+  st('tEdge', edgeScroll); st('tMotion', reducedMotion); st('tShake', shakeOn); st('tFlash', flashRed); st('tCb', cbMode); st('tGrain', grainOn); st('tFullFx', fullFx); st('tFxAuto', fxAuto); st('tRecTab', REC.mode === 'tab'); st('tSpr', SPRITES_ON); st('tClassicProj', CLASSIC_PROJ); st('tClassicBoom', CLASSIC_BOOM);
   applyGrain();
 }
 const bindToggle = (id, set) => { const el = document.getElementById(id); if (el) el.addEventListener('click', function () { this.classList.toggle('on'); set(this.classList.contains('on')); saveOpts(); }); };
@@ -11300,6 +11615,8 @@ addEventListener('keydown', e => { if (e.key === 'F9' && !e.repeat) { e.preventD
 bindToggle('tFxAuto', v => { fxAuto = v; if (!v) { FX_Q = 1; fxDerive(); } });
 bindToggle('tRecTab', v => { REC.mode = v ? 'tab' : 'game'; });
 bindToggle('tClassicProj', v => { CLASSIC_PROJ = v; });
+bindToggle('tClassicBoom', v => { CLASSIC_BOOM = v; });
+setTimeout(xWarm, 3500);
 loadOpts();
 addEventListener('keydown', e => {
   if (!e.repeat && !e.ctrlKey && !e.metaKey && !e.altKey && e.key && e.key.toLowerCase() === 'r' && !/^(input|textarea|select)$/i.test((e.target && e.target.tagName) || '') && !(e.target && e.target.isContentEditable)) recToggle();

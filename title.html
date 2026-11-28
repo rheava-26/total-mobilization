@@ -9018,7 +9018,7 @@ function updProj(dt) {
       let cur = Math.atan2(p.vy, p.vx); if (!isFinite(cur)) cur = -1.5708;
       if (burning) { let want = Math.atan2(ay - p.y, ax - p.x), da = want - cur; while (da > Math.PI) da -= 6.2832; while (da < -Math.PI) da += 6.2832; const na = cur + Math.max(-STRATMIS_BURN_TURN * dt, Math.min(STRATMIS_BURN_TURN * dt, da)); p.vx = Math.cos(na) * p.spd; p.vy = Math.sin(na) * p.spd; }
       else { p.vy += 120 * dt; p.vx *= (1 - .05 * dt); p.vy *= (1 - .05 * dt); const curSpd = Math.hypot(p.vx, p.vy); let want = Math.atan2(p.ty - p.y, p.tx - p.x), da = want - cur; while (da > Math.PI) da -= 6.2832; while (da < -Math.PI) da += 6.2832; const na = cur + Math.max(-STRATMIS_COAST_TURN * dt, Math.min(STRATMIS_COAST_TURN * dt, da)); p.vx = Math.cos(na) * curSpd; p.vy = Math.sin(na) * curSpd; }   // COAST — fuel spent: gravity + light drag, plus a small residual correction (≤ STRATMIS_COAST_TURN) so it can still nudge onto target without chasing one that dodges
-      p.tr.push({ x: p.x, y: p.y, b: burning ? 1 : 0 }); if (p.tr.length > TRC(26)) p.tr.shift();
+      if (CLASSIC_PROJ || ((p._tk = (p._tk | 0) + 1) & 1) || !p.tr.length) p.tr.push({ x: p.x, y: p.y, b: burning ? 1 : 0 }); if (p.tr.length > TRC(26)) p.tr.shift();
       if (burning) { if (CLASSIC_PROJ && Math.random() < .8) G.parts.push({ k: 'smoke', x: p.x - p.vx * .01, y: p.y - p.vy * .01, vx: (Math.random() - .5) * 10, vy: 6 + Math.random() * 12, r: 2 + Math.random() * 3, life: .5 + Math.random() * .6 }); if (Math.random() < (CLASSIC_PROJ ? .85 : .12)) G.parts.push({ k: 'ember', x: p.x - p.vx * .012, y: p.y - p.vy * .012, vx: (Math.random() - .5) * 14, vy: (Math.random() - .5) * 14, r: 1 + Math.random() * 1.3, life: .16 + Math.random() * .14, tw: Math.random() * 6 }); }   // smoke trail + a brighter exhaust flare — BOTH cut out the instant the motor burns out (coasting = no plume)
       p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
       if (p.t > p.climb && GRID_E.anyWithin(p.x, p.y, 46, true, false)) { detonateStrat(p.sub, p.x, p.y); p.life = 0; }   // AIRBURST on a fleet → strikes hit the air
@@ -9138,7 +9138,7 @@ function updProj(dt) {
         p.spd = Math.hypot(p.vx, p.vy);
       }
       p.trCap = p.lit ? 20 : Math.max(0, (p.trCap != null ? p.trCap : 20) - (CLASSIC_PROJ ? 40 : 13) * dt);   /* motor's cold (burned out OR still in the pre-ignition pop-up) — the trail's ALLOWED length collapses toward 0 over about a second instead of holding at 20, so a coasting missile visibly stops dragging a streak. Leaves in-burn behavior (p.lit true) untouched. */
-      p.tr.push({ x: p.x, y: p.y, b: p.lit ? 1 : 0 }); while (p.tr.length > TRC(p.trCap)) p.tr.shift();
+      if (CLASSIC_PROJ || ((p._tk = (p._tk | 0) + 1) & 1) || !p.tr.length) p.tr.push({ x: p.x, y: p.y, b: p.lit ? 1 : 0 }); while (p.tr.length > TRC(p.trCap)) p.tr.shift();   /* new look: one trail point per 2 frames so the same cap hangs twice as long */
       if (CLASSIC_PROJ && !p.aegis && p.lit && Math.random() < .7) G.parts.push({ k: 'smoke', x: p.x - p.vx * .012, y: p.y - p.vy * .012, vx: (Math.random() - .5) * 9, vy: (Math.random() - .5) * 9 - 3, r: 1.5 + Math.random() * 2.2, life: .4 + Math.random() * .55 });   // billowing cloud contrail — ONLY while the motor's lit (the sleek AEGIS interceptor leaves a clean cyan streak instead — no smoke either way)
     }
     else if (p.k === 'shell') { p.vy += 240 * dt; p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > (CLASSIC_PROJ ? 6 : 2)) p.tr.shift(); }
@@ -9574,9 +9574,9 @@ const MP_T = { w: [[244,246,250],[176,185,198]], g: [[210,212,216],[138,140,148]
 const _mpAtlas = {}, MP_S = 64;
 function mslPuffAtlas(tk) {
   let cv = _mpAtlas[tk]; if (cv) return cv; const T = MP_T[tk], hi = T[0], lo = T[1], mix = (t, a) => 'rgba(' + Math.round(hi[0] + (lo[0] - hi[0]) * t) + ',' + Math.round(hi[1] + (lo[1] - hi[1]) * t) + ',' + Math.round(hi[2] + (lo[2] - hi[2]) * t) + ',' + a + ')';
-  cv = document.createElement('canvas'); cv.width = MP_S * 4; cv.height = MP_S; const g = cv.getContext('2d'); let sd = 7;
+  cv = document.createElement('canvas'); cv.width = MP_S * 8; cv.height = MP_S; const g = cv.getContext('2d'); let sd = 7;
   const rnd = () => (sd = (sd * 16807 + 11) % 2147483647) / 2147483647;
-  for (let v = 0; v < 4; v++) {
+  for (let v = 0; v < 8; v++) {
     g.save(); g.translate(v * MP_S, 0); g.beginPath(); g.rect(0, 0, MP_S, MP_S); g.clip();
     for (let b = 0; b < 9; b++) { const an = rnd() * 6.2832, d = rnd() * 13, bx = 32 + Math.cos(an) * d, by = 32 + Math.sin(an) * d, r = 12 + rnd() * 9, sh = Math.max(0, Math.min(1, (bx - 32 + by - 32) / 40 + .35)); const gr = g.createRadialGradient(bx - 3, by - 3, 0, bx, by, r); gr.addColorStop(0, mix(sh * .7, .8)); gr.addColorStop(.55, mix(.25 + sh * .6, .5)); gr.addColorStop(1, mix(.6 + sh * .4, 0)); g.fillStyle = gr; g.beginPath(); g.arc(bx, by, r, 0, 6.2832); g.fill(); }
     g.globalCompositeOperation = 'destination-in'; const m = g.createRadialGradient(32, 32, 0, 32, 32, 32); m.addColorStop(0, 'rgba(0,0,0,1)'); m.addColorStop(.5, 'rgba(0,0,0,.9)'); m.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = m; g.fillRect(0, 0, MP_S, MP_S);
@@ -9588,16 +9588,16 @@ function mslTrail(p, tk, r0, r1, dens, L) {   /* smoke column: newest point = at
   const tr = p.tr, n = tr.length; if (n < 2) return;
   let step = 1, i0 = 0; if (_dt3) { step = 3; i0 = Math.max(0, n - 7); } else if (_dt2) { step = 2; i0 = Math.max(0, n - 10); } else if (FX_Q < .6) step = 2;
   const np = G.proj.length; if (np > 200) step = Math.max(step, 6); else if (np > 90) step = Math.max(step, 2);
-  const at = mslPuffAtlas(tk), Wd = W + 80, ga = dens * (step === 1 ? .6 : step === 2 ? .78 : step === 3 ? .9 : .95), sz = (step === 1 ? 1 : step === 2 ? 1.2 : step === 3 ? 1.38 : 1.0) * 1.55;
+  const gm = step >= 4 ? 1 : 1.55, at = mslPuffAtlas(tk), Wd = W + 80, ga = dens * (step === 1 ? .6 : step === 2 ? .78 : step === 3 ? .9 : .95), sz = (step === 1 ? 1 : step === 2 ? 1.2 : step === 3 ? 1.38 : 1.0) * 1.55;
   for (let i = n - 1; i >= i0; i -= step) {
     const pt = tr[i], nx = tr[i + step] || null, ap = n - 1 - i, h0 = ((pt.x * 12.9898 + pt.y * 78.233) | 0) & 255, bst = pt.b === 0 ? .34 : 1, D = nx ? Math.sqrt((nx.x - pt.x) * (nx.x - pt.x) + (nx.y - pt.y) * (nx.y - pt.y)) : 0;
-    const a0 = Math.min(1, ap / L), r0p = (r0 + (r1 - r0) * (Math.sqrt(a0) * .6 + a0 * .4)) * sz, k = nx ? Math.min(step === 1 ? 3 : 1, Math.floor(D / r0p)) : 0;   /* fast missiles move many px per frame — fill the gap between two trail points with interpolated puffs so the column never reads as dots */
+    const a0 = Math.min(1, ap / L), r0p = (r0 + (r1 * gm - r0) * (Math.sqrt(a0) * .6 + a0 * .4)) * sz, k = nx ? Math.min(step === 1 ? 8 : 1, Math.floor(D / (r0p * .6))) : 0;   /* fast missiles move many px per frame — fill the gap between two trail points with interpolated puffs so the column never reads as dots */
     for (let j = 0; j <= k; j++) {
       const f = j / (k + 1), apj = ap - f * step, a = Math.min(1, Math.max(0, apj) / L), a2 = a * a, h = j ? (h0 + j * 61) & 255 : h0, wx = nx ? pt.x + (nx.x - pt.x) * f : pt.x, wy = nx ? pt.y + (nx.y - pt.y) * f : pt.y, ka = 1 / (1 + k * .45);
       const x = sx(wx) + (a2 * 13 + ((h - 128) / 49) * a) * (h & 1 ? 1 : .6), y = wy - a2 * 15 + (((h * 7) & 255) - 128) / 71 * a;
       if (x < -60 || x > Wd) continue;
-      const r = (r0 + (r1 - r0) * (Math.sqrt(a) * .6 + a * .4)) * sz, al = ka * ga * bst * (1 - a) * (1 - a * .1) * (apj < 2 ? .5 + Math.max(0, apj) * .25 : 1);
-      if (al < .012) continue; c.globalAlpha = Math.min(.9, al); c.drawImage(at, (h & 3) * MP_S, 0, MP_S, MP_S, x - r, y - r, r * 2, r * 2);
+      const r = (r0 + (r1 * gm - r0) * (Math.sqrt(a) * .6 + a * .4)) * sz * (.82 + ((h >> 3) & 7) * .057), al = ka * ga * bst * (1 - a * a * .92) * (apj < 2 ? .5 + Math.max(0, apj) * .25 : 1);
+      if (al < .012) continue; c.globalAlpha = Math.min(.9, al); c.drawImage(at, (h & 7) * MP_S, 0, MP_S, MP_S, x - r, y - r, r * 2, r * 2);
     }
   }
   c.globalAlpha = 1;
@@ -9651,7 +9651,7 @@ function renderProj(p, px) {
   }
   else if (p.k === 'missile' && p.aegis) {   // AEGIS GUIDED INTERCEPTOR — a sleek cyan dart trailing a clean glowing streak (NO grey smoke cloud); reads instantly as a smart tracking round vs the CIWS's orange flak fleck-spray
     const ang = Math.atan2(p.vy, p.vx);
-    if (!CLASSIC_PROJ) { mslTrail(p, 'i', 1.2, 4, .8, 14); if (p.lit !== false) mslBloom(p, 'b', px, p.y, ang, 4, .3); }
+    if (!CLASSIC_PROJ) { mslTrail(p, 'i', 2.4, 6.5, 1.5, 14); if (p.lit !== false) mslBloom(p, 'b', px, p.y, ang, 4, .3); }
     c.save(); c.globalCompositeOperation = 'lighter';   // bright cyan ion trail that fades behind the round
     if (CLASSIC_PROJ) for (let i = _dt2 ? Math.max(0, p.tr.length - 6) : 0; i < p.tr.length; i++) { const a2 = i / p.tr.length; c.globalAlpha = a2 * .55; c.fillStyle = '#7fe9ff'; c.beginPath(); c.arc(sx(p.tr[i].x), p.tr[i].y, .5 + a2 * 1.7, 0, 6.28); c.fill(); }
     c.restore(); c.globalAlpha = 1;
@@ -9678,7 +9678,7 @@ function renderProj(p, px) {
     const msc = (p.msz === 'small' ? .32 : p.msz === 'large' ? .68 : .5) * (p.big ? 1.6 : 1);   // BIG MISSILE (skycruiser's bigMissile flag) — a visibly heavier warhead, drawn ~1.6x, on top of the launcher-scale silhouette
     const trFade = p.lit === false ? .4 : 1;   /* motor's cold — fade the streak so a coasting missile visibly reads as "engine off", not a permanent smear (cosmetic only, see updProj for the matching trail-length shrink) */
     const thinTailA = p.thin ? .55 : .38;   // v4.1 D rule 3 — thin artillery ripple rounds get a BRIGHTER tail so a fast 4-round burst still reads clearly instead of washing out
-    if (!CLASSIC_PROJ) { const kb = msc / .5; mslTrail(p, !p.friendly ? 'h' : p.big ? 'd' : p.thin ? 'g' : 'w', 3 * kb, (p.thin ? 7 : 10) * kb, p.thin ? 1.25 : 1, 20); if (p.lit !== false) mslBloom(p, p.friendly ? 'o' : 'r', px, p.y, ang, 5 * msc, msc * .62); } else for (let i = _dt2 ? Math.max(0, p.tr.length - 6) : 0; i < p.tr.length; i++) { const a2 = i / p.tr.length; c.globalAlpha = a2 * thinTailA * trFade; c.fillStyle = '#cfd6de'; c.beginPath(); c.arc(sx(p.tr[i].x), p.tr[i].y, (1 + a2 * 2.6) * (msc / .5) * trFade, 0, 6.28); c.fill(); }   // smoke trail, scaled to the body
+    if (!CLASSIC_PROJ) { const kb = msc / .5; mslTrail(p, !p.friendly ? 'h' : p.big ? 'd' : p.thin ? 'w' : 'w', (p.thin ? 3.4 : 3) * kb, (p.thin ? 8 : 10) * kb, p.thin ? 1.7 : 1, 20); if (p.lit !== false) mslBloom(p, p.friendly ? 'o' : 'r', px, p.y, ang, 5 * msc, msc * .62); } else for (let i = _dt2 ? Math.max(0, p.tr.length - 6) : 0; i < p.tr.length; i++) { const a2 = i / p.tr.length; c.globalAlpha = a2 * thinTailA * trFade; c.fillStyle = '#cfd6de'; c.beginPath(); c.arc(sx(p.tr[i].x), p.tr[i].y, (1 + a2 * 2.6) * (msc / .5) * trFade, 0, 6.28); c.fill(); }   // smoke trail, scaled to the body
     c.globalAlpha = 1; c.save(); c.translate(px, p.y); c.rotate(ang); c.scale(msc, msc);   // small tactical / interceptor missile — much smaller than a strategic ICBM
     if (CLASSIC_PROJ && p.lit !== false) { const fl = 3 + Math.random() * 4; c.globalCompositeOperation = 'lighter'; c.fillStyle = 'rgba(255,180,60,.95)'; c.beginPath(); c.moveTo(-5, 0); c.lineTo(-5 - fl, -1.4); c.lineTo(-5 - fl * 1.7, 0); c.lineTo(-5 - fl, 1.4); c.closePath(); c.fill(); c.globalCompositeOperation = 'source-over'; }   // exhaust only while the motor's lit — cuts out cold once fuel runs out (see updProj)
     // v4.1 D rule 3 — THIN ARTILLERY ROCKET SILHOUETTE: mlrs/hydra burst rounds draw narrower (x0.6 width) and longer (x1.4 length) than a normal tactical missile, so a burst reads as a ripple of thin fast rockets, not the usual stub-nosed dart

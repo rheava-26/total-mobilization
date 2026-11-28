@@ -664,6 +664,7 @@
   <div class="row"><label>Flash Reduction <span style="opacity:.55;font-size:10px">— dims nuke &amp; muzzle flashes (photosensitivity)</span></label><div class="toggle" id="tFlash"><div class="knob"></div></div></div>
   <div class="row"><label>Colorblind-Friendly Bars <span style="opacity:.55;font-size:10px">— blue/orange instead of green/red</span></label><div class="toggle" id="tCb"><div class="knob"></div></div></div>
   <div class="row"><label>Film Grain &amp; Vignette</label><div class="toggle on" id="tGrain"><div class="knob"></div></div></div>
+  <div class="row"><label>Classic Tracers <span style="opacity:.55;font-size:10px">— Draws gun rounds as long thin tracers. Off draws them as bright heads with short tails.</span></label><div class="toggle" id="tClassicProj"><div class="knob"></div></div></div>
   <div class="row"><label>Recording mode <span style="opacity:.55;font-size:10px">— off: game only, no HUD, no prompt · on: whole tab with HUD, one browser picker</span></label><div class="toggle" id="tRecTab"><div class="knob"></div></div></div>
   <div style="font-size:10px;color:#7c90ac;margin-top:8px;line-height:1.5">Settings are saved on this device. UI SCALE also enlarges all HUD text. On touch devices, edge scroll is off by default — drag to scroll, pinch to zoom.</div>
   <div class="row"><label>Photosensitive Safe Mode <span style="opacity:.55;font-size:10px">— one tap: reduced motion, no screen shake, flash reduction &amp; no film grain</span></label><button class="pill" onclick="applySafeMode()">APPLY</button></div>
@@ -9132,8 +9133,8 @@ function updProj(dt) {
       p.tr.push({ x: p.x, y: p.y }); while (p.tr.length > TRC(p.trCap)) p.tr.shift();
       if (!p.aegis && p.lit && Math.random() < .7) G.parts.push({ k: 'smoke', x: p.x - p.vx * .012, y: p.y - p.vy * .012, vx: (Math.random() - .5) * 9, vy: (Math.random() - .5) * 9 - 3, r: 1.5 + Math.random() * 2.2, life: .4 + Math.random() * .55 });   // billowing cloud contrail — ONLY while the motor's lit (the sleek AEGIS interceptor leaves a clean cyan streak instead — no smoke either way)
     }
-    else if (p.k === 'shell') { p.vy += 240 * dt; p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 6) p.tr.shift(); }
-    else if (p.k === 'amslug') { p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > 5) p.tr.shift(); }   // antimatter slug: dead straight, no gravity, no homing — falls through to the shared move + collision below
+    else if (p.k === 'shell') { p.vy += 240 * dt; p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > (CLASSIC_PROJ ? 6 : 2)) p.tr.shift(); }
+    else if (p.k === 'amslug') { p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > (CLASSIC_PROJ ? 5 : 2)) p.tr.shift(); }   // antimatter slug: dead straight, no gravity, no homing — falls through to the shared move + collision below
     p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
     if (p.k === 'missile' && p.prox && p.friendly && p.life > 0) {   // AIRCRAFT MISSILE PROXIMITY FUSE — a near-miss on a jinking target airbursts (splash) instead of tunnelling past; domes/fields already caught it in flight above, so this only triggers in the open
       const best = GRID_E.anyWithin(p.x, p.y, FIGHTER_MSL_PROX, true, true);
@@ -9500,8 +9501,35 @@ function drawSwarmCluster(u, px, d, n) {
   c.save(); c.globalAlpha = .55; c.fillStyle = '#dce6ff'; c.font = '9px Consolas'; c.textAlign = 'center'; c.fillText('×' + n, px, my - blobR - (u.hp < u.maxHp ? 14 : 5)); c.textAlign = 'left'; c.restore();
   if (u.regrowing) { c.save(); c.globalAlpha = .7 + .3 * pulseA(.03); c.fillStyle = '#6dffb0'; c.font = 'bold 9px Consolas'; c.textAlign = 'center'; c.fillText('↻', px, my - blobR - (u.hp < u.maxHp ? 24 : 15)); c.textAlign = 'left'; c.restore(); }
 }
+/* BIG HEAD, SHORT TAIL — gun/kinetic rounds draw as ONE pre-rendered sprite per style (fat bright core + soft halo + a short tapered tail, baked at 2x), so a round costs a single drawImage with no per-op shadowBlur. CLASSIC_PROJ=true keeps the old long thin tracers. */
+let CLASSIC_PROJ = false;
+const _slugCache = new Map(), SLUG_S = 2;
+function _slugSprite(key, body, hot, headR, tailL, haloR) {
+  let sp = _slugCache.get(key); if (sp) return sp;
+  const left = Math.ceil(Math.max(tailL, haloR) + 1), right = Math.ceil(haloR + 1), hh = Math.ceil(haloR + 1), cv = document.createElement('canvas'); cv.width = (left + right) * SLUG_S; cv.height = hh * 2 * SLUG_S;
+  const g = cv.getContext('2d'); g.scale(SLUG_S, SLUG_S); g.translate(left, hh);
+  const hg = g.createRadialGradient(0, 0, 0, 0, 0, haloR); hg.addColorStop(0, body); hg.addColorStop(.35, body); hg.addColorStop(1, 'rgba(0,0,0,0)'); g.globalAlpha = .5; g.fillStyle = hg; g.beginPath(); g.arc(0, 0, haloR, 0, 6.2832); g.fill();   /* soft halo */
+  const tw = headR * .9, tg = g.createLinearGradient(0, 0, -tailL, 0); tg.addColorStop(0, body); tg.addColorStop(.45, body); tg.addColorStop(1, 'rgba(0,0,0,0)'); g.globalAlpha = .9; g.fillStyle = tg; g.beginPath(); g.moveTo(0, -tw); g.lineTo(-tailL, 0); g.lineTo(0, tw); g.closePath(); g.fill();   /* short tapered tail */
+  const hg2 = g.createLinearGradient(0, 0, -tailL * .6, 0); hg2.addColorStop(0, hot); hg2.addColorStop(1, 'rgba(0,0,0,0)'); g.globalAlpha = .8; g.fillStyle = hg2; g.beginPath(); g.moveTo(0, -tw * .45); g.lineTo(-tailL * .6, 0); g.lineTo(0, tw * .45); g.closePath(); g.fill();   /* hot centre sliver */
+  g.globalAlpha = 1; g.fillStyle = body; g.beginPath(); g.arc(0, 0, headR, 0, 6.2832); g.fill(); g.fillStyle = hot; g.beginPath(); g.arc(0, 0, headR * .72, 0, 6.2832); g.fill();   /* solid head: body ring + near-white centre */
+  sp = { cv, ox: left, oy: hh, w: left + right, h: hh * 2 }; _slugCache.set(key, sp); return sp;
+}
+function drawSlug(p, px) {
+  const k = p.k, f = !!p.friendly; let key, body, hot, hr, tl, ha;
+  if (k === 'plasmasnipe') { key = 'snipe'; body = '#ff5ad0'; hot = '#ffe6f8'; hr = 3.2; tl = 24; ha = 10; }
+  else if (k === 'shell') { key = f ? 'shellF' : 'shellH'; body = f ? '#ffb347' : '#ff6a3a'; hot = f ? '#fff0c0' : '#ffd9c0'; hr = 3; tl = 14; ha = 8; }
+  else if (k === 'amslug') { key = 'am'; body = '#9a63ff'; hot = '#f6ecff'; hr = 2.4; tl = 12; ha = 7; }
+  else if (k === 'rail') { const b = !!p.big; key = b ? 'railB' : 'rail'; body = b ? '#cfeeff' : '#5cc4ff'; hot = '#ffffff'; hr = b ? 3.4 : 2.2; tl = b ? 26 : 16; ha = b ? 10 : 6.5; }
+  else if (k === 'plasball') { const b = !!p.big; key = (f ? 'pbF' : 'pbH') + (b ? 'B' : ''); body = f ? '#e04dff' : '#ff3b1a'; hot = f ? '#fdeaff' : '#ffe0cc'; hr = b ? 3.2 : 2; tl = b ? 16 : 10; ha = b ? 9 : 6; }
+  else if (p.stream) { key = f ? 'stF' : 'stH'; body = f ? '#ffd23a' : '#ff3b1a'; hot = f ? '#fffbe8' : '#ffe0cc'; hr = 1.4; tl = 6; ha = 4; }
+  else if (k === 'tracer') { const hv = !!p.heavy; key = (f ? (p.fire ? 'trFi' : 'trF') : 'trH') + (hv ? 'V' : ''); body = f ? (p.fire ? '#ffb42a' : '#ffd23a') : '#ff3b1a'; hot = f ? '#fffbe8' : '#ffe0cc'; hr = hv ? 3 : 1.8; tl = hv ? 15 : 9; ha = hv ? 8 : 5.5; }
+  else return false;
+  const sp = _slugSprite(key, body, hot, hr, tl, ha);
+  c.save(); c.translate(px, p.y); c.rotate(Math.atan2(p.vy, p.vx)); c.drawImage(sp.cv, -sp.ox, -sp.oy, sp.w, sp.h); c.restore(); return true;
+}
 const _tracerCache = new Map();   // PERF: cached tapered-tracer gradients keyed by colour (see the default bullet branch below)
 function renderProj(p, px) {
+  if (!CLASSIC_PROJ && drawSlug(p, px)) return;
   if (p.k === 'pdfan') { const a = Math.max(0, p.life / .12); c.save(); c.globalAlpha = a * .85; c.strokeStyle = '#ff5050'; c.lineWidth = 1.6; c.shadowColor = '#ff5050'; c.shadowBlur = _dt2 ? 0 : (6); c.beginPath(); for (const pt of p.pts) { c.moveTo(px, p.y); c.lineTo(sx(pt[0]), pt[1]); } c.stroke(); c.restore(); return; }   // v4.2 — ONE fan of thin red lances, emitter → every round it swatted this tick, instead of nMax separate beam projectiles
   if (p.k === 'flakring') { const a = Math.max(0, p.life / .12); c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = a * .8; c.strokeStyle = '#e6b0ff'; c.lineWidth = 2.4; c.beginPath(); c.arc(px, p.y, FLAK_R * (1 - a * .3), 0, 6.2832); c.stroke(); c.restore(); return; }   // v4.2 — the flagship's antimatter flak field: one violet ring marker per burst, the actual damage ring is drawn by the G.parts 'ring' effect pushed alongside it
   if (p.k === 'beam') { const topY = Math.min(p.y1, p.y2), altFade = .35 + .65 * Math.min(1, topY / (worldH() * .5)); c.globalAlpha = Math.max(0, p.life / .12) * (p.tractor ? 1 : altFade); c.strokeStyle = p.tractor ? '#c8a0ff' : (p.friendly ? '#bfe9ff' : '#ffb0b0'); c.lineWidth = p.tractor ? 3 : 2.5; c.shadowColor = c.strokeStyle; c.shadowBlur = _dt2 ? 0 : (p.tractor ? 14 : 10); c.beginPath(); c.moveTo(sx(p.x1), p.y1); c.lineTo(sx(p.x2), p.y2); c.stroke(); c.shadowBlur = 0; c.globalAlpha = 1; }   // lasers DIM with altitude (nothing to scatter off up high); tractor beams glow violet
@@ -11167,7 +11195,7 @@ const starDen = document.getElementById('starDen'), starDenV = document.getEleme
 /* ===== OPTIONS PERSISTENCE — every setting (incl. accessibility) is remembered on this device ===== */
 const IS_TOUCH = !!(window.matchMedia && matchMedia('(pointer: coarse)').matches);
 function applyGrain() { const g = document.querySelector('.grain'); if (g) g.style.display = grainOn ? '' : 'none'; }
-function saveOpts() { try { localStorage.setItem('tm_opts', JSON.stringify({ ui: +uiScale.value, star: +starDen.value, edge: edgeScroll, motion: reducedMotion, shake: shakeOn, flash: flashRed, cb: cbMode, grain: grainOn, fx: fullFx, fxAuto: fxAuto, recTab: REC.mode === 'tab', spr: SPRITES_ON })); } catch (e) {} }
+function saveOpts() { try { localStorage.setItem('tm_opts', JSON.stringify({ ui: +uiScale.value, star: +starDen.value, edge: edgeScroll, motion: reducedMotion, shake: shakeOn, flash: flashRed, cb: cbMode, grain: grainOn, fx: fullFx, fxAuto: fxAuto, recTab: REC.mode === 'tab', spr: SPRITES_ON, cproj: CLASSIC_PROJ })); } catch (e) {} }
 function loadOpts() {
   let o = null; try { o = JSON.parse(localStorage.getItem('tm_opts') || 'null'); } catch (e) {}
   if (!o) {   // first run — respect the system's reduced-motion preference; touch devices get edge-scroll off (it fights drag-panning)
@@ -11176,10 +11204,10 @@ function loadOpts() {
   } else {
     if (o.ui) { uiScale.value = o.ui; root.style.setProperty('--ui-scale', o.ui / 100); uiScaleV.textContent = o.ui + '%'; }
     if (o.star) { starDen.value = o.star; starTarget = o.star; }
-    edgeScroll = o.edge !== false; reducedMotion = !!o.motion; shakeOn = o.shake !== false; flashRed = !!o.flash; cbMode = !!o.cb; grainOn = o.grain !== false; fullFx = o.fx !== false; fxAuto = o.fxAuto !== false; REC.mode = o.recTab ? 'tab' : 'game'; SPRITES_ON = o.spr !== false;
+    edgeScroll = o.edge !== false; reducedMotion = !!o.motion; shakeOn = o.shake !== false; flashRed = !!o.flash; cbMode = !!o.cb; grainOn = o.grain !== false; fullFx = o.fx !== false; fxAuto = o.fxAuto !== false; REC.mode = o.recTab ? 'tab' : 'game'; SPRITES_ON = o.spr !== false; CLASSIC_PROJ = !!o.cproj;
   }
   const st = (id, on) => { const el = document.getElementById(id); if (el) el.classList.toggle('on', on); };
-  st('tEdge', edgeScroll); st('tMotion', reducedMotion); st('tShake', shakeOn); st('tFlash', flashRed); st('tCb', cbMode); st('tGrain', grainOn); st('tFullFx', fullFx); st('tFxAuto', fxAuto); st('tRecTab', REC.mode === 'tab'); st('tSpr', SPRITES_ON);
+  st('tEdge', edgeScroll); st('tMotion', reducedMotion); st('tShake', shakeOn); st('tFlash', flashRed); st('tCb', cbMode); st('tGrain', grainOn); st('tFullFx', fullFx); st('tFxAuto', fxAuto); st('tRecTab', REC.mode === 'tab'); st('tSpr', SPRITES_ON); st('tClassicProj', CLASSIC_PROJ);
   applyGrain();
 }
 const bindToggle = (id, set) => { const el = document.getElementById(id); if (el) el.addEventListener('click', function () { this.classList.toggle('on'); set(this.classList.contains('on')); saveOpts(); }); };
@@ -11208,6 +11236,7 @@ function sprToggle() { SPRITES_ON = !SPRITES_ON; const el = document.getElementB
 addEventListener('keydown', e => { if (e.key === 'F9' && !e.repeat) { e.preventDefault(); sprToggle(); } });   /* F9 — A/B the unit sprite cache live */
 bindToggle('tFxAuto', v => { fxAuto = v; if (!v) { FX_Q = 1; fxDerive(); } });
 bindToggle('tRecTab', v => { REC.mode = v ? 'tab' : 'game'; });
+bindToggle('tClassicProj', v => { CLASSIC_PROJ = v; });
 loadOpts();
 addEventListener('keydown', e => {
   if (!e.repeat && !e.ctrlKey && !e.metaKey && !e.altKey && e.key && e.key.toLowerCase() === 'r' && !/^(input|textarea|select)$/i.test((e.target && e.target.tagName) || '') && !(e.target && e.target.isContentEditable)) recToggle();

@@ -5118,11 +5118,14 @@ function xFire(x, P, cx, cy, r, heat, a) {   /* a gradient fireball: white-hot c
   g.addColorStop(0, xRamp(P, heat, a)); g.addColorStop(.3, xRamp(P, heat * .88, a)); g.addColorStop(.58, xRamp(P, heat * .62, a)); g.addColorStop(.8, xRamp(P, heat * .36, a)); g.addColorStop(.93, xRamp(P, heat * .14, a * .95)); g.addColorStop(1, xRamp(P, 0, 0));
   x.fillStyle = g; x.beginPath(); x.arc(cx, cy, r, 0, 6.2832); x.fill();
 }
-function xPuff(x, P, cx, cy, r, a, warm) {   /* a shaded smoke ball: lit crown, dark body, optional fire-lit underside */
-  if (r < 1 || a <= .01) return; const s = P.sm, d = P.dk, k = P.smk > 1 ? 1 : P.smk;
-  const g = x.createRadialGradient(cx - r * .3, cy - r * .34, r * .05, cx, cy, r);
-  g.addColorStop(0, 'rgba(' + s[0] + ',' + s[1] + ',' + s[2] + ',' + a + ')'); g.addColorStop(.5, 'rgba(' + ((s[0] + d[0] * 2) / 3 | 0) + ',' + ((s[1] + d[1] * 2) / 3 | 0) + ',' + ((s[2] + d[2] * 2) / 3 | 0) + ',' + a + ')'); g.addColorStop(.8, 'rgba(' + d[0] + ',' + d[1] + ',' + d[2] + ',' + a * .8 + ')'); g.addColorStop(1, 'rgba(' + d[0] + ',' + d[1] + ',' + d[2] + ',0)');
-  x.fillStyle = g; x.beginPath(); x.arc(cx, cy, r, 0, 6.2832); x.fill();
+function xPuff(x, P, cx, cy, r, a, warm, sd, rot) {   /* a lumpy, feathered smoke billow: a dark core, ~6 overlapping sub-puffs of varied size around the rim (lit on top), soft noisy edge — never a perfect circle */
+  if (r < 1 || a <= .01) return; sd = ((sd || 0) * 977) | 0; rot = rot || 0; const s = P.sm, d = P.dk, rgb = (c, al) => 'rgba(' + (c[0] | 0) + ',' + (c[1] | 0) + ',' + (c[2] | 0) + ',' + al + ')', mid = [(s[0] + d[0] * 2) / 3, (s[1] + d[1] * 2) / 3, (s[2] + d[2] * 2) / 3];
+  const g0 = x.createRadialGradient(cx, cy, 0, cx, cy, r * .85); g0.addColorStop(0, rgb(d, a)); g0.addColorStop(.6, rgb(mid, a * .9)); g0.addColorStop(1, rgb(d, 0)); x.fillStyle = g0; x.beginPath(); x.arc(cx, cy, r * .85, 0, 6.2832); x.fill();
+  for (let k = 0; k < 6; k++) {
+    const h = xh(sd + k * 17 + 1), h2 = xh(sd + k * 29 + 5), an = k / 6 * 6.2832 + h * 1.1 + rot, dd = r * (.4 + .34 * h2), rr = r * (.3 + .3 * h), px = cx + Math.cos(an) * dd, py = cy + Math.sin(an) * dd * .92, lit = xclamp(.5 - Math.sin(an) * .5, 0, 1), top = [mid[0] + (s[0] - mid[0]) * lit, mid[1] + (s[1] - mid[1]) * lit, mid[2] + (s[2] - mid[2]) * lit];
+    const g = x.createRadialGradient(px - rr * .3, py - rr * .35, rr * .05, px, py, rr); g.addColorStop(0, rgb(top, a)); g.addColorStop(.5, rgb(mid, a * .92)); g.addColorStop(.82, rgb(d, a * .6)); g.addColorStop(1, rgb(d, 0));
+    x.fillStyle = g; x.beginPath(); x.arc(px, py, rr, 0, 6.2832); x.fill();
+  }
   if (warm > .03) { const w = x.createRadialGradient(cx, cy + r * .25, 0, cx, cy + r * .25, r * .95); w.addColorStop(0, xRamp(P, .7, warm * a)); w.addColorStop(1, xRamp(P, .3, 0)); x.fillStyle = w; x.beginPath(); x.arc(cx, cy, r, 0, 6.2832); x.fill(); }
 }
 function xLayout(med, tier, vi, lite) {   /* the seeded element lists a sheet is drawn from — shared by a medium's body and smoke sheets so puffs follow lobes */
@@ -5202,15 +5205,18 @@ function xDrawBody(x, P, med, tier, L, s, T, R) {   /* ground / low air / high a
     xFire(x, P, lx, ly, lr, heat, fa); xFire(x, P, lx + Math.cos(lb.a + 1.1) * lr * .5, ly + Math.sin(lb.a + 1.1) * lr * .5, lr * .55, heat * .92, fa * .9);
   }
   /* PRIMARY FIREBALL — lumpy so it is never a perfect sphere */
-  const fs = s - T * .025;
+  const dimK = tier >= 3 ? (u < .045 ? 0 : .3 + .7 * xease((u - .045) / .07)) : 1, fs = s - T * .025;
   if (fs > 0) {
-    const fr = R * xease(fs / (T * .2) * ex) * (1 - .22 * xease((u - .45) / .55)), heat = Math.pow(xclamp(1 - u / .6, 0, 1), .8), fa = (1 - xease((u - .5) / .4)) * thin;
+    const fr = R * xease(fs / (T * .2) * ex) * (1 - .22 * xease((u - .45) / .55)), heat = Math.pow(xclamp(1 - u / .6, 0, 1), .8), fa = (1 - xease((u - .5) / .4)) * thin * dimK;
     if (fa > .01) {
       x.fillStyle = dk + (.5 * fa) + ')'; x.beginPath(); x.arc(0, cy, fr * 1.06, 0, 6.2832); x.fill();
       let i = 0; for (const lm of L.lumps) { xFire(x, P, Math.cos(lm.a) * fr * lm.d, cy + Math.sin(lm.a) * fr * lm.d - fr * .12 * xease(u * 2), fr * lm.s, heat * (.94 - .05 * i++), fa); }
       xFire(x, P, 0, cy, fr * .88, heat, fa);
     }
   }
+  /* STAGE A+: the BLOOM — a baked white flash. Big blasts get a bigger one; the superweapon tier is a blinding expanding white flash for a few frames, then a short dim before the fireball blooms (a stark flash, never a full-screen inversion) */
+  { const bu = tier >= 3 ? .045 : tier === 2 ? .07 : .1, bk = u / bu; if (bk < 1) { const Rb = R * [1.5, 1.35, 1.9, 2.55][tier] * (tier >= 3 ? .75 + .35 * xease(bk * 2) : 1), al = tier >= 3 ? (bk < .6 ? 1 : 1 - (bk - .6) / .4) : .9 * (1 - bk), gb = x.createRadialGradient(0, cy, 0, 0, cy, Rb);
+    gb.addColorStop(0, 'rgba(255,255,255,' + al + ')'); gb.addColorStop(tier >= 3 ? .55 : .35, 'rgba(255,255,255,' + (al * (tier >= 3 ? .95 : .7)) + ')'); gb.addColorStop(.7, xRamp(P, .85, al * .5)); gb.addColorStop(1, xRamp(P, .6, 0)); x.fillStyle = gb; x.beginPath(); x.arc(0, cy, Rb, 0, 6.2832); x.fill(); } }
   /* STAGE A: compression flash, tight white-hot core, bright point and ring */
   const cu = s / (T * .22);
   if (cu < 1) { const cr = R * (.28 + .5 * xease(s / (T * .06))) * (1 - .55 * cu), al = Math.pow(1 - cu, .7), gr = x.createRadialGradient(0, cy, 0, 0, cy, cr * 1.5);
@@ -5229,20 +5235,22 @@ function xDrawBody(x, P, med, tier, L, s, T, R) {   /* ground / low air / high a
 function xDrawSmoke(x, P, med, tier, L, s, T, R) {   /* the long dark roll: a rising column + mushroom cap on the ground, drifting billows in the air, white steam over water */
   const u = s / T, fadeA = 1 - xease((u - .5) / .5), inA = xease((s - T * .1) / (T * .18)), A = fadeA * inA * (P.smk > 1 ? 1 : P.smk) * (med === 'h' ? .45 : 1); if (A <= .01) return;
   const warmK = xclamp(1 - s / (T * .3), 0, 1), g = med === 'g';
-  if (med === 'w') { const Pw = { f: P.f, sm: [232, 238, 244], dk: [150, 166, 182], smk: 1 }; let i = 0; for (const p of L.puff) { const sa = Math.max(0, s - p.dl * T), k = xease(sa / (T * .6)), rr = R * (.4 + .5 * k) * (.8 + p.r0), px = Math.cos(p.a) * R * .6 * p.d * k, py = -R * (.5 + 1.2 * k * (.4 + p.h)); xPuff(x, Pw, px, py, rr, A * .75, 0); i++; } return; }
+  if (med === 'w') { const Pw = { f: P.f, sm: [232, 238, 244], dk: [150, 166, 182], smk: 1 }; let i = 0; for (const p of L.puff) { const sa = Math.max(0, s - p.dl * T), k = xease(sa / (T * .6)), rr = R * (.4 + .5 * k) * (.8 + p.r0), px = Math.cos(p.a) * R * .6 * p.d * k, py = -R * (.5 + 1.2 * k * (.4 + p.h)); xPuff(x, Pw, px, py, rr, A * .75, 0, p.ph); i++; } return; }
   if (g && tier >= 2) {   /* MUSHROOM — stem puffs stacked up a rising column, a rolling cap on top, fire-lit from beneath while young */
     const Hm = R * (tier >= 3 ? 5.4 : 4.1) * xease(s / (T * .45)), sw = R * .12, warm = warmK * (tier >= 3 ? 1 : .75);
-    for (const p of L.puff) { const sa = Math.max(0, s - p.dl * T), gr = .5 + .8 * xease(sa / (T * .5)), h = Hm * p.h, rr = R * (p.r0 + .12 * (1 - p.h)) * gr, px = Math.sin(p.ph + s * 1.3) * sw + Math.cos(p.a) * rr * .35; xPuff(x, P, px, -h - R * .3, rr, A * (.75 + .25 * p.h), warm * (1 - p.h)); }
+    if (Hm > R * .4) { const gw = xease(s / (T * .3)), g2 = x.createLinearGradient(-R * .5, 0, R * .5, 0), dk = P.dk, sm = P.sm; g2.addColorStop(0, 'rgba(' + dk + ',' + (A * .9) + ')'); g2.addColorStop(.38, 'rgba(' + ((sm[0] + dk[0]) / 2 | 0) + ',' + ((sm[1] + dk[1]) / 2 | 0) + ',' + ((sm[2] + dk[2]) / 2 | 0) + ',' + (A * .85) + ')'); g2.addColorStop(1, 'rgba(' + dk + ',' + (A * .9) + ')'); x.fillStyle = g2; x.beginPath();
+      const NN = 10, wf = j => R * (.5 - .17 * j / NN) * (.4 + .6 * gw) * (1 + .13 * Math.sin(j * .9 + s * 1.6)); for (let j = 0; j <= NN; j++) { const w = wf(j), y = -R * .3 - Hm * j / NN; if (j) x.lineTo(-w, y); else x.moveTo(-w, y); } for (let j = NN; j >= 0; j--) x.lineTo(wf(j), -R * .3 - Hm * j / NN); x.closePath(); x.fill(); }
+    for (const p of L.puff) { const sa = Math.max(0, s - p.dl * T), gr = .5 + .8 * xease(sa / (T * .5)), h = Hm * p.h, rr = R * (p.r0 * .85 + .1 * (1 - p.h)) * gr, side = p.a > 3.14 ? 1 : -1, wd = R * (.5 - .17 * p.h) * (.4 + .6 * xease(s / (T * .3))), px = side * wd * .8 + Math.sin(p.ph + s * 1.3) * sw; xPuff(x, P, px, -h - R * .3, rr, A * (.75 + .25 * p.h), warm * (1 - p.h), p.ph); }
     const cap = Hm + R * .3; for (const p of L.cap) { const gr = xease(s / (T * .5)), rc = R * (.8 + .9 * gr), a = p.a + s * .35, px = Math.cos(a) * rc, py = -cap + Math.sin(a) * rc * .5, rr = R * p.r0 * (.5 + .7 * gr) * (.8 + .3 * Math.sin(a));
-      xPuff(x, P, px, py, rr, A * (Math.sin(a) > 0 ? .8 : 1), warm * .7 * (Math.sin(a) > 0 ? 1 : .3)); }
-    xPuff(x, P, 0, -cap, R * (.7 + .5 * xease(s / (T * .5))), A, warm * .5);
-    for (let j = 0; j < 5; j++) { const sa = Math.max(0, s - T * .03 * j), gr = xease(sa / (T * .4)), side = j % 2 ? 1 : -1, px = side * R * (.3 + .55 * gr + j * .15), rr = R * (.4 + .1 * j) * (.5 + .7 * gr); xPuff(x, P, px, -rr * .5, rr, A * .55, 0); }   /* low billow along the ground */
+      xPuff(x, P, px, py, rr, A * (Math.sin(a) > 0 ? .8 : 1), warm * .7 * (Math.sin(a) > 0 ? 1 : .3), p.a, s * .9); }
+    xPuff(x, P, 0, -cap, R * (.7 + .5 * xease(s / (T * .5))), A, warm * .5, 3, s * .5);
+    for (let j = 0; j < 5; j++) { const sa = Math.max(0, s - T * .03 * j), gr = xease(sa / (T * .4)), side = j % 2 ? 1 : -1, px = side * R * (.3 + .55 * gr + j * .15), rr = R * (.4 + .1 * j) * (.5 + .7 * gr); xPuff(x, P, px, -rr * .5, rr, A * .55, 0, j + 7); }   /* low billow along the ground */
     return;
   }
   const rise = R * (g ? 2.4 : med === 'h' ? 1.4 : 2.2) * xease(s / (T * .7)), wm = warmK * (g ? .8 : 1);
   for (const p of L.puff) { const sa = Math.max(0, s - p.dl * T), gr = xease(sa / (T * .5)), rr = R * (.28 + p.r0 * .9) * (.35 + .9 * gr) * (tier === 0 ? .8 : 1), dd = R * p.d * .9 * xease(sa / (T * .35));
     const px = g ? Math.cos(p.a * .5) * dd * .7 : Math.cos(p.a) * dd, py = g ? -R * .35 - rise * (.3 + .7 * p.h) - rr * .25 : Math.sin(p.a) * dd - rise * (.2 + .6 * p.h);
-    xPuff(x, P, px, py, rr, A * .9, wm * (1 - p.h * .6)); }
+    xPuff(x, P, px, py, rr, A * .9, wm * (1 - p.h * .6), p.ph); }
 }
 function xDrawSpace(x, P, tier, L, s, T, R) {   /* vacuum: a bright sphere, a thin shock sphere, an expanding glittering debris shell — no smoke, no gravity */
   const u = s / T, fa = 1 - xease((u - .08) / .3);
@@ -5351,7 +5359,7 @@ function boom(x, y, p, style) {   /* THE universal explosion. CLASSIC_BOOM (and 
   if (CLASSIC_BOOM || style === 'melt' || style === 'collapse') return boomClassic(x, y, p, style);
   const fam = BOOM_STYLES[style] || BOOM_STYLES.he, vi = (Math.random() * fam.variants.length) | 0, vr = fam.variants[vi], heavy = fxHeavy();   /* the SAME single Math.random draw the classic path makes */
   const pal = XPAL[style] ? style : 'he', P = XPAL[pal], bump = (style === 'nuke' ? 1 : 0) + (style === 'antimatter' ? 1 : 0);
-  const tier = Math.min(3, (p < 6 ? 0 : p < 13 ? 1 : p < 22 ? 2 : 3) + bump), R = Math.max(6, p * (tier === 0 ? 3.4 : 2.8) * P.rm * vr.r), md = xmedium(x, y, style, R), med = md.m;
+  const tier = Math.min(3, (p < 6 ? 0 : p < 13 ? 1 : p < 22 ? 2 : 3) + bump), R = Math.max(6, p * (tier === 0 ? 4.25 : 2.8) * P.rm * vr.r), md = xmedium(x, y, style, R), med = md.m;
   const sd = (Math.imul(++XM.seq, 2654435761) ^ Math.imul((x * 7.31) | 0, 73856093) ^ Math.imul((y * 3.17) | 0, 19349663)) | 0, fl = xh(sd) < .5 ? -1 : 1;
   XM.gFr = XM.fr; XM.gx = x;
   if (G.parts.length < _fxPartCap * .985) {

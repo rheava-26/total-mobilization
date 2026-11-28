@@ -9,6 +9,17 @@ real cost (upkeep/logistics), not a hard cap or diminishing returns. Fix perf an
 fantasy. (The designer: *"you say 'I could place 100 of those and it'd be OP?' and the game says
 'errr no.' We say yes."*)
 
+**Tenet clarification (designer, 2026-11-28):** nerfing is allowed, but only with a really good reason,
+when something is *blatantly* overpowered and the evidence proves it (precedent: psionics were nerfed
+because "you literally could not lose with them"). And **no power creep**: never make everything
+stronger until the enemy must one-shot any unbuffed unit. A player buff names the enemy's answer; an
+enemy buff never makes the player's existing army worthless.
+
+**The One-Button Law (designer, 2026-11-28):** "you're supposed to just click a button and then you
+build units. Everything's really supposed to scale with volume." No mechanic may need per-unit,
+per-building or per-shot attention to work; anything steerable is optional, automatic by default, or
+one standing choice.
+
 **Keep `ROADMAP.md` current and commit it EVERY turn** — it is the living backlog + model handoff
 so nothing is forgotten. Read it at the start of a session.
 

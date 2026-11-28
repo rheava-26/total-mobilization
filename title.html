@@ -8950,7 +8950,7 @@ function updProj(dt) {
     if (p.k === 'plasmasnipe') {   // ORBITAL PLASMA SNIPE — a physical falling bolt now (was hitscan); straight vertical drop onto the ground unit it locked, capped fall speed, shot-downable in flight like any other orbital ordnance
       if (p.interceptable && p.hp <= 0) { boom(p.x, p.y, 8, resolveStyleAt('plasma', p.x, p.y)); G.parts.push({ k: 'flash', x: p.x, y: p.y, r: 12, life: .15 }); spark(p.x, p.y, 4); p.life = 0; continue; }
       p.tr.push({ x: p.x, y: p.y }); if (p.tr.length > TRC(14)) p.tr.shift(); p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
-      if (p.life > 0 && p.y >= groundY(p.x)) { detonatePlasmaSnipe(p.x, groundY(p.x), p.dmg); p.life = 0; }
+      if (p.life > 0 && p.y >= groundY(p.x)) { detonatePlasmaSnipe(p.x, groundY(p.x), p.dmg); p.life = 0; if (!CLASSIC_PROJ) G.parts.push({ k: 'plasmapop', x: p.x, y: groundY(p.x), r: 52, ang: (p.x * .0137) % 6.2832, hostile: true, life: .25, snipe: true }); }
       continue;
     }
     if (p.k === 'buster') {   // BUNKER-BUSTER PENETRATOR — SINGLE CONTINUOUS ACCELERATION (no bands): starts at a slow REENTRY_V0_FRAC-scaled orbital crawl and accelerates the whole way to impact, uncapped (see spawnBuster) — mean speed matches the old formula's, so total fall time still does, and impact is fast enough that only the last ~0.7-0.8s of the curve is actually below MESO_Y — jinks + spams flares only once it's in that real lower-atmosphere stretch
@@ -9091,7 +9091,7 @@ function updProj(dt) {
       let hit = false, hitAir = false; const sweep = Math.hypot(p.vx, p.vy) * dt * .5, prox = (p.big ? 44 : 22);   // PROXIMITY radius — bursts NEAR the target, not only on contact
       if (p.friendly) { const ft = GRID_E.firstHit(p.x, p.y, prox + sweep, prox * 1.6 + sweep, null); if (ft) { hit = true; hitAir = !ft.ground; } }   // NOTE: no `if (t.reentry) continue` here — plasma-armed units (acquireEnemy has no reentry filter, gated only by ceilF) DO acquire & fire at descending re-entry targets, so the bolt must be able to airburst on them too, or it flies straight through and whiffs. Airborne (non-ground) targets get a wider fuse — fast movers/descenders were slipping past the tight radius on a dead-straight shot; ground behavior (tanks, artillery) is untouched.
       else { if (GRID_F.firstHit(p.x, p.y, prox + sweep, prox + sweep, null)) hit = true; }
-      if (hit || p.y >= groundY(p.x) || p.life <= 0) { const burstR = (p.big ? 80 : 42) + (hitAir ? 26 : 0); plasmaBurst(p.x, Math.min(p.y, groundY(p.x)), burstR, p.dmg * (p.fade ?? 1), p.friendly); p.life = 0; }   // burst radius must comfortably exceed the proximity TRIGGER radius above, or a shot can detonate "near" a fast-moving/wide-fused airborne target yet land just outside its own blast (a trigger-without-damage near-miss) — the +26 keeps that margin now that airborne targets get a wider trigger fuse
+      if (hit || p.y >= groundY(p.x) || p.life <= 0) { const burstR = (p.big ? 80 : 42) + (hitAir ? 26 : 0); plasmaBurst(p.x, Math.min(p.y, groundY(p.x)), burstR, p.dmg * (p.fade ?? 1), p.friendly); p.life = 0; if (!CLASSIC_PROJ) G.parts.push({ k: 'plasmapop', x: p.x, y: Math.min(p.y, groundY(p.x)), r: p.big ? 46 : 26, ang: (p.x * .0137 + p.y * .0091) % 6.2832, hostile: !p.friendly, life: .25 }); }   /* cosmetic field-collapse flipbook — no Math.random, only G.parts */   // burst radius must comfortably exceed the proximity TRIGGER radius above, or a shot can detonate "near" a fast-moving/wide-fused airborne target yet land just outside its own blast (a trigger-without-damage near-miss) — the +26 keeps that margin now that airborne targets get a wider trigger fuse
       continue;
     }
     if (p.k === 'smart') {   // homes, then latches onto an enemy and seeds disassembler nanites
@@ -9204,6 +9204,7 @@ function updParts(dt) {
     }
     if (pt.k === 'wreck') { if (!pt.grounded) { pt.vy += 160 * dt; pt.x += pt.vx * dt; pt.y += pt.vy * dt; pt.rot += pt.vr * dt; if (pt.smolder && Math.random() < .09) { spark(pt.x, pt.y, 2); if (Math.random() < .3) boom(pt.x, pt.y, 2); } if (pt.y >= pt.gy) { pt.y = pt.gy; pt.grounded = true; pt.vr = 0; if (pt.pool) sludgePool(pt.x, pt.y, pt.s, pt.s >= 5, fxHeavy()); else boom(pt.x, pt.y, 5); } } if (!pt.pool && Math.random() < .13) smoke(pt.x + (Math.random() - .5) * pt.s, pt.y - pt.s, 1); pt.life -= dt; continue; }   // a MELTED wreck (pool=true, see meltDeath) settles into its own puddle instead of a crash burst, and doesn't trail smoke on the way down — it's cooling, not burning
     if (pt.k === 'puddle') { if (pt.r < pt.maxR) pt.r = Math.min(pt.maxR, pt.r + (pt.maxR / pt.grow) * dt); pt.life -= dt; continue; }   // SLUDGE PUDDLE — spreads fast, then just cools & fades (see renderPart + sludgePool())
+    if (pt.k === 'plasmapop') { pt.life -= dt; continue; }   /* stationary flipbook, frame chosen in renderPart from remaining life */
     if (pt.k === 'fleck') { pt.x += pt.vx * dt; pt.y += pt.vy * dt; pt.vx *= .9; pt.vy = pt.vy * .9 + 6 * dt; pt.life -= dt; continue; }   // NANITE DISASSEMBLY MOTE — drifts outward & dissolves, no gravity fall (see disassemble())
     pt.vy += 150 * dt; pt.x += pt.vx * dt; pt.y += pt.vy * dt; pt.life -= dt; if (pt.rot !== undefined) pt.rot += pt.vr * dt;
   }
@@ -9509,31 +9510,64 @@ function drawSwarmCluster(u, px, d, n) {
   c.save(); c.globalAlpha = .55; c.fillStyle = '#dce6ff'; c.font = '9px Consolas'; c.textAlign = 'center'; c.fillText('×' + n, px, my - blobR - (u.hp < u.maxHp ? 14 : 5)); c.textAlign = 'left'; c.restore();
   if (u.regrowing) { c.save(); c.globalAlpha = .7 + .3 * pulseA(.03); c.fillStyle = '#6dffb0'; c.font = 'bold 9px Consolas'; c.textAlign = 'center'; c.fillText('↻', px, my - blobR - (u.hp < u.maxHp ? 24 : 15)); c.textAlign = 'left'; c.restore(); }
 }
-/* BIG HEAD, SHORT TAIL — gun/kinetic rounds draw as ONE pre-rendered sprite per style (fat bright core + soft halo + a short tapered tail, baked at 2x), so a round costs a single drawImage with no per-op shadowBlur. CLASSIC_PROJ=true keeps the old long thin tracers. */
+/* LONG TAILS, POINTED SLUGS — a gun round is TWO cached stamps: a fixed-size HEAD sprite and a TAIL sprite stretched along the flight axis to L = clamp(k * |v|, Lmin, Lmax), so the faster the round the longer it leads. Kinetic rounds are thin pointed needles, plasma is a round contained-field bulb, rail is a very long white-hot lance. No shadowBlur, at most two drawImage per round. CLASSIC_PROJ=true keeps the old long thin tracers. */
 let CLASSIC_PROJ = false;
-const _slugCache = new Map(), SLUG_S = 2;
-function _slugSprite(key, body, hot, headR, tailL, haloR) {
+const _slugCache = new Map(), SLUG_S = 2, SLUG_TW = 64, SLUG_NA = 48;
+function _slugHead(sp, ang) {   /* the head is pre-rotated into SLUG_NA angle buckets (baked lazily), so stamping it is an UNROTATED blit — far cheaper than a rotated drawImage; only the stretched tail is rotated, at its exact angle */
+  const n = sp.hb, bi = n === 1 ? 0 : (Math.round((ang < 0 ? ang + 6.2832 : ang) / 6.2832 * n)) % n; let e = sp.hbs[bi]; if (e) return e;
+  const sq = Math.ceil(Math.hypot(sp.w, sp.h)) + 1, cv = document.createElement('canvas'); cv.width = cv.height = sq * SLUG_S; const g = cv.getContext('2d'); g.translate(sq * SLUG_S / 2, sq * SLUG_S / 2); if (n > 1) g.rotate(bi / n * 6.2832); g.drawImage(sp.cv, -sp.ox * SLUG_S, -sp.oy * SLUG_S);
+  e = { cv, sq }; sp.hbs[bi] = e; return e;
+}
+function _slugSprite(key, sp0) {
   let sp = _slugCache.get(key); if (sp) return sp;
-  const left = Math.ceil(Math.max(tailL, haloR) + 1), right = Math.ceil(haloR + 1), hh = Math.ceil(haloR + 1), cv = document.createElement('canvas'); cv.width = (left + right) * SLUG_S; cv.height = hh * 2 * SLUG_S;
+  const body = sp0.body, hot = sp0.hot, hw = sp0.hw, hl = sp0.hl, haloR = sp0.halo, tw = sp0.tw, bulb = !!sp0.bulb;
+  const left = Math.ceil(haloR + 1), right = Math.ceil(haloR + 1), hh = Math.ceil(haloR + 1), cv = document.createElement('canvas'); cv.width = (left + right) * SLUG_S; cv.height = hh * 2 * SLUG_S;
   const g = cv.getContext('2d'); g.scale(SLUG_S, SLUG_S); g.translate(left, hh);
-  const hg = g.createRadialGradient(0, 0, 0, 0, 0, haloR); hg.addColorStop(0, body); hg.addColorStop(.35, body); hg.addColorStop(1, 'rgba(0,0,0,0)'); g.globalAlpha = .5; g.fillStyle = hg; g.beginPath(); g.arc(0, 0, haloR, 0, 6.2832); g.fill();   /* soft halo */
-  const tw = headR * .9, tg = g.createLinearGradient(0, 0, -tailL, 0); tg.addColorStop(0, body); tg.addColorStop(.45, body); tg.addColorStop(1, 'rgba(0,0,0,0)'); g.globalAlpha = .9; g.fillStyle = tg; g.beginPath(); g.moveTo(0, -tw); g.lineTo(-tailL, 0); g.lineTo(0, tw); g.closePath(); g.fill();   /* short tapered tail */
-  const hg2 = g.createLinearGradient(0, 0, -tailL * .6, 0); hg2.addColorStop(0, hot); hg2.addColorStop(1, 'rgba(0,0,0,0)'); g.globalAlpha = .8; g.fillStyle = hg2; g.beginPath(); g.moveTo(0, -tw * .45); g.lineTo(-tailL * .6, 0); g.lineTo(0, tw * .45); g.closePath(); g.fill();   /* hot centre sliver */
-  g.globalAlpha = 1; g.fillStyle = body; g.beginPath(); g.arc(0, 0, headR, 0, 6.2832); g.fill(); g.fillStyle = hot; g.beginPath(); g.arc(0, 0, headR * .72, 0, 6.2832); g.fill();   /* solid head: body ring + near-white centre */
-  sp = { cv, ox: left, oy: hh, w: left + right, h: hh * 2 }; _slugCache.set(key, sp); return sp;
+  if (bulb) {   /* PLASMA — a round contained field: soft halo, bright rim, inner glow, white core */
+    const hg = g.createRadialGradient(0, 0, 0, 0, 0, haloR); hg.addColorStop(0, body); hg.addColorStop(.4, body); hg.addColorStop(1, 'rgba(0,0,0,0)'); g.globalAlpha = .45; g.fillStyle = hg; g.beginPath(); g.arc(0, 0, haloR, 0, 6.2832); g.fill();
+    g.globalAlpha = 1; const bg = g.createRadialGradient(0, 0, 0, 0, 0, hw); bg.addColorStop(0, hot); bg.addColorStop(.45, body); bg.addColorStop(1, body); g.fillStyle = bg; g.beginPath(); g.arc(0, 0, hw, 0, 6.2832); g.fill();
+    g.strokeStyle = hot; g.globalAlpha = .9; g.lineWidth = Math.max(.6, hw * .22); g.beginPath(); g.arc(0, 0, hw * .88, 0, 6.2832); g.stroke();   /* bright containment rim */
+    g.globalAlpha = 1; g.fillStyle = '#ffffff'; g.beginPath(); g.arc(0, 0, hw * .38, 0, 6.2832); g.fill();
+  } else {   /* KINETIC / RAIL — a thin pointed ogive needle (tip forward), tight halo, small hot core */
+    const hg = g.createRadialGradient(0, 0, 0, 0, 0, haloR); hg.addColorStop(0, body); hg.addColorStop(.3, body); hg.addColorStop(1, 'rgba(0,0,0,0)'); g.globalAlpha = .32; g.fillStyle = hg; g.beginPath(); g.ellipse(0, 0, haloR, haloR * .62, 0, 0, 6.2832); g.fill();
+    const tip = hl * .55, back = -hl * .45; g.globalAlpha = sp0.sheath ? .75 : 1; g.fillStyle = body; g.beginPath(); g.moveTo(tip, 0); g.quadraticCurveTo(tip - hl * .42, -hw * 1.05, back, -hw); g.lineTo(back, hw); g.quadraticCurveTo(tip - hl * .42, hw * 1.05, tip, 0); g.closePath(); g.fill();
+    g.globalAlpha = 1; const cw = hw * (sp0.sheath ? .42 : .55); g.fillStyle = hot; g.beginPath(); g.moveTo(tip * .92, 0); g.quadraticCurveTo(tip * .4, -cw * 1.05, back * .8, -cw); g.lineTo(back * .8, cw); g.quadraticCurveTo(tip * .4, cw * 1.05, tip * .92, 0); g.closePath(); g.fill();
+  }
+  /* TAIL — drawn once at SLUG_TW px wide, head end on the RIGHT; the drawImage destination width is what varies with speed. Tapers to a point and fades to transparent at the far end; its head end matches the head's width and tucks under it, so there is no seam. */
+  const th = Math.ceil(tw + 1), tc = document.createElement('canvas'); tc.width = SLUG_TW; tc.height = th * 2 * SLUG_S; const t = tc.getContext('2d'); t.scale(1, SLUG_S); t.translate(0, th);
+  const fg = t.createLinearGradient(0, 0, SLUG_TW, 0); fg.addColorStop(0, 'rgba(0,0,0,0)'); fg.addColorStop(.45, body); fg.addColorStop(1, body);
+  t.globalAlpha = .38; t.fillStyle = fg; t.beginPath(); t.moveTo(SLUG_TW, -tw); t.lineTo(0, 0); t.lineTo(SLUG_TW, tw); t.closePath(); t.fill();   /* wide faint sheath */
+  t.globalAlpha = .9; t.beginPath(); t.moveTo(SLUG_TW, -tw * .62); t.lineTo(0, 0); t.lineTo(SLUG_TW, tw * .62); t.closePath(); t.fill();   /* body streak */
+  const hg3 = t.createLinearGradient(0, 0, SLUG_TW, 0); hg3.addColorStop(0, 'rgba(255,255,255,0)'); hg3.addColorStop(.5, hot); hg3.addColorStop(1, hot); t.globalAlpha = sp0.hotTail || .85; t.fillStyle = hg3; t.beginPath(); t.moveTo(SLUG_TW, -tw * .3); t.lineTo(SLUG_TW * .05, 0); t.lineTo(SLUG_TW, tw * .3); t.closePath(); t.fill();   /* hot centre sliver */
+  sp = { cv, ox: left, oy: hh, w: left + right, h: hh * 2, hb: bulb ? 1 : SLUG_NA, hbs: [], tc, th, k: sp0.k, lmin: sp0.lmin, lmax: sp0.lmax, tov: sp0.tov === undefined ? hl * .3 : sp0.tov }; _slugCache.set(key, sp); return sp;
 }
 function drawSlug(p, px) {
-  const k = p.k, f = !!p.friendly; let key, body, hot, hr, tl, ha;
-  if (k === 'plasmasnipe') { key = 'snipe'; body = '#ff5ad0'; hot = '#ffe6f8'; hr = 3.2; tl = 24; ha = 10; }
-  else if (k === 'shell') { key = f ? 'shellF' : 'shellH'; body = f ? '#ffb347' : '#ff6a3a'; hot = f ? '#fff0c0' : '#ffd9c0'; hr = 3; tl = 14; ha = 8; }
-  else if (k === 'amslug') { key = 'am'; body = '#9a63ff'; hot = '#f6ecff'; hr = 2.4; tl = 12; ha = 7; }
-  else if (k === 'rail') { const b = !!p.big; key = b ? 'railB' : 'rail'; body = b ? '#cfeeff' : '#5cc4ff'; hot = '#ffffff'; hr = b ? 3.4 : 2.2; tl = b ? 26 : 16; ha = b ? 10 : 6.5; }
-  else if (k === 'plasball') { const b = !!p.big; key = (f ? 'pbF' : 'pbH') + (b ? 'B' : ''); body = f ? '#e04dff' : '#ff3b1a'; hot = f ? '#fdeaff' : '#ffe0cc'; hr = b ? 3.2 : 2; tl = b ? 16 : 10; ha = b ? 9 : 6; }
-  else if (p.stream) { key = f ? 'stF' : 'stH'; body = f ? '#ffd23a' : '#ff3b1a'; hot = f ? '#fffbe8' : '#ffe0cc'; hr = 1.4; tl = 6; ha = 4; }
-  else if (k === 'tracer') { const hv = !!p.heavy; key = (f ? (p.fire ? 'trFi' : 'trF') : 'trH') + (hv ? 'V' : ''); body = f ? (p.fire ? '#ffb42a' : '#ffd23a') : '#ff3b1a'; hot = f ? '#fffbe8' : '#ffe0cc'; hr = hv ? 3 : 1.8; tl = hv ? 15 : 9; ha = hv ? 8 : 5.5; }
+  const k = p.k, f = !!p.friendly, b = !!p.big; let key, S;
+  if (k === 'plasmasnipe') { key = 'snipe'; S = { bulb: 1, body: '#ff5ad0', hot: '#ffe6f8', hw: 3.4, halo: 10, tw: 3, k: .04, lmin: 8, lmax: 40, tov: 0 }; }
+  else if (k === 'shell') { key = f ? 'shellF' : 'shellH'; S = { body: f ? '#ffb347' : '#ff6a3a', hot: f ? '#fff0c0' : '#ffd9c0', hw: 2.3, hl: 9, halo: 6.5, tw: 2.4, k: .03, lmin: 5, lmax: 20 }; }
+  else if (k === 'amslug') { key = 'am'; S = { body: '#9a63ff', hot: '#f6ecff', hw: 1.5, hl: 9, halo: 5.5, tw: 1.8, k: .035, lmin: 7, lmax: 34 }; }
+  else if (k === 'rail') { key = b ? 'railB' : 'rail'; S = { body: b ? '#cfeeff' : '#5cc4ff', hot: '#ffffff', sheath: 1, hw: b ? 1.5 : 1, hl: b ? 22 : 15, halo: b ? 7 : 5, tw: b ? 2.4 : 1.6, k: b ? .105 : .085, lmin: 26, lmax: b ? 150 : 110, hotTail: 1 }; }
+  else if (k === 'plasball') { key = (f ? 'pbF' : 'pbH') + (b ? 'B' : ''); S = { bulb: 1, body: f ? '#e04dff' : '#ff3b1a', hot: f ? '#fdeaff' : '#ffe0cc', hw: b ? 3.8 : 2.5, halo: b ? 10 : 7, tw: b ? 3 : 1.9, k: b ? .03 : .022, lmin: 6, lmax: b ? 34 : 32, tov: 0 }; }
+  else if (p.stream) { key = f ? 'stF' : 'stH'; S = { body: f ? '#ffd23a' : '#ff3b1a', hot: f ? '#fffbe8' : '#ffe0cc', hw: .75, hl: 5.5, halo: 3.4, tw: .9, k: .034, lmin: 8, lmax: 44 }; }
+  else if (k === 'tracer') { const hv = !!p.heavy; key = (f ? (p.fire ? 'trFi' : 'trF') : 'trH') + (hv ? 'V' : ''); S = { body: f ? (p.fire ? '#ffb42a' : '#ffd23a') : '#ff3b1a', hot: f ? '#fffbe8' : '#ffe0cc', hw: hv ? 1.9 : 1.1, hl: hv ? 11 : 7, halo: hv ? 6 : 4, tw: hv ? 2.2 : 1.3, k: .036, lmin: 7, lmax: 40 }; }
   else return false;
-  const sp = _slugSprite(key, body, hot, hr, tl, ha);
-  c.save(); c.translate(px, p.y); c.rotate(Math.atan2(p.vy, p.vx)); c.drawImage(sp.cv, -sp.ox, -sp.oy, sp.w, sp.h); c.restore(); return true;
+  const sp = _slugSprite(key, S), L = Math.max(sp.lmin, Math.min(sp.lmax, sp.k * Math.hypot(p.vx, p.vy)));
+  const ang = Math.atan2(p.vy, p.vx), he = _slugHead(sp, ang); c.save(); c.imageSmoothingEnabled = false; c.translate(px, p.y); c.rotate(ang); c.drawImage(sp.tc, -L + sp.tov, -sp.th, L, sp.th * 2); c.restore(); c.imageSmoothingEnabled = false; c.drawImage(he.cv, Math.round(px - he.sq * .5), Math.round(p.y - he.sq * .5), he.sq, he.sq); c.imageSmoothingEnabled = true; return true;   /* smoothing off: the sprites are baked at 2x, so nearest sampling is cheap and still clean */
+}
+const _popBooks = {};
+function _popBook(hostile) {   /* cached 5-frame plasma-collapse flipbook (one 5x1 atlas per palette): 1 thin ring snaps out, 2 white-hot core, 3-5 heat bloom fading */
+  const key = hostile ? 'H' : 'F'; let fb = _popBooks[key]; if (fb) return fb;
+  const fs = 128, h = fs / 2, cv = document.createElement('canvas'); cv.width = fs * 5; cv.height = fs; const g = cv.getContext('2d');
+  const body = hostile ? [255, 90, 40] : [236, 80, 255], mid = hostile ? [255, 170, 110] : [255, 150, 235], rgb = (a, al) => 'rgba(' + a[0] + ',' + a[1] + ',' + a[2] + ',' + al + ')';
+  const blob = (cx, cy, r, a0, a1) => { const gr = g.createRadialGradient(cx, cy, 0, cx, cy, r); gr.addColorStop(0, rgb(mid, a0)); gr.addColorStop(.45, rgb(body, a0 * .7)); gr.addColorStop(1, rgb(body, 0)); g.fillStyle = gr; g.beginPath(); g.arc(cx, cy, r, 0, 6.2832); g.fill(); };
+  for (let i = 0; i < 5; i++) {
+    g.save(); g.translate(i * fs + h, h);
+    if (i === 0) { g.strokeStyle = rgb(mid, .95); g.lineWidth = 3; g.beginPath(); g.arc(0, 0, h * .44, 0, 6.2832); g.stroke(); g.strokeStyle = '#ffffff'; g.lineWidth = 1.2; g.beginPath(); g.arc(0, 0, h * .44, 0, 6.2832); g.stroke(); blob(0, 0, h * .4, .35); }
+    else if (i === 1) { g.strokeStyle = rgb(body, .6); g.lineWidth = 2; g.beginPath(); g.arc(0, 0, h * .74, 0, 6.2832); g.stroke(); blob(0, 0, h * .6, 1); const cg = g.createRadialGradient(0, 0, 0, 0, 0, h * .42); cg.addColorStop(0, '#ffffff'); cg.addColorStop(.6, 'rgba(255,255,255,.85)'); cg.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = cg; g.beginPath(); g.arc(0, 0, h * .42, 0, 6.2832); g.fill(); }
+    else { const k = i - 2, R = h * (.78 + k * .1), a = .8 - k * .28; for (let j = 0; j < 6; j++) { const an = j * 1.047 + k * .5; blob(Math.cos(an) * R * .3, Math.sin(an) * R * .3, R * .62, a * .5); } blob(0, 0, R * .9, a); if (k === 0) { g.fillStyle = 'rgba(255,255,255,.55)'; g.beginPath(); g.arc(0, 0, h * .16, 0, 6.2832); g.fill(); } }
+    g.restore();
+  }
+  fb = { cv, fs }; _popBooks[key] = fb; return fb;
 }
 const _tracerCache = new Map();   // PERF: cached tapered-tracer gradients keyed by colour (see the default bullet branch below)
 function renderProj(p, px) {
@@ -9725,6 +9759,7 @@ function renderPart(pt, px) {
   else if (pt.k === 'spray') { const la = Math.max(0, Math.min(1, pt.life * 2)); glow(px, pt.y, pt.r * 2.2, 'rgba(223,242,255,1)', la * .4); c.globalAlpha = la * .85; c.fillStyle = '#dff2ff'; c.beginPath(); c.arc(px, pt.y, pt.r, 0, 6.28); c.fill(); c.globalAlpha = 1; }   // WATER impact droplet
   else if (pt.k === 'wavefront') { const t = 1 - Math.max(0, pt.life) / pt.maxLife, off = t * pt.spread, wa = Math.max(0, 1 - t) * .8; if (wa > .01) { c.save(); c.globalAlpha = wa; c.strokeStyle = pt.col || '#d8c090'; c.lineWidth = 2.4; for (const dir of [-1, 1]) { const ex = pt.x + dir * off, epx = sx(ex), egy = groundY(ex); c.beginPath(); c.moveTo(epx - 9, egy); c.lineTo(epx + 9, egy); c.stroke(); } c.restore(); c.globalAlpha = 1; } }   // SEISMIC — two bright dashes riding the real terrain profile, racing outward from ground zero
   else if (pt.k === 'muzzle') { const fm = pt.fam; if (!(_dt3 && fm < 2)) { let fi = Math.min(2, ((1 - Math.max(0, pt.life) / pt.ml) * 3) | 0); if (fm === 1) fi = (fi + pt.v) % 3; if (!(_dt2 && fm < 2 && fi > 0)) { const sh = MZ.sheet(fm), sc = pt.r, U = MZ.U; c.save(); c.translate(px, pt.y); c.rotate(pt.ang); if (pt.v & 1) c.scale(1, -1); if (flashRed) c.globalAlpha = .45; c.drawImage(sh, fi * MZ.CW, 0, MZ.CW, MZ.CH, -MZ.OX / U * sc, -MZ.CH / 2 / U * sc, MZ.CW / U * sc, MZ.CH / U * sc); c.restore(); } } }   /* baked muzzle flipbook — see mzBake */
+  else if (pt.k === 'plasmapop') { const fi = Math.max(0, Math.min(4, ((1 - pt.life / .25) * 5) | 0)), fb = _popBook(pt.hostile), fs = fb.fs, rr2 = pt.r * (pt.snipe ? 1.25 : 1); c.save(); c.translate(px, pt.y); c.rotate(pt.ang || 0); c.globalCompositeOperation = 'lighter'; c.drawImage(fb.cv, fi * fs, 0, fs, fs, -rr2, -rr2, rr2 * 2, rr2 * 2); c.restore(); }   /* PLASMA FIELD COLLAPSE — 5 cached frames: snapping ring, white-hot core, three fading heat-bloom frames */
   else if (pt.k === 'plasma') { glow(px, pt.y, pt.r * 4.4, 'rgba(190,140,255,1)', Math.min(1, pt.life * 2.5) * .85); c.globalAlpha = Math.min(1, pt.life * 2.5) * .85; c.fillStyle = pt.life > .3 ? '#dff0ff' : '#c184ff'; c.beginPath(); c.arc(px, pt.y, pt.r, 0, 6.28); c.fill(); c.globalAlpha = 1; }
   else if (pt.k === 'wreck') { c.save(); c.translate(px, pt.y); c.rotate(pt.rot); c.scale(pt.facing, 1); c.globalAlpha = Math.min(1, pt.life / 2.5) * .92; if (ART[pt.art]) ART[pt.art](c, pt.s, -.5); c.globalAlpha = .35; c.fillStyle = '#000'; c.fillRect(-pt.s * 2, -pt.s * .2, pt.s * 4, pt.s * .5); c.globalAlpha = 1; c.restore(); }
   else if (pt.k === 'deb') { c.save(); c.translate(px, pt.y); c.rotate(pt.rot); c.globalAlpha = Math.min(1, pt.life); c.fillStyle = '#2a2a2a'; c.fillRect(-pt.r, -pt.r, pt.r * 2, pt.r * 2); c.restore(); c.globalAlpha = 1; }
